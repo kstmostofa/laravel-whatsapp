@@ -5,7 +5,7 @@ Five minutes from `composer require` to "I can send a WhatsApp message from PHP.
 ## Prerequisites
 
 - PHP **8.2+** with `ext-curl`, `ext-openssl`
-- Laravel **11** or **12**
+- Laravel **11** or **12** or **13**
 - Composer
 - **Only for the Web sidecar**: Node.js 18+, npm, and ~600 MB free disk (Puppeteer downloads Chromium)
 - **Only for the admin UI**: Livewire 3.x + Flux UI
