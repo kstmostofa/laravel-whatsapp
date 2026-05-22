@@ -1,0 +1,41 @@
+/**
+ * Standalone CSS source for kstmostofa/laravel-whatsapp.
+ *
+ * Vite compiles this into `dist/laravel-whatsapp.css` — a self-contained file
+ * usable on apps that don't have Tailwind v4 set up (or use a different
+ * framework like Bootstrap). Tree-shaken: only the utilities our views
+ * actually use end up in the output, plus Flux's component CSS + the
+ * WhatsApp brand tokens.
+ *
+ * Re-build with: cd dist-src && npm run build  (see build.sh)
+ */
+
+@import 'tailwindcss';
+@import '../vendor/livewire/flux/dist/flux.css';
+
+@source '../vendor/livewire/flux/stubs/**/*.blade.php';
+@source '../resources/views/**/*.blade.php';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    /* WhatsApp brand palette — exposed as `wa-50` … `wa-900` utilities. */
+    --color-wa-50:  #E8F8EF;
+    --color-wa-100: #C7F0D6;
+    --color-wa-200: #93E2AE;
+    --color-wa-300: #5DD487;
+    --color-wa-400: #38C56C;
+    --color-wa-500: #25D366;
+    --color-wa-600: #00A884;
+    --color-wa-700: #128C7E;
+    --color-wa-800: #075E54;
+    --color-wa-900: #054D44;
+
+    /* Chat bubble + surface tokens used by chat-history.blade.php */
+    --color-wa-bubble-light: #D9FDD3;
+    --color-wa-bubble-dark:  #005C4B;
+    --color-wa-surface-light: #FFFFFF;
+    --color-wa-surface-dark:  #202C33;
+    --color-wa-canvas-light:  #F0F2F5;
+    --color-wa-canvas-dark:   #111B21;
+}

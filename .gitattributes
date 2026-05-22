@@ -1,0 +1,26 @@
+# Keep these out of the Packagist `dist` tarball that Composer downloads.
+# They're useful in the repo (CI, tests, docs) but not at install time.
+/.github                export-ignore
+/docs                   export-ignore
+/dist-src               export-ignore
+/tests                  export-ignore
+/.gitattributes         export-ignore
+/.gitignore             export-ignore
+/CHANGELOG.md           export-ignore
+/PUBLISHING.md          export-ignore
+/package.json           export-ignore
+/phpunit.xml            export-ignore
+
+# Normalise line endings — Windows contributors shouldn't poison the diff.
+* text=auto eol=lf
+*.php       text eol=lf
+*.js        text eol=lf
+*.json      text eol=lf
+*.md        text eol=lf
+*.blade.php text eol=lf
+
+# Binary files
+*.png       binary
+*.jpg       binary
+*.svg       binary
+*.woff2     binary

@@ -1,0 +1,14 @@
+{
+  "name": "laravel-whatsapp-docs",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Documentation site for kstmostofa/laravel-whatsapp — built with VitePress, deployed to GitHub Pages.",
+  "scripts": {
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
+  },
+  "devDependencies": {
+    "vitepress": "^1.5.0"
+  }
+}

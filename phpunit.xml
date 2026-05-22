@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         processIsolation="false"
+         stopOnFailure="false"
+         cacheDirectory=".phpunit.cache"
+         backupStaticProperties="false">
+    <testsuites>
+        <testsuite name="laravel-wa">
+            <directory>tests</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>src</directory>
+        </include>
+    </source>
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <env name="WHATSAPP_API_VERSION" value="v21.0"/>
+        <env name="WHATSAPP_PHONE_NUMBER_ID" value="100000000000001"/>
+        <env name="WHATSAPP_BUSINESS_ACCOUNT_ID" value="200000000000001"/>
+        <env name="WHATSAPP_ACCESS_TOKEN" value="TEST_TOKEN"/>
+        <env name="WHATSAPP_APP_SECRET" value="TEST_SECRET"/>
+        <env name="WHATSAPP_VERIFY_TOKEN" value="TEST_VERIFY"/>
+        <env name="WHATSAPP_VERIFY_SIGNATURE" value="true"/>
+        <env name="WHATSAPP_WEB_ENABLED" value="true"/>
+        <env name="WHATSAPP_WEB_HOST" value="127.0.0.1"/>
+        <env name="WHATSAPP_WEB_PORT" value="3999"/>
+        <env name="WHATSAPP_WEB_TOKEN" value="TEST_SIDECAR_TOKEN"/>
+    </php>
+</phpunit>
