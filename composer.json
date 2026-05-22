@@ -1,6 +1,6 @@
 {
     "name": "kstmostofa/laravel-whatsapp",
-    "description": "Dual-backend Laravel package for WhatsApp: Meta Cloud API (pure PHP) + bundled whatsapp-web.js sidecar. Ships a Livewire/Flux admin UI, queued jobs, webhooks with HMAC, Eloquent models, broadcasting, and CLI lifecycle commands.",
+    "description": "Dual-backend Laravel package for WhatsApp: Meta Cloud API + bundled whatsapp-web.js sidecar. Ships a Livewire/Flux admin UI, queued jobs, webhooks with HMAC, Eloquent models, broadcasting, and CLI lifecycle commands.",
     "type": "library",
     "license": "MIT",
     "keywords": [
