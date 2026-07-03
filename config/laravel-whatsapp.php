@@ -100,6 +100,7 @@ return [
             'node_binary' => env('WHATSAPP_WEB_NODE_BINARY', 'node'),
             'npm_binary' => env('WHATSAPP_WEB_NPM_BINARY', 'npm'),
             'session_dir' => env('WHATSAPP_WEB_SESSION_DIR', storage_path('app/whatsapp-sidecar/sessions')),
+            'auto_start_sessions' => env('WHATSAPP_WEB_AUTO_START_SESSIONS', true),
             'pid_file' => env('WHATSAPP_WEB_PID_FILE', storage_path('app/whatsapp-sidecar/sidecar.pid')),
             'log_file' => env('WHATSAPP_WEB_LOG_FILE', storage_path('logs/whatsapp-sidecar.log')),
             'err_file' => env('WHATSAPP_WEB_ERR_FILE', storage_path('logs/whatsapp-sidecar.err.log')),

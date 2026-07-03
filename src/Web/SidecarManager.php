@@ -107,6 +107,10 @@ class SidecarManager
             'SIDECAR_TOKEN' => (string) ($this->token() ?? ''),
             'SESSION_DIR' => $this->sessionDir(),
             'SIDECAR_PID_FILE' => $this->pidFile(),
+            'AUTO_START_SESSIONS' => filter_var(
+                $this->config['sidecar']['auto_start_sessions'] ?? true,
+                FILTER_VALIDATE_BOOLEAN,
+            ) ? 'true' : 'false',
             'PATH' => getenv('PATH') ?: '/usr/local/bin:/usr/bin:/bin',
         ];
 

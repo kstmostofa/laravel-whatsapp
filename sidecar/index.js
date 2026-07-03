@@ -14,12 +14,16 @@ const qrcode = require('qrcode');
 const path = require('path');
 const fs = require('fs');
 const { Client, LocalAuth, MessageMedia, Location } = require('whatsapp-web.js');
+const { discoverPersistedSessions } = require('./session-store');
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '127.0.0.1';
 const TOKEN = process.env.SIDECAR_TOKEN || '';
 const SESSION_DIR = process.env.SESSION_DIR || path.join(__dirname, 'sessions');
 const PID_FILE = process.env.SIDECAR_PID_FILE || '';
+const AUTO_START_SESSIONS = !['0', 'false', 'no', 'off'].includes(
+  String(process.env.AUTO_START_SESSIONS ?? 'true').toLowerCase(),
+);
 
 if (!fs.existsSync(SESSION_DIR)) fs.mkdirSync(SESSION_DIR, { recursive: true });
 
@@ -147,6 +151,19 @@ async function bootSession(sessionId) {
   });
 
   return session;
+}
+
+async function autoStartPersistedSessions() {
+  if (!AUTO_START_SESSIONS) return;
+
+  for (const sessionId of discoverPersistedSessions(SESSION_DIR)) {
+    try {
+      await bootSession(sessionId);
+      console.log(`[laravel-wa-sidecar] auto-started persisted session ${sessionId}`);
+    } catch (e) {
+      console.error(`[laravel-wa-sidecar] failed to auto-start persisted session ${sessionId}: ${e.message}`);
+    }
+  }
 }
 
 // Normalize a recipient to whatsapp-web.js's expected Chat ID format.
@@ -551,6 +568,9 @@ app.use((err, _req, res, _next) => {
 
 const server = app.listen(PORT, HOST, () => {
   console.log(`[laravel-wa-sidecar] listening on http://${HOST}:${PORT}`);
+  autoStartPersistedSessions().catch((e) => {
+    console.error(`[laravel-wa-sidecar] failed to auto-start persisted sessions: ${e.message}`);
+  });
 });
 
 function shutdown(signal) {

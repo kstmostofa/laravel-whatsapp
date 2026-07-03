@@ -105,7 +105,9 @@ php artisan whatsapp:sidecar:status   # installed? running? reachable?
 php artisan whatsapp:sidecar:stop     # SIGTERM, then SIGKILL after 5s
 ```
 
-PID, logs, session auth state go under `storage/app/whatsapp-sidecar/` and `storage/logs/whatsapp-sidecar*.log`. The session's WhatsApp Web auth is persisted, so restarting the sidecar doesn't require re-scanning a QR — unless you call `destroy()` on the session.
+PID, logs, session auth state go under `storage/app/whatsapp-sidecar/` and `storage/logs/whatsapp-sidecar*.log`. The session's WhatsApp Web auth is persisted, so restarting the sidecar auto-starts saved sessions and doesn't require re-scanning a QR — unless you call `destroy()` on the session.
+
+Set `WHATSAPP_WEB_AUTO_START_SESSIONS=false` if you prefer to boot saved sessions manually with `WhatsApp::web('<id>')->start()`.
 
 ### Pair your phone
 
