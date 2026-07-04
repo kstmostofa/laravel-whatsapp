@@ -111,6 +111,14 @@ class SidecarManager
             'PATH' => getenv('PATH') ?: ($this->isWindows() ? '' : '/usr/local/bin:/usr/bin:/bin'),
         ];
 
+        // Let Puppeteer reuse a system browser when configured (e.g. after
+        // installing with --skip-chromium). spawnUnix only exports this
+        // whitelist, so it must be added here to reach the Node process.
+        $chrome = $this->config['sidecar']['chrome_path'] ?? null;
+        if (is_string($chrome) && $chrome !== '') {
+            $env['PUPPETEER_EXECUTABLE_PATH'] = $chrome;
+        }
+
         $pidFile = $this->pidFile();
 
         // Spawn the Node sidecar fully detached so it outlives this PHP process.

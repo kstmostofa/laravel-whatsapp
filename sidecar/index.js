@@ -91,10 +91,16 @@ async function bootSession(sessionId) {
   const existing = sessions.get(sessionId);
   if (existing) return existing;
 
+  // Reuse a system Chrome/Chromium when PUPPETEER_EXECUTABLE_PATH is set
+  // (e.g. installed with --skip-chromium). Falls back to Puppeteer's bundled
+  // Chromium when unset.
+  const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || undefined;
+
   const client = new Client({
     authStrategy: new LocalAuth({ clientId: sessionId, dataPath: SESSION_DIR }),
     puppeteer: {
       headless: true,
+      executablePath,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
     },
   });

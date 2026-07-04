@@ -99,6 +99,11 @@ return [
             'path' => env('WHATSAPP_WEB_SIDECAR_PATH', base_path('vendor/kstmostofa/laravel-whatsapp/sidecar')),
             'node_binary' => env('WHATSAPP_WEB_NODE_BINARY', 'node'),
             'npm_binary' => env('WHATSAPP_WEB_NPM_BINARY', 'npm'),
+            // Path to a Chrome/Chromium binary for Puppeteer. Leave null to use
+            // the Chromium that `whatsapp:sidecar:install` downloads. Set this
+            // (or PUPPETEER_EXECUTABLE_PATH) when you installed with
+            // --skip-chromium and want to reuse a system browser instead.
+            'chrome_path' => env('WHATSAPP_WEB_CHROME_PATH', env('PUPPETEER_EXECUTABLE_PATH')),
             'session_dir' => env('WHATSAPP_WEB_SESSION_DIR', storage_path('app/whatsapp-sidecar/sessions')),
             'pid_file' => env('WHATSAPP_WEB_PID_FILE', storage_path('app/whatsapp-sidecar/sidecar.pid')),
             'log_file' => env('WHATSAPP_WEB_LOG_FILE', storage_path('logs/whatsapp-sidecar.log')),
