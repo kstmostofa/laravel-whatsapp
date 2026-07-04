@@ -18,7 +18,7 @@ Public. Returns `{ ok: true, sessions: N }`.
 
 ### `GET /sessions`
 
-List of currently-tracked sessions:
+List of sessions currently tracked by the sidecar. Persisted `session-*` auth folders are auto-started on sidecar boot by default, so they appear here while reconnecting:
 
 ```json
 { "sessions": [{ "id": "main", "status": "ready" }, …] }

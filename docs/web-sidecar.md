@@ -37,7 +37,9 @@ The sidecar runs locally on the same server as Laravel. Auth between PHP and Nod
 
 ## Sessions
 
-A "session" = one paired WhatsApp account. Each session has its own auth state stored in `storage/app/whatsapp-sidecar/sessions/session-<id>/`. Sessions survive sidecar restarts — no need to re-scan a QR unless you call `destroy()`.
+A "session" = one paired WhatsApp account. Each session has its own auth state stored in `storage/app/whatsapp-sidecar/sessions/session-<id>/`. Sessions survive sidecar restarts and are auto-started from saved auth folders when the sidecar boots — no need to re-scan a QR unless you call `destroy()`.
+
+Set `WHATSAPP_WEB_AUTO_START_SESSIONS=false` if you want persisted sessions to stay dormant until your app calls `WhatsApp::web('<id>')->start()` explicitly.
 
 ### Start + pair
 

@@ -105,6 +105,7 @@ return [
             // --skip-chromium and want to reuse a system browser instead.
             'chrome_path' => env('WHATSAPP_WEB_CHROME_PATH', env('PUPPETEER_EXECUTABLE_PATH')),
             'session_dir' => env('WHATSAPP_WEB_SESSION_DIR', storage_path('app/whatsapp-sidecar/sessions')),
+            'auto_start_sessions' => env('WHATSAPP_WEB_AUTO_START_SESSIONS', true),
             'pid_file' => env('WHATSAPP_WEB_PID_FILE', storage_path('app/whatsapp-sidecar/sidecar.pid')),
             'log_file' => env('WHATSAPP_WEB_LOG_FILE', storage_path('logs/whatsapp-sidecar.log')),
             'err_file' => env('WHATSAPP_WEB_ERR_FILE', storage_path('logs/whatsapp-sidecar.err.log')),

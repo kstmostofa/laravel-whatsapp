@@ -82,6 +82,7 @@ Each paired session keeps a Puppeteer Chromium instance. Budget **1–2 GB RAM p
 
 - Stop sessions you're not using: `WhatsApp::web('foo')->stop()` (keeps auth)
 - Run fewer sessions per box
+- Set `WHATSAPP_WEB_AUTO_START_SESSIONS=false` so saved sessions don't all restart automatically when the sidecar boots
 
 ## Cloud API
 

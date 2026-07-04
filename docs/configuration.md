@@ -49,6 +49,7 @@ Middleware on the routes is `['api']` by default. Override in `config/laravel-wh
 | `WHATSAPP_WEB_NODE_BINARY` | **`node`** | Path to Node binary |
 | `WHATSAPP_WEB_NPM_BINARY` | **`npm`** | Path to npm |
 | `WHATSAPP_WEB_SESSION_DIR` | `storage/app/whatsapp-sidecar/sessions` | Persisted WhatsApp Web auth state |
+| `WHATSAPP_WEB_AUTO_START_SESSIONS` | **`true`** | Auto-start persisted `session-*` auth folders when the sidecar boots |
 | `WHATSAPP_WEB_PID_FILE` | `storage/app/whatsapp-sidecar/sidecar.pid` | PID file |
 | `WHATSAPP_WEB_LOG_FILE` | `storage/logs/whatsapp-sidecar.log` | stdout log |
 | `WHATSAPP_WEB_ERR_FILE` | `storage/logs/whatsapp-sidecar.err.log` | stderr log |
