@@ -5,7 +5,7 @@ namespace Kstmostofa\LaravelWhatsApp\Console\Commands;
 use Illuminate\Console\Command;
 use Kstmostofa\LaravelWhatsApp\Exceptions\SidecarException;
 use Kstmostofa\LaravelWhatsApp\Web\SidecarManager;
-use Symfony\Component\Process\Process;
+use Symfony\Component\Process\ExecutableFinder;
 
 class SidecarInstallCommand extends Command
 {
@@ -65,8 +65,9 @@ class SidecarInstallCommand extends Command
      */
     protected function cleanCorruptCacheDirs(): void
     {
+        $home = $this->homeDir();
         $cacheRoot = getenv('PUPPETEER_CACHE_DIR')
-            ?: (($_SERVER['HOME'] ?? getenv('HOME') ?: '').'/.cache/puppeteer');
+            ?: ($home === '' ? '' : $home.DIRECTORY_SEPARATOR.'.cache'.DIRECTORY_SEPARATOR.'puppeteer');
 
         if (! $cacheRoot || ! is_dir($cacheRoot)) {
             return;
@@ -76,7 +77,7 @@ class SidecarInstallCommand extends Command
         foreach (glob($cacheRoot.'/*', GLOB_ONLYDIR) ?: [] as $browserDir) {
             foreach (glob($browserDir.'/*', GLOB_ONLYDIR) ?: [] as $versionDir) {
                 if ($this->isEffectivelyEmpty($versionDir)) {
-                    @exec('rm -rf '.escapeshellarg($versionDir));
+                    $this->deleteTree($versionDir);
                     $cleaned++;
                     $this->line("  Removed empty Puppeteer cache dir: {$versionDir}");
                 }
@@ -112,14 +113,57 @@ class SidecarInstallCommand extends Command
         $nodeModules = $manager->path().DIRECTORY_SEPARATOR.'node_modules';
         if (is_dir($nodeModules)) {
             $this->warn("Removing {$nodeModules}");
-            @exec('rm -rf '.escapeshellarg($nodeModules));
+            $this->deleteTree($nodeModules);
         }
 
-        $cache = ($_SERVER['HOME'] ?? '').'/.cache/puppeteer/chrome';
-        if (is_dir($cache)) {
+        $home = $this->homeDir();
+        $cache = $home === ''
+            ? ''
+            : $home.DIRECTORY_SEPARATOR.'.cache'.DIRECTORY_SEPARATOR.'puppeteer'.DIRECTORY_SEPARATOR.'chrome';
+        if ($cache !== '' && is_dir($cache)) {
             $this->warn("Removing Puppeteer Chrome cache at {$cache}");
-            @exec('rm -rf '.escapeshellarg($cache));
+            $this->deleteTree($cache);
         }
+    }
+
+    /**
+     * The user's home directory, cross-platform. On Windows PHP does not
+     * populate $_SERVER['HOME']; USERPROFILE (or HOMEDRIVE+HOMEPATH) is used.
+     */
+    protected function homeDir(): string
+    {
+        $home = $_SERVER['HOME'] ?? getenv('HOME') ?: '';
+
+        if ($home === '' && DIRECTORY_SEPARATOR === '\\') {
+            $home = getenv('USERPROFILE')
+                ?: (getenv('HOMEDRIVE') && getenv('HOMEPATH') ? getenv('HOMEDRIVE').getenv('HOMEPATH') : '');
+        }
+
+        return (string) $home;
+    }
+
+    /**
+     * Recursively delete a directory in pure PHP — no shelling out to `rm`
+     * (absent on Windows) or `rmdir /s`.
+     */
+    protected function deleteTree(string $path): void
+    {
+        if (! is_dir($path)) {
+            @unlink($path);
+
+            return;
+        }
+
+        $items = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST
+        );
+
+        foreach ($items as $item) {
+            $item->isDir() ? @rmdir($item->getPathname()) : @unlink($item->getPathname());
+        }
+
+        @rmdir($path);
     }
 
     protected function renderRecoveryHints(string $errorMessage): void
@@ -137,12 +181,15 @@ class SidecarInstallCommand extends Command
 
     protected function checkBinary(string $binary, string $label): void
     {
-        $process = new Process(['which', $binary]);
-        $process->run();
-
-        if (! $process->isSuccessful()) {
-            $this->error("{$label} (`{$binary}`) not found on PATH. Install it before running this command.");
-            exit(self::FAILURE);
+        // ExecutableFinder resolves against PATH (and PATHEXT on Windows, so
+        // `node` matches node.exe / npm.cmd). An absolute path in config is
+        // accepted as-is. This replaces a hard-coded `which`, which does not
+        // exist on Windows and made the check always fail there.
+        if (is_file($binary) || (new ExecutableFinder())->find($binary) !== null) {
+            return;
         }
+
+        $this->error("{$label} (`{$binary}`) not found on PATH. Install it before running this command.");
+        exit(self::FAILURE);
     }
 }

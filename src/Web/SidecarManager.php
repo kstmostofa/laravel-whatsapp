@@ -9,8 +9,9 @@ use Symfony\Component\Process\Process;
  * Installs, starts, stops, and supervises the bundled Node sidecar
  * (sidecar/index.js wrapping whatsapp-web.js).
  *
- * The sidecar is detached on `start()` using `nohup` because Symfony Process
- * can't fully detach a child from the PHP process.
+ * The sidecar is detached on `start()` so it outlives the PHP process:
+ * `nohup` + a redirected subshell on Unix, and proc_open with a new console
+ * on Windows. In both cases the Node child records its own PID file.
  */
 class SidecarManager
 {
@@ -107,38 +108,19 @@ class SidecarManager
             'SIDECAR_TOKEN' => (string) ($this->token() ?? ''),
             'SESSION_DIR' => $this->sessionDir(),
             'SIDECAR_PID_FILE' => $this->pidFile(),
-            'PATH' => getenv('PATH') ?: '/usr/local/bin:/usr/bin:/bin',
+            'PATH' => getenv('PATH') ?: ($this->isWindows() ? '' : '/usr/local/bin:/usr/bin:/bin'),
         ];
 
-        $envExports = '';
-        foreach ($env as $k => $v) {
-            $envExports .= sprintf('%s=%s ', $k, escapeshellarg($v));
-        }
-
-        $node = $this->config['sidecar']['node_binary'];
-        $entry = $this->path().DIRECTORY_SEPARATOR.'index.js';
-
-        // Fully detach so `shell_exec` returns immediately. The classic problem
-        // is that even with `& echo $!`, shell_exec waits on the outer shell's
-        // stdout pipe — which a backgrounded child can keep open. We solve this
-        // by wrapping in a subshell whose stdout/stderr are redirected to
-        // /dev/null, and by writing the PID to a file we read afterwards.
         $pidFile = $this->pidFile();
 
-        $cmd = sprintf(
-            '( cd %s && %s nohup %s %s < /dev/null >> %s 2>> %s & echo $! > %s ) > /dev/null 2>&1',
-            escapeshellarg($this->path()),
-            $envExports,
-            escapeshellarg($node),
-            escapeshellarg($entry),
-            escapeshellarg($this->logFile()),
-            escapeshellarg($this->errFile()),
-            escapeshellarg($pidFile),
-        );
+        // Spawn the Node sidecar fully detached so it outlives this PHP process.
+        // The sidecar writes its own OS PID to SIDECAR_PID_FILE on boot, which
+        // we poll for below — so the spawn itself does not need to report a PID.
+        $this->isWindows()
+            ? $this->spawnWindows($env)
+            : $this->spawnUnix($env);
 
-        shell_exec($cmd);
-
-        // The shell writes nohup's PID first. Node then overwrites the file
+        // The sidecar writes its own PID once booted. Node then overwrites the file
         // with its own PID a fraction of a second after boot (macOS `nohup`
         // forks rather than execs, so the shell's $! is the wrapper). Poll
         // until the file contains a PID of a *currently running* node process.
@@ -174,20 +156,44 @@ class SidecarManager
         }
 
         if ($this->processAlive($pid)) {
-            @posix_kill($pid, SIGTERM);
+            $this->terminate($pid, force: false);
 
             for ($i = 0; $i < 50 && $this->processAlive($pid); $i++) {
                 usleep(100_000);
             }
 
             if ($this->processAlive($pid)) {
-                @posix_kill($pid, SIGKILL);
+                $this->terminate($pid, force: true);
             }
         }
 
         @unlink($this->pidFile());
 
         return true;
+    }
+
+    /**
+     * Send a terminate (or force-kill) signal to a PID, cross-platform.
+     * Unix uses POSIX signals; Windows uses taskkill (with /T to kill the
+     * process tree, since the sidecar may spawn a Chromium child).
+     */
+    protected function terminate(int $pid, bool $force): void
+    {
+        if ($this->isWindows()) {
+            $flags = $force ? '/T /F' : '/T';
+            @exec('taskkill /PID '.(int) $pid.' '.$flags.' 2>NUL');
+
+            return;
+        }
+
+        if (function_exists('posix_kill')) {
+            // SIG* constants come from ext-pcntl, which may be absent even when
+            // ext-posix is present; fall back to the well-known signal numbers.
+            $signal = $force
+                ? (defined('SIGKILL') ? SIGKILL : 9)
+                : (defined('SIGTERM') ? SIGTERM : 15);
+            @posix_kill($pid, $signal);
+        }
     }
 
     /**
@@ -220,7 +226,106 @@ class SidecarManager
 
     protected function processAlive(int $pid): bool
     {
+        if ($pid <= 0) {
+            return false;
+        }
+
+        if ($this->isWindows()) {
+            // tasklist prints a header + the matching row, or "INFO: No tasks..."
+            $out = (string) @shell_exec('tasklist /FI "PID eq '.(int) $pid.'" /NH 2>NUL');
+
+            return stripos($out, 'No tasks') === false && strpos($out, (string) $pid) !== false;
+        }
+
         return function_exists('posix_kill') && @posix_kill($pid, 0);
+    }
+
+    protected function isWindows(): bool
+    {
+        return DIRECTORY_SEPARATOR === '\\';
+    }
+
+    /**
+     * Unix: detach with a subshell whose stdout/stderr go to /dev/null, using
+     * nohup so the child survives the parent shell. The child writes its own
+     * PID file; we still capture the shell's $! as a fallback seed.
+     *
+     * @param  array<string, string>  $env
+     */
+    protected function spawnUnix(array $env): void
+    {
+        $envExports = '';
+        foreach ($env as $k => $v) {
+            $envExports .= sprintf('%s=%s ', $k, escapeshellarg($v));
+        }
+
+        $node = $this->config['sidecar']['node_binary'];
+        $entry = $this->path().DIRECTORY_SEPARATOR.'index.js';
+
+        $cmd = sprintf(
+            '( cd %s && %s nohup %s %s < /dev/null >> %s 2>> %s & echo $! > %s ) > /dev/null 2>&1',
+            escapeshellarg($this->path()),
+            $envExports,
+            escapeshellarg($node),
+            escapeshellarg($entry),
+            escapeshellarg($this->logFile()),
+            escapeshellarg($this->errFile()),
+            escapeshellarg($this->pidFile()),
+        );
+
+        shell_exec($cmd);
+    }
+
+    /**
+     * Windows: proc_open with create_new_console detaches the child into its
+     * own console so it outlives this PHP process. Env and cwd are passed
+     * natively (no `set`/quoting dance); stdout/stderr are appended to the log
+     * files. We deliberately do not proc_close (that would block on the child).
+     *
+     * @param  array<string, string>  $env
+     */
+    protected function spawnWindows(array $env): void
+    {
+        $node = $this->config['sidecar']['node_binary'];
+        $entry = $this->path().DIRECTORY_SEPARATOR.'index.js';
+
+        $descriptors = [
+            0 => ['file', 'NUL', 'r'],
+            1 => ['file', $this->logFile(), 'a'],
+            2 => ['file', $this->errFile(), 'a'],
+        ];
+
+        $pipes = [];
+        $proc = @proc_open(
+            [$node, $entry],
+            $descriptors,
+            $pipes,
+            $this->path(),
+            array_merge($this->inheritedEnv(), $env),
+            ['bypass_shell' => true, 'create_new_console' => true],
+        );
+
+        if (is_resource($proc)) {
+            // Detach: do NOT proc_close (it waits). The child keeps running in
+            // its new console and records its own PID via SIDECAR_PID_FILE.
+            proc_get_status($proc);
+        }
+    }
+
+    /**
+     * The current environment as a string=>string map, for merging with the
+     * sidecar's own vars when spawning (Windows proc_open replaces env wholesale).
+     *
+     * @return array<string, string>
+     */
+    protected function inheritedEnv(): array
+    {
+        $env = [];
+        foreach (getenv() as $k => $v) {
+            $env[$k] = (string) $v;
+        }
+
+        return $env;
     }
 
     protected function ensureDirectory(string $path): void
