@@ -282,6 +282,13 @@ class SidecarManager
      * natively (no `set`/quoting dance); stdout/stderr are appended to the log
      * files. We deliberately do not proc_close (that would block on the child).
      *
+     * Because `bypass_shell` launches node.exe directly, proc_get_status()
+     * reports node's real OS PID. We seed the PID file with it immediately so
+     * start()'s poll succeeds at once — otherwise on Windows the poll can time
+     * out while `require('whatsapp-web.js')` (a large module tree) loads before
+     * the sidecar reaches its own PID-write line. Node later rewrites the same
+     * value harmlessly.
+     *
      * @param  array<string, string>  $env
      */
     protected function spawnWindows(array $env): void
@@ -306,9 +313,16 @@ class SidecarManager
         );
 
         if (is_resource($proc)) {
-            // Detach: do NOT proc_close (it waits). The child keeps running in
-            // its new console and records its own PID via SIDECAR_PID_FILE.
-            proc_get_status($proc);
+            $status = proc_get_status($proc);
+            $pid = (int) ($status['pid'] ?? 0);
+
+            if ($pid > 0) {
+                $this->ensureDirectory(dirname($this->pidFile()));
+                @file_put_contents($this->pidFile(), (string) $pid);
+            }
+
+            // Detach: do NOT proc_close (it waits on the child). The process
+            // keeps running in its own console and manages its PID file.
         }
     }
 
