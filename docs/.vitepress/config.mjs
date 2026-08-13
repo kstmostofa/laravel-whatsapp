@@ -7,7 +7,7 @@ import { defineConfig } from 'vitepress'
 // If you fork to a different repo name, update it below.
 
 export default defineConfig({
-    base: '/laravel-whatsapp/',
+    base: '/',
 
     title: 'Laravel WhatsApp',
     description: 'Dual-backend WhatsApp integration for Laravel — Meta Cloud API + whatsapp-web.js sidecar, with a Livewire admin UI.',
