@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-09-05
+
+Resilience release for the web sidecar — both fixes are for WhatsApp Web
+minifying its own internals out from under `whatsapp-web.js`.
+
 ### Fixed
 - Sidecar messages no longer arrive with `id: null`. Recent (minified) WhatsApp
   Web builds don't expose `_serialized` on message keys, so the sidecar now
@@ -18,6 +23,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   minified internals drift out from under `whatsapp-web.js`'s `getChats()`. The
   sidecar now falls back to reading the in-page chat store itself, so `/chats`
   and `/groups` keep serving. (#5)
+
+### Added
+- `npm test` script for the sidecar, covering the ID helpers and the chat-store
+  fallback (17 tests).
+- Troubleshooting entry for the `{"error": "r"}` symptom and the fallback log
+  line.
+
+## [1.0.2] - 2026-07-04
+
+### Added
+- **Auto-start persisted sessions** — paired `session-*` auth folders reconnect
+  automatically when the sidecar boots, so a restart no longer leaves sessions
+  dormant until each is started by hand. Opt out with
+  `WHATSAPP_WEB_AUTO_START_SESSIONS=false`. (#1, thanks @huzaifaarain)
+
+## [1.0.1] - 2026-07-04
+
+### Added
+- `web.sidecar.chrome_path` (`WHATSAPP_WEB_CHROME_PATH`, falling back to
+  `PUPPETEER_EXECUTABLE_PATH`) is now actually read and forwarded to the
+  sidecar, so `--skip-chromium` installs can run against a system Chrome
+  instead of downloading ~600 MB of Chromium.
+
+### Fixed
+- Windows support for the sidecar lifecycle commands: `which` replaced with
+  Symfony's `ExecutableFinder` (so `node`/`npm` resolve via `PATHEXT`), `rm -rf`
+  replaced with a pure-PHP recursive delete.
+- Windows `whatsapp:sidecar:start` no longer times out with "no PID written" —
+  the PID file is seeded from `proc_get_status()` immediately instead of waiting
+  for Node to finish loading `whatsapp-web.js`.
 
 ## [1.0.0] - 2026-05-23
 
@@ -69,5 +104,8 @@ Initial public release.
   - Laravel 11 / 12 → PHP 8.2+
   - Laravel 13 → PHP 8.4+ (Symfony 8 is pulled in transitively and requires 8.4)
 
-[Unreleased]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.0.2...v1.0.3
+[1.0.2]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.0.1...v1.0.2
+[1.0.1]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/kstmostofa/laravel-whatsapp/releases/tag/v1.0.0
