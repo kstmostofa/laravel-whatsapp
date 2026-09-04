@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   own parts — chat, contact and participant IDs get the same treatment.
   `PersistIncomingMessage` also inserts (rather than upserts) messages that
   still arrive without an ID, so they can't overwrite each other's row. (#6)
+- Loading chats no longer 500s with `{"error": "r"}` when WhatsApp Web's
+  minified internals drift out from under `whatsapp-web.js`'s `getChats()`. The
+  sidecar now falls back to reading the in-page chat store itself, so `/chats`
+  and `/groups` keep serving. (#5)
 
 ## [1.0.0] - 2026-05-23
 

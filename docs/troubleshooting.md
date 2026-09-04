@@ -84,6 +84,25 @@ Each paired session keeps a Puppeteer Chromium instance. Budget **1–2 GB RAM p
 - Run fewer sessions per box
 - Set `WHATSAPP_WEB_AUTO_START_SESSIONS=false` so saved sessions don't all restart automatically when the sidecar boots
 
+### Loading chats fails with `{"error": "r"}`
+
+`whatsapp-web.js`'s `getChats()` evaluates a lot of WhatsApp Web's minified
+internals, so whenever WhatsApp reshuffles them the call throws a one-letter
+error (`r`, `t`, `a` — the minified variable name) that the sidecar surfaces as
+a 500. See [wwebjs/whatsapp-web.js#201845](https://github.com/wwebjs/whatsapp-web.js/issues/201845).
+
+The sidecar now falls back to reading the in-page chat store itself when that
+happens, so `/chats` and `/groups` keep working. You'll see this in the sidecar
+log when the fallback kicks in:
+
+```
+[laravel-wa-sidecar] client.getChats() failed (Evaluation failed: r); reading the in-page chat store instead
+```
+
+That's informational, not an error. If the fallback also fails you'll get a
+`503` saying the WhatsApp Web store is unavailable — the session is paired but
+the page hasn't finished loading, so retry once it reports `ready`.
+
 ## Cloud API
 
 ### "OAuth access token expired"

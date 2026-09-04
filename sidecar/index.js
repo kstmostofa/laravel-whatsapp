@@ -16,6 +16,7 @@ const fs = require('fs');
 const { Client, LocalAuth, MessageMedia, Location } = require('whatsapp-web.js');
 const { discoverPersistedSessions } = require('./session-store');
 const { serializeMessageId, serializeWid } = require('./wa-id');
+const { readChatsFromStore } = require('./chat-store');
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '127.0.0.1';
@@ -92,6 +93,43 @@ function serializeMessage(m) {
     author: serializeWid(m.author),
     deviceType: m.deviceType,
   };
+}
+
+function normalizeChat(c) {
+  return {
+    id: serializeWid(c.id),
+    name: c.name ?? null,
+    isGroup: !!c.isGroup,
+    unreadCount: c.unreadCount ?? 0,
+    timestamp: c.timestamp ?? null,
+    description: c.description ?? null,
+    participants: (c.participants || []).map((p) => ({
+      id: serializeWid(p.id),
+      isAdmin: !!p.isAdmin,
+      isSuperAdmin: !!p.isSuperAdmin,
+    })),
+    lastMessage: c.lastMessage ? serializeMessage(c.lastMessage) : null,
+  };
+}
+
+/**
+ * Every chat the session can see, as one normalized shape that /chats and
+ * /groups each project a subset of.
+ *
+ * `client.getChats()` is the richest source but also the most brittle: it
+ * touches a lot of minified WhatsApp Web internals and throws unhelpful errors
+ * (`Evaluation failed: r`) when WhatsApp moves them around. When it does, fall
+ * back to reading the in-page chat store directly rather than failing the
+ * request.
+ */
+async function listChats(session) {
+  try {
+    return (await session.client.getChats()).map(normalizeChat);
+  } catch (e) {
+    console.warn(`[laravel-wa-sidecar] client.getChats() failed (${e.message}); reading the in-page chat store instead`);
+
+    return await readChatsFromStore(session.client.pupPage);
+  }
 }
 
 async function bootSession(sessionId) {
@@ -349,14 +387,9 @@ app.get('/sessions/:id/chats', async (req, res, next) => {
   try {
     const s = getSession(req.params.id);
     requireReady(s);
-    const chats = await s.client.getChats();
-    res.json(chats.map((c) => ({
-      id: serializeWid(c.id),
-      name: c.name,
-      isGroup: c.isGroup,
-      unreadCount: c.unreadCount,
-      timestamp: c.timestamp,
-      lastMessage: c.lastMessage ? serializeMessage(c.lastMessage) : null,
+    const chats = await listChats(s);
+    res.json(chats.map(({ id, name, isGroup, unreadCount, timestamp, lastMessage }) => ({
+      id, name, isGroup, unreadCount, timestamp, lastMessage,
     })));
   } catch (e) { next(e); }
 });
@@ -365,16 +398,9 @@ app.get('/sessions/:id/groups', async (req, res, next) => {
   try {
     const s = getSession(req.params.id);
     requireReady(s);
-    const chats = await s.client.getChats();
-    res.json(chats.filter((c) => c.isGroup).map((c) => ({
-      id: serializeWid(c.id),
-      name: c.name,
-      description: c.description,
-      participants: (c.participants || []).map((p) => ({
-        id: serializeWid(p.id),
-        isAdmin: p.isAdmin,
-        isSuperAdmin: p.isSuperAdmin,
-      })),
+    const chats = await listChats(s);
+    res.json(chats.filter((c) => c.isGroup).map(({ id, name, description, participants }) => ({
+      id, name, description, participants,
     })));
   } catch (e) { next(e); }
 });
