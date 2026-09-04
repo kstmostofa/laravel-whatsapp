@@ -5,7 +5,8 @@
   "description": "Minimal Node sidecar wrapping whatsapp-web.js, controlled by the kstmostofa/laravel-wa Laravel package.",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "test": "node --test \"test/*.test.js\""
   },
   "engines": {
     "node": ">=18"

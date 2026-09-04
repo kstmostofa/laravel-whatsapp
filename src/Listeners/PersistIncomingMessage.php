@@ -36,43 +36,62 @@ class PersistIncomingMessage
     {
         $m = $event->message();
         $isOutbound = (bool) ($m['fromMe'] ?? false);
+        $messageId = isset($m['id']) && is_scalar($m['id']) ? (string) $m['id'] : null;
 
-        WaMessage::updateOrCreate(
-            ['wa_message_id' => $m['id'] ?? null, 'backend' => 'web'],
-            [
-                'session_id' => $event->sessionId,
-                'direction' => $isOutbound ? 'outbound' : 'inbound',
-                // For outbound: from=me, to=chat. For inbound: from=chat, to=me.
-                'chat_id' => $m['from'] ?? null,
-                'from_id' => $m['from'] ?? null,
-                'to_id' => $m['to'] ?? null,
-                'type' => $m['type'] ?? 'unknown',
-                'body' => $m['body'] ?? null,
-                'payload' => $m,
-                'status' => $isOutbound ? 'sent' : 'received',
-                'wa_timestamp' => isset($m['timestamp']) ? now()->setTimestamp((int) $m['timestamp']) : null,
-            ],
-        );
+        $this->store('web', $messageId, [
+            'session_id' => $event->sessionId,
+            'direction' => $isOutbound ? 'outbound' : 'inbound',
+            // For outbound: from=me, to=chat. For inbound: from=chat, to=me.
+            'chat_id' => $m['from'] ?? null,
+            'from_id' => $m['from'] ?? null,
+            'to_id' => $m['to'] ?? null,
+            'type' => $m['type'] ?? 'unknown',
+            'body' => $m['body'] ?? null,
+            'payload' => $m,
+            'status' => $isOutbound ? 'sent' : 'received',
+            'wa_timestamp' => isset($m['timestamp']) ? now()->setTimestamp((int) $m['timestamp']) : null,
+        ]);
     }
 
     protected function persistCloud(CloudMessageReceived $event): void
     {
+        $this->store('cloud', $event->messageId(), [
+            'session_id' => $event->phoneNumberId,
+            'direction' => 'inbound',
+            'chat_id' => $event->from(),
+            'from_id' => $event->from(),
+            'to_id' => $event->phoneNumberId,
+            'type' => $event->payload['type'] ?? 'text',
+            'body' => $event->text(),
+            'payload' => $event->payload,
+            'status' => 'received',
+            'wa_timestamp' => isset($event->payload['timestamp'])
+                ? now()->setTimestamp((int) $event->payload['timestamp'])
+                : null,
+        ]);
+    }
+
+    /**
+     * Upsert on (wa_message_id, backend) — the id is what makes a redelivered
+     * webhook or a replayed SSE event idempotent.
+     *
+     * When the backend couldn't give us an id there is nothing stable to match
+     * on: `updateOrCreate` would treat every such message as the same row and
+     * keep overwriting it. Insert instead so each one is kept.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    protected function store(string $backend, ?string $messageId, array $attributes): void
+    {
+        if ($messageId === null || $messageId === '') {
+            WaMessage::create($attributes + ['backend' => $backend, 'wa_message_id' => null]);
+
+            return;
+        }
+
         WaMessage::updateOrCreate(
-            ['wa_message_id' => $event->messageId(), 'backend' => 'cloud'],
-            [
-                'session_id' => $event->phoneNumberId,
-                'direction' => 'inbound',
-                'chat_id' => $event->from(),
-                'from_id' => $event->from(),
-                'to_id' => $event->phoneNumberId,
-                'type' => $event->payload['type'] ?? 'text',
-                'body' => $event->text(),
-                'payload' => $event->payload,
-                'status' => 'received',
-                'wa_timestamp' => isset($event->payload['timestamp'])
-                    ? now()->setTimestamp((int) $event->payload['timestamp'])
-                    : null,
-            ],
+            ['wa_message_id' => $messageId, 'backend' => $backend],
+            $attributes,
         );
     }
 

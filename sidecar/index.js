@@ -15,6 +15,7 @@ const path = require('path');
 const fs = require('fs');
 const { Client, LocalAuth, MessageMedia, Location } = require('whatsapp-web.js');
 const { discoverPersistedSessions } = require('./session-store');
+const { serializeMessageId, serializeWid } = require('./wa-id');
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '127.0.0.1';
@@ -75,9 +76,11 @@ function broadcast(sessionId, event, data) {
 function serializeMessage(m) {
   if (!m) return null;
   return {
-    id: m.id?._serialized ?? null,
-    from: m.from,
-    to: m.to,
+    // Never read `m.id._serialized` directly — minified WhatsApp Web builds
+    // drop that key and every message would come through with `id: null`.
+    id: serializeMessageId(m.id),
+    from: serializeWid(m.from),
+    to: serializeWid(m.to),
     body: m.body,
     type: m.type,
     timestamp: m.timestamp,
@@ -86,7 +89,7 @@ function serializeMessage(m) {
     isStatus: m.isStatus,
     isStarred: m.isStarred,
     fromMe: m.fromMe,
-    author: m.author,
+    author: serializeWid(m.author),
     deviceType: m.deviceType,
   };
 }
@@ -140,7 +143,7 @@ async function bootSession(sessionId) {
 
   client.on('message', (m) => broadcast(sessionId, 'message', { message: serializeMessage(m) }));
   client.on('message_create', (m) => broadcast(sessionId, 'message_create', { message: serializeMessage(m) }));
-  client.on('message_ack', (m, ack) => broadcast(sessionId, 'message_ack', { id: m.id?._serialized, ack }));
+  client.on('message_ack', (m, ack) => broadcast(sessionId, 'message_ack', { id: serializeMessageId(m.id), ack }));
   client.on('message_revoke_everyone', (after, before) => broadcast(sessionId, 'message_revoke', {
     after: serializeMessage(after),
     before: serializeMessage(before),
@@ -348,7 +351,7 @@ app.get('/sessions/:id/chats', async (req, res, next) => {
     requireReady(s);
     const chats = await s.client.getChats();
     res.json(chats.map((c) => ({
-      id: c.id._serialized,
+      id: serializeWid(c.id),
       name: c.name,
       isGroup: c.isGroup,
       unreadCount: c.unreadCount,
@@ -364,11 +367,11 @@ app.get('/sessions/:id/groups', async (req, res, next) => {
     requireReady(s);
     const chats = await s.client.getChats();
     res.json(chats.filter((c) => c.isGroup).map((c) => ({
-      id: c.id._serialized,
+      id: serializeWid(c.id),
       name: c.name,
       description: c.description,
       participants: (c.participants || []).map((p) => ({
-        id: p.id._serialized,
+        id: serializeWid(p.id),
         isAdmin: p.isAdmin,
         isSuperAdmin: p.isSuperAdmin,
       })),
@@ -432,7 +435,7 @@ app.get('/sessions/:id/contacts', async (req, res, next) => {
     requireReady(s);
     const contacts = await s.client.getContacts();
     res.json(contacts.map((c) => ({
-      id: c.id._serialized,
+      id: serializeWid(c.id),
       name: c.name,
       pushname: c.pushname,
       number: c.number,
