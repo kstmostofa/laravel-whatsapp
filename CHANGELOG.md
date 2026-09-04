@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Sidecar messages no longer arrive with `id: null`. Recent (minified) WhatsApp
+  Web builds don't expose `_serialized` on message keys, so the sidecar now
+  rebuilds the canonical `fromMe_remote_id[_participant]` string from the key's
+  own parts — chat, contact and participant IDs get the same treatment.
+  `PersistIncomingMessage` also inserts (rather than upserts) messages that
+  still arrive without an ID, so they can't overwrite each other's row. (#6)
+
 ## [1.0.0] - 2026-05-23
 
 Initial public release.
