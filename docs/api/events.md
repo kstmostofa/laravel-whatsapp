@@ -13,6 +13,7 @@ Dispatched by the webhook receiver after HMAC verification, one event per `messa
 | `Events\InteractiveReplied` | User tapped a button or list reply |
 | `Events\MessageStatusUpdate` | Outbound message status (sent / delivered / read / failed) |
 | `Events\TemplateStatusUpdate` | Template approved / rejected / paused by Meta |
+| `Events\MessageSent` | Meta accepted an outbound message you sent (fired by the client, not the webhook) |
 
 ### `MessageReceived`
 
@@ -65,6 +66,20 @@ $event->status();       // sent | delivered | read | failed
 $event->messageId();    // your outbound wamid
 $event->recipientId();  // who the status is about
 $event->errors();       // array if status=failed
+```
+
+### `MessageSent`
+
+Fired by the Cloud client after every successful send, however it was made: the facade, the `SendMessage` job, or a notification.
+
+```php
+$event->phoneNumberId;
+$event->messageId();   // the new wamid — matches later MessageStatusUpdate events
+$event->to();          // normalized recipient digits
+$event->type();        // text | template | image | …
+$event->body();        // text, caption, or template name
+$event->payload;       // request body
+$event->response;      // Meta's response
 ```
 
 ### `TemplateStatusUpdate`
@@ -209,7 +224,7 @@ Or with closures via `Event::listen(...)` anywhere — but a class listener is m
 
 ## Built-in listener: `PersistIncomingMessage`
 
-Set `WHATSAPP_PERSIST_INCOMING=true` and the service provider registers `Kstmostofa\LaravelWhatsApp\Listeners\PersistIncomingMessage` against Cloud `MessageReceived` and Web `MessageReceived`, `MessageCreated`, `MessageAck` and `MessageRevoked`. Idempotent — re-delivered messages don't duplicate; ack updates update the existing row rather than insert a new one. Messages sent from the paired phone are stored as outbound, and delete-for-everyone marks the row deleted.
+Set `WHATSAPP_PERSIST_INCOMING=true` and the service provider registers `Kstmostofa\LaravelWhatsApp\Listeners\PersistIncomingMessage` against Cloud `MessageReceived`, `MediaReceived`, `InteractiveReplied`, `MessageSent` and `MessageStatusUpdate`, and Web `MessageReceived`, `MessageCreated`, `MessageAck` and `MessageRevoked`. Idempotent — re-delivered messages don't duplicate; ack updates update the existing row rather than insert a new one. Messages sent from the paired phone are stored as outbound, and delete-for-everyone marks the row deleted. Cloud sends are stored as outbound, and Cloud delivery statuses update the row's `status` and `ack` on the same scale as the Web backend (`sent` 1, `delivered` 2, `read` 3, `failed` -1). Late webhooks never move a message backwards.
 
 ## Built-in listener: `PersistSessionState`
 

@@ -89,7 +89,8 @@ The package's ServiceProvider detects `livewire/flux` isn't installed and **sile
 - All Events + Jobs
 - The webhook receiver
 - The persistence listener
-- All Artisan commands (`whatsapp:sidecar:*`, `whatsapp:health`, `whatsapp:web:listen`)
+- All Artisan commands (`whatsapp:sidecar:*`, `whatsapp:health`, `whatsapp:web:listen`, `whatsapp:contacts:sync`)
+- The notification channel and `WhatsApp::fake()`
 
 You wire your own UI in whatever stack you prefer (Inertia + Vue, Filament, Nova, custom Blade, etc.).
 

@@ -9,6 +9,10 @@ use Kstmostofa\LaravelWhatsApp\Client\Resources\MediaResource;
 use Kstmostofa\LaravelWhatsApp\Client\Resources\MessagesResource;
 use Kstmostofa\LaravelWhatsApp\Client\Resources\PhoneNumberResource;
 use Kstmostofa\LaravelWhatsApp\Client\Resources\TemplatesResource;
+use Kstmostofa\LaravelWhatsApp\Health\HealthSnapshot;
+use Kstmostofa\LaravelWhatsApp\MessageRouter;
+use Kstmostofa\LaravelWhatsApp\Testing\SentMessage;
+use Kstmostofa\LaravelWhatsApp\Testing\WhatsAppFake;
 use Kstmostofa\LaravelWhatsApp\Web\WebClient;
 use Kstmostofa\LaravelWhatsApp\Web\WebSession;
 
@@ -31,6 +35,16 @@ use Kstmostofa\LaravelWhatsApp\Web\WebSession;
  * @method static TemplatesResource templates(?string $businessAccountId = null)
  * @method static array request(string $method, string $path, array $options = [])
  *
+ * Available after WhatsApp::fake():
+ * @method static array<int, SentMessage> sent(?callable $filter = null)
+ * @method static void assertSent(?callable $filter = null)
+ * @method static void assertSentTo(string $to, ?callable $filter = null)
+ * @method static void assertNotSent(?callable $filter = null)
+ * @method static void assertNotSentTo(string $to, ?callable $filter = null)
+ * @method static void assertNothingSent()
+ * @method static void assertSentCount(int $expected)
+ * @method static void assertTemplateSent(string $name, ?string $to = null)
+ *
  * @see CloudClient
  */
 class WhatsApp extends Facade
@@ -47,6 +61,30 @@ class WhatsApp extends Facade
      * docblock) because it returns from a different binding than the facade's
      * primary accessor.
      */
+    /**
+     * Swap both backends for a recording fake. Nothing reaches Meta or the
+     * sidecar; use the assert* methods to check what would have been sent.
+     */
+    public static function fake(): WhatsAppFake
+    {
+        $config = static::$app['config'];
+
+        $fake = new WhatsAppFake(
+            $config->get('laravel-whatsapp.phone_number_id'),
+            $config->get('laravel-whatsapp.business_account_id'),
+        );
+
+        static::swap($fake);
+        static::$app->instance(CloudClient::class, $fake);
+        static::$app->instance(WebClient::class, $fake->webClient());
+
+        // Rebuilt on next use so they pick up the fakes.
+        static::$app->forgetInstance(MessageRouter::class);
+        static::$app->forgetInstance(HealthSnapshot::class);
+
+        return $fake;
+    }
+
     public static function web(string $sessionId): WebSession
     {
         return static::$app->make(WebClient::class)->session($sessionId);

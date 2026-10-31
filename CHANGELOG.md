@@ -15,6 +15,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Laravel 12 or 13 to use this version; 1.0.x keeps working on Laravel 11.
 
 ### Added
+- **Notification channel.** Add `'whatsapp'` to a notification's `via()` and
+  return a string or a `WhatsAppMessage` from `toWhatsApp()`. Supports text,
+  templates, image / video / document by URL, per-message recipient and
+  backend overrides, and on-demand routing.
+- **`WhatsApp::fake()`** for tests. Records every send from both backends —
+  facade, `WhatsApp::send()`, the `SendMessage` job, and notifications — with
+  `assertSent`, `assertSentTo`, `assertNotSent`, `assertNotSentTo`,
+  `assertNothingSent`, `assertSentCount` and `assertTemplateSent`.
+- `Events\MessageSent`, fired after every successful Cloud API send.
+- `whatsapp:contacts:sync [session] [--all]` fills `wa_contacts` from the
+  Web sidecar.
+- Cloud persistence: with `WHATSAPP_PERSIST_INCOMING=true`, outbound Cloud
+  sends are stored, delivery statuses update `status` and `ack` (never moving
+  backwards on late webhooks), and inbound media and button replies are
+  stored alongside text messages.
+- New docs pages: Notifications and Testing.
 - `Events\Web\MessageCreated` for the sidecar's `message_create` event, so
   messages sent from the paired phone reach Laravel. With persistence on they
   are stored as outbound and show up in the conversations UI.

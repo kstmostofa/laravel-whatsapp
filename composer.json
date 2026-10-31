@@ -35,6 +35,7 @@
         "illuminate/console": "^12.0|^13.0",
         "illuminate/contracts": "^12.0|^13.0",
         "illuminate/http": "^12.0|^13.0",
+        "illuminate/notifications": "^12.0|^13.0",
         "illuminate/support": "^12.0|^13.0",
         "guzzlehttp/guzzle": "^7.5",
         "symfony/process": "^7.0|^8.0"

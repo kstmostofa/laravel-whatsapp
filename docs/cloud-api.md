@@ -120,7 +120,7 @@ Event::listen(MessageReceived::class, function ($event) {
 });
 ```
 
-To **persist** these to `wa_messages` automatically, set `WHATSAPP_PERSIST_INCOMING=true`.
+To **persist** these to `wa_messages` automatically, set `WHATSAPP_PERSIST_INCOMING=true`. With it on, your outbound sends are stored too, and delivery status webhooks update their `status` and `ack`, so read receipts work for Cloud messages as well.
 
 ## Media
 
