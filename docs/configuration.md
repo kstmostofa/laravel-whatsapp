@@ -127,7 +127,8 @@ Drivers can differ — your app on MySQL, WhatsApp on Postgres, no problem.
 
 | Env var | Default | Purpose |
 |---|---|---|
-| `WHATSAPP_PERSIST_INCOMING` | **`false`** | Auto-write inbound messages + ack updates to `wa_messages` |
+| `WHATSAPP_PERSIST_INCOMING` | **`false`** | Auto-write messages, ack updates and revokes to `wa_messages` |
+| `WHATSAPP_PERSIST_SESSIONS` | same as `WHATSAPP_PERSIST_INCOMING` | Track Web session status, pairing time and disconnects in `wa_sessions` |
 
 When `true`, the package registers `PersistIncomingMessage` as a listener for both Cloud and Web backends. Idempotent — re-delivered messages don't duplicate.
 

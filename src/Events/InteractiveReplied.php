@@ -41,6 +41,18 @@ class InteractiveReplied
             ?? null;
     }
 
+    /** Alias of replyId(). */
+    public function buttonId(): ?string
+    {
+        return $this->replyId();
+    }
+
+    /** Alias of replyTitle(). */
+    public function buttonText(): ?string
+    {
+        return $this->replyTitle();
+    }
+
     public function from(): ?string
     {
         return $this->payload['from'] ?? null;

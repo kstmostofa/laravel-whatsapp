@@ -28,6 +28,14 @@ class WebListenCommand extends Command
 
     protected string $buffer = '';
 
+    protected bool $quit = false;
+
+    /**
+     * The sidecar sends an SSE comment every ~20s. If nothing at all arrives
+     * for this long the socket is half-open and we reconnect.
+     */
+    protected const STALL_SECONDS = 60;
+
     public function handle(WebClient $client, Dispatcher $events): int
     {
         $sessionId = $this->argument('session')
@@ -52,6 +60,8 @@ class WebListenCommand extends Command
 
         $this->info("Subscribing to {$url}");
 
+        $this->trapSignals();
+
         while (! $this->shouldQuit()) {
             $this->buffer = '';
 
@@ -67,8 +77,12 @@ class WebListenCommand extends Command
                 $this->warn("Stream closed cleanly. Reconnecting in {$delay}s…");
             }
 
-            sleep($delay);
+            for ($i = 0; $i < $delay && ! $this->shouldQuit(); $i++) {
+                sleep(1);
+            }
         }
+
+        $this->info('Listener stopped.');
 
         return self::SUCCESS;
     }
@@ -94,6 +108,10 @@ class WebListenCommand extends Command
             CURLOPT_HTTPHEADER => $headers,
             CURLOPT_TIMEOUT => 0,           // no overall timeout — SSE is long-lived
             CURLOPT_CONNECTTIMEOUT => 10,
+            // Abort when the stream goes silent — heartbeats keep a healthy
+            // stream above this floor, a dead half-open socket drops below it.
+            CURLOPT_LOW_SPEED_LIMIT => 1,
+            CURLOPT_LOW_SPEED_TIME => self::STALL_SECONDS,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_RETURNTRANSFER => false,
             CURLOPT_HEADER => false,
@@ -122,7 +140,8 @@ class WebListenCommand extends Command
         ]);
 
         $ok = curl_exec($ch);
-        $err = curl_errno($ch) ? curl_error($ch) : null;
+        // Aborting from the write callback on shutdown is not an error.
+        $err = curl_errno($ch) && ! $this->quit ? curl_error($ch) : null;
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
@@ -184,12 +203,27 @@ class WebListenCommand extends Command
         $events->dispatch(new $eventClass($sessionId, $payload));
     }
 
-    protected function shouldQuit(): bool
+    /**
+     * Stop gracefully on SIGTERM / SIGINT (Supervisor, systemd, Ctrl+C) instead
+     * of being SIGKILLed mid-dispatch after the stop timeout.
+     */
+    protected function trapSignals(): void
     {
-        if (function_exists('pcntl_signal_dispatch')) {
-            pcntl_signal_dispatch();
+        if (! function_exists('pcntl_signal')) {
+            return;
         }
 
-        return false;
+        pcntl_async_signals(true);
+
+        foreach ([SIGTERM, SIGINT] as $signal) {
+            pcntl_signal($signal, function () {
+                $this->quit = true;
+            });
+        }
+    }
+
+    protected function shouldQuit(): bool
+    {
+        return $this->quit;
     }
 }

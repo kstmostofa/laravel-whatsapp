@@ -117,6 +117,11 @@ return [
             'qr' => \Kstmostofa\LaravelWhatsApp\Events\Web\QrGenerated::class,
             'disconnected' => \Kstmostofa\LaravelWhatsApp\Events\Web\Disconnected::class,
             'message_ack' => \Kstmostofa\LaravelWhatsApp\Events\Web\MessageAck::class,
+            // Fires for every message created on the account, including ones
+            // sent from the paired phone. Inbound messages also fire `message`,
+            // so listeners usually only care about `fromMe()` here.
+            'message_create' => \Kstmostofa\LaravelWhatsApp\Events\Web\MessageCreated::class,
+            'message_revoke' => \Kstmostofa\LaravelWhatsApp\Events\Web\MessageRevoked::class,
         ],
     ],
 
@@ -201,6 +206,10 @@ return [
 
     'persist' => [
         'incoming_messages' => env('WHATSAPP_PERSIST_INCOMING', false),
+
+        // Track Web session lifecycle (qr / ready / disconnected) in wa_sessions.
+        // Defaults to the same value as incoming_messages.
+        'sessions' => env('WHATSAPP_PERSIST_SESSIONS', env('WHATSAPP_PERSIST_INCOMING', false)),
     ],
 
     /*

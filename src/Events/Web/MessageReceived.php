@@ -54,9 +54,30 @@ class MessageReceived implements ShouldBroadcast
         return (bool) ($this->message()['fromMe'] ?? false);
     }
 
+    public function to(): ?string
+    {
+        return $this->message()['to'] ?? null;
+    }
+
+    public function messageId(): ?string
+    {
+        $id = $this->message()['id'] ?? null;
+
+        return is_scalar($id) && (string) $id !== '' ? (string) $id : null;
+    }
+
+    /**
+     * The conversation this message belongs to: the other party for messages
+     * you sent, the sender (or group) for messages you received.
+     */
+    public function chatId(): ?string
+    {
+        return $this->fromMe() ? $this->to() : $this->from();
+    }
+
     public function isGroup(): bool
     {
-        return str_ends_with((string) ($this->message()['from'] ?? ''), '@g.us');
+        return str_ends_with((string) ($this->chatId() ?? ''), '@g.us');
     }
 
     public function broadcastAs(): string

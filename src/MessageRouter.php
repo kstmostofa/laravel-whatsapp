@@ -62,6 +62,8 @@ class MessageRouter
 
     protected function defaultWebSession(): string
     {
-        return $this->config['web']['default_session'] ?? 'main';
+        return $this->config['ui']['default_session']
+            ?? $this->config['web']['default_session']
+            ?? 'main';
     }
 }

@@ -8,12 +8,17 @@ use Kstmostofa\LaravelWhatsApp\Web\SidecarManager;
 
 class SidecarStartCommand extends Command
 {
-    protected $signature = 'whatsapp:sidecar:start';
+    protected $signature = 'whatsapp:sidecar:start
+        {--foreground : Run attached to this process instead of detaching (for Supervisor / systemd)}';
 
     protected $description = 'Spawn the bundled whatsapp-web.js Node sidecar as a detached background process.';
 
     public function handle(SidecarManager $manager): int
     {
+        if ($this->option('foreground')) {
+            return $this->runForeground($manager);
+        }
+
         try {
             $pid = $manager->start();
         } catch (SidecarException $e) {
@@ -28,5 +33,22 @@ class SidecarStartCommand extends Command
         $this->line('  Next: php artisan whatsapp:web:listen');
 
         return self::SUCCESS;
+    }
+
+    protected function runForeground(SidecarManager $manager): int
+    {
+        $this->info("Running sidecar in the foreground on http://{$manager->host()}:{$manager->port()}");
+
+        try {
+            return $manager->runForeground(function (string $type, string $buffer) {
+                $type === 'err'
+                    ? $this->getOutput()->getErrorStyle()->write($buffer)
+                    : $this->getOutput()->write($buffer);
+            });
+        } catch (SidecarException $e) {
+            $this->error($e->getMessage());
+
+            return self::FAILURE;
+        }
     }
 }

@@ -21,4 +21,23 @@ class SessionReady
         public array $payload = [],
     ) {
     }
+
+    /** The paired account's own ID, e.g. `9665XXXXXXXX@c.us`. */
+    public function wid(): ?string
+    {
+        return $this->payload['info']['wid'] ?? null;
+    }
+
+    public function pushname(): ?string
+    {
+        return $this->payload['info']['pushname'] ?? null;
+    }
+
+    /** The paired phone number, digits only. */
+    public function phone(): ?string
+    {
+        $wid = $this->wid();
+
+        return $wid ? (explode('@', $wid)[0] ?: null) : null;
+    }
 }

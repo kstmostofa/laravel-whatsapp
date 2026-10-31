@@ -4,7 +4,9 @@ The Node sidecar (`sidecar/index.js`, ~300 LOC) exposes a small HTTP API that La
 
 ## Auth
 
-All routes (except `/health`) require `Authorization: Bearer <WHATSAPP_WEB_TOKEN>` if the env var is set on the sidecar. Mismatch returns 401.
+Every route, `/health` included, requires `Authorization: Bearer <WHATSAPP_WEB_TOKEN>` when the token is set on the sidecar. Mismatch returns 401. With no token set, every route is open and the sidecar logs a warning at boot.
+
+Session IDs in `:id` must match `^[A-Za-z0-9_-]{1,64}$`. Anything else returns 400.
 
 ## Base URL
 
@@ -14,19 +16,19 @@ Default `http://127.0.0.1:3000`. See [Configuration](/configuration#web-sidecar)
 
 ### `GET /health`
 
-Public. Returns `{ ok: true, sessions: N }`.
+Returns `{ ok: true, sessions: N, uptime: <seconds> }`.
 
 ### `GET /sessions`
 
 List of sessions currently tracked by the sidecar. Persisted `session-*` auth folders are auto-started on sidecar boot by default, so they appear here while reconnecting:
 
 ```json
-{ "sessions": [{ "id": "main", "status": "ready" }, …] }
+[{ "id": "main", "status": "ready" }, …]
 ```
 
 ### `POST /sessions/:id/start`
 
-Boots a whatsapp-web.js client for `:id`. Idempotent — already-running session just returns its current state.
+Boots a whatsapp-web.js client for `:id`. Idempotent: a live session just returns its current state. A session whose status is `disconnected`, `auth_failure` or `error` is torn down and booted again, so calling start is how you restart it.
 
 ```json
 { "id": "main", "status": "qr", "qr": "data:image/png;base64,…" }
@@ -133,11 +135,20 @@ WhatsApp only allows editing within ~15 minutes.
 
 Cached by the Laravel side for `WHATSAPP_UI_CHATS_CACHE_SECONDS` (default 3s).
 
+### `POST /sessions/:id/chats/:chatId/seen`
+
+Marks the chat as read: sends read receipts and clears its unread counter. No body. Returns `{ ok: true }`. The admin UI calls this when you open a conversation.
+
 ### `GET /sessions/:id/groups`
 
 ```json
 [
-  { "id": "<gid>@g.us", "subject": "Project X", "participantCount": 12, "isAdmin": true },
+  {
+    "id": "<gid>@g.us",
+    "name": "Project X",
+    "description": "…",
+    "participants": [{ "id": "9665XXX@c.us", "isAdmin": true, "isSuperAdmin": false }, …]
+  },
   …
 ]
 ```
@@ -146,10 +157,10 @@ Cached by the Laravel side for `WHATSAPP_UI_CHATS_CACHE_SECONDS` (default 3s).
 
 Create a group:
 ```json
-{ "subject": "Project X", "participants": ["9665XXX@c.us", "9665YYY@c.us"] }
+{ "name": "Project X", "participants": ["9665XXX@c.us", "9665YYY@c.us"] }
 ```
 
-Returns the group's `gid._serialized`.
+`subject` is accepted as an alias for `name`. Returns the group's `gid._serialized`.
 
 ### `POST /sessions/:id/groups/:groupId/participants/add`
 ### `POST /sessions/:id/groups/:groupId/participants/remove`
@@ -211,7 +222,8 @@ Post to Status / Stories:
 {
   "type": "text",
   "body": "Just shipped",
-  "options": { "backgroundColor": "#075E54", "font": 2 }
+  "backgroundColor": "#075E54",
+  "font": 2
 }
 ```
 
@@ -226,22 +238,28 @@ Server-Sent Events stream. Long-lived. Used by `php artisan whatsapp:web:listen`
 
 ```
 event: message
-data: {"id":"…","from":"…","body":"…",…}
+data: {"sessionId":"main","message":{"id":"…","from":"…","to":"…","body":"…","type":"chat","fromMe":false,"mimetype":null,"filename":null,"hasQuotedMsg":false,…}}
+
+event: message_create
+data: {"sessionId":"main","message":{…same shape, fires for sent messages too…}}
 
 event: message_ack
-data: {"id":"…","ack":2}
+data: {"sessionId":"main","id":"…","ack":2}
+
+event: message_revoke
+data: {"sessionId":"main","after":{…message…},"before":{…message…}|null}
 
 event: qr
-data: "data:image/png;base64,…"
+data: {"sessionId":"main","dataUri":"data:image/png;base64,…"}
 
 event: ready
-data: {"pushname":"…","wid":"…","phone":"…"}
+data: {"sessionId":"main","info":{"wid":"9665XXX@c.us","pushname":"…","platform":"…"}}
 
 event: disconnected
-data: {"reason":"…"}
+data: {"sessionId":"main","reason":"…"}
 ```
 
-Keepalive comments every 30s. Server-side reconnects on backend hiccups.
+The stream also carries `authenticated`, `auth_failure`, `error`, `group_join`, `group_leave` and `group_update`. A `: ping` comment is sent every 20 seconds. `whatsapp:web:listen` reconnects if nothing arrives for 60 seconds.
 
 ## ID normalization
 

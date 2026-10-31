@@ -2,12 +2,36 @@
 
 namespace Kstmostofa\LaravelWhatsApp\Tests\Unit;
 
+use GuzzleHttp\Psr7\Response;
 use InvalidArgumentException;
+use Kstmostofa\LaravelWhatsApp\Client\CloudClient;
 use Kstmostofa\LaravelWhatsApp\MessageRouter;
+use Kstmostofa\LaravelWhatsApp\Tests\Support\MocksGuzzle;
 use Kstmostofa\LaravelWhatsApp\Tests\TestCase;
+use Kstmostofa\LaravelWhatsApp\Web\WebClient;
 
 class MessageRouterTest extends TestCase
 {
+    use MocksGuzzle;
+
+    public function test_web_sends_use_the_configured_default_session(): void
+    {
+        $this->app['config']->set('laravel-whatsapp.ui.default_session', 'sales');
+
+        $web = $this->app->make(WebClient::class);
+        $this->mockGuzzleOn($web, [new Response(200, [], '{"id":"x"}')]);
+
+        $router = new MessageRouter(
+            $this->app->make(CloudClient::class),
+            $web,
+            $this->app['config']->get('laravel-whatsapp'),
+        );
+
+        $router->sendText('966512345678@c.us', 'hi');
+
+        $this->assertStringEndsWith('sessions/sales/messages', (string) $this->lastRequest()->getUri());
+    }
+
     public function test_phone_number_routes_to_cloud(): void
     {
         $router = $this->app->make(MessageRouter::class);

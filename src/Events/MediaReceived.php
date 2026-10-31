@@ -36,6 +36,13 @@ class MediaReceived
         return $type ? ($this->payload[$type]['id'] ?? null) : null;
     }
 
+    public function mimeType(): ?string
+    {
+        $type = $this->mediaType();
+
+        return $type ? ($this->payload[$type]['mime_type'] ?? null) : null;
+    }
+
     public function caption(): ?string
     {
         $type = $this->mediaType();

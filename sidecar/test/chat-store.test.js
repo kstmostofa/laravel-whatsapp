@@ -83,6 +83,9 @@ test('reads chats straight from the in-page store', async () => {
       fromMe: false,
       author: null,
       deviceType: null,
+      mimetype: null,
+      filename: null,
+      hasQuotedMsg: false,
     },
   }]);
 });

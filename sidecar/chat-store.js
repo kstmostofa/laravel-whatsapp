@@ -88,6 +88,9 @@ function collectChats() {
       fromMe: !!(m.id && m.id.fromMe),
       author: wid(m.author),
       deviceType: null,
+      mimetype: m.mimetype ?? null,
+      filename: m.filename ?? null,
+      hasQuotedMsg: !!m.quotedMsg,
     };
   });
 
