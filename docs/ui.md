@@ -119,6 +119,7 @@ The `/whatsapp/chats` page is the most feature-rich:
 | **Sound on inbound** | Web Audio API two-tone chirp. Toggleable per-user, persisted in `localStorage`. Only fires when not in active conversation OR scrolled away |
 | **Smart auto-scroll** | Only scrolls to bottom when user is already near bottom. Reading scrollback stays put |
 | **Double-check acks** | Inline SVG ticks. Single check = sent, double = delivered, blue double = read |
+| **Import history** | Empty conversations offer an **Import recent history** button that pulls the last messages from WhatsApp |
 | **Read receipts** | Opening a chat marks it read on WhatsApp and clears its unread badge |
 | **Phone-sent messages** | Messages you send from the paired phone show up as outbound bubbles (needs `WHATSAPP_PERSIST_INCOMING=true`) |
 | **Edit message** | Dropdown menu → inline edit form. Calls `msg.edit()` on whatsapp-web.js side. WhatsApp's 15-min edit window applies |

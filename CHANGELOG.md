@@ -15,6 +15,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Laravel 12 or 13 to use this version; 1.0.x keeps working on Laravel 11.
 
 ### Added
+- **Bulk sending.** `WhatsApp::bulk($recipients, $message)` queues one
+  `SendBulkMessage` job per recipient, rate limited per sender through the
+  `whatsapp-bulk` limiter (configurable per backend). Recipients are
+  de-duplicated, `except()` skips an opt-out list, `routeUsing()` and a
+  message closure allow per-recipient content, Web sends are spaced out by a
+  random delay, and `dispatchAsBatch()` returns a Laravel job batch.
+  Permanent Meta errors fail without retrying.
+- **History import.** `whatsapp:web:sync` and an "Import recent history"
+  button on empty conversations copy recent messages from WhatsApp into
+  `wa_messages`, without duplicates and without firing app events. Backed by
+  `WebSession::history()` and a new sidecar endpoint.
+- Sidecar messages include the `ack` level, so imported and live outbound
+  messages show the right ticks.
+- `CloudApiException::isPermanent()`.
 - **Notification channel.** Add `'whatsapp'` to a notification's `via()` and
   return a string or a `WhatsAppMessage` from `toWhatsApp()`. Supports text,
   templates, image / video / document by URL, per-message recipient and

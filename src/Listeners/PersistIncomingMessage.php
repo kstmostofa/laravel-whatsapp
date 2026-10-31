@@ -59,8 +59,11 @@ class PersistIncomingMessage
     {
         $m = $event->message();
         $isOutbound = $event->fromMe();
+        // Live events and history imports both carry the current ack for
+        // messages we sent; inbound acks describe someone else's receipts.
+        $ack = $isOutbound && isset($m['ack']) && is_int($m['ack']) ? $m['ack'] : null;
 
-        $this->store('web', $event->messageId(), [
+        $attributes = [
             'session_id' => $event->sessionId,
             'direction' => $isOutbound ? 'outbound' : 'inbound',
             // For outbound: from=me, to=chat. For inbound: from=chat, to=me.
@@ -70,9 +73,17 @@ class PersistIncomingMessage
             'type' => $m['type'] ?? 'unknown',
             'body' => $m['body'] ?? null,
             'payload' => $m,
-            'status' => $isOutbound ? 'sent' : 'received',
+            'status' => $isOutbound ? ($ack !== null ? WebMessageAck::labelFor($ack) : 'sent') : 'received',
+            'ack' => $ack,
             'wa_timestamp' => isset($m['timestamp']) ? now()->setTimestamp((int) $m['timestamp']) : null,
-        ]);
+        ];
+
+        // Don't wipe an ack we already know when this event carries none.
+        if ($ack === null) {
+            unset($attributes['ack']);
+        }
+
+        $this->store('web', $event->messageId(), $attributes);
     }
 
     protected function persistCloud(CloudMessageReceived|CloudMediaReceived|CloudInteractiveReplied $event, ?string $body): void

@@ -28,7 +28,7 @@ export default defineConfig({
         logo: { src: '/logo.svg', alt: 'Laravel WhatsApp' },
 
         nav: [
-            { text: 'Guide', link: '/getting-started', activeMatch: '^/(getting-started|installation|cloud-api|web-sidecar|notifications|testing|ui|configuration|production|troubleshooting)' },
+            { text: 'Guide', link: '/getting-started', activeMatch: '^/(getting-started|installation|cloud-api|web-sidecar|notifications|bulk|testing|ui|configuration|production|troubleshooting)' },
             { text: 'API Reference', link: '/api/facade', activeMatch: '^/api/' },
             { text: 'Changelog', link: 'https://github.com/kstmostofa/laravel-whatsapp/releases' },
             {
@@ -61,6 +61,7 @@ export default defineConfig({
                     text: 'Features',
                     items: [
                         { text: 'Notifications', link: '/notifications' },
+                        { text: 'Bulk sending', link: '/bulk' },
                         { text: 'Testing', link: '/testing' },
                     ],
                 },

@@ -11,6 +11,8 @@ use Kstmostofa\LaravelWhatsApp\Client\Resources\PhoneNumberResource;
 use Kstmostofa\LaravelWhatsApp\Client\Resources\TemplatesResource;
 use Kstmostofa\LaravelWhatsApp\Health\HealthSnapshot;
 use Kstmostofa\LaravelWhatsApp\MessageRouter;
+use Kstmostofa\LaravelWhatsApp\Notifications\WhatsAppMessage;
+use Kstmostofa\LaravelWhatsApp\Support\PendingBulk;
 use Kstmostofa\LaravelWhatsApp\Testing\SentMessage;
 use Kstmostofa\LaravelWhatsApp\Testing\WhatsAppFake;
 use Kstmostofa\LaravelWhatsApp\Web\WebClient;
@@ -83,6 +85,17 @@ class WhatsApp extends Facade
         static::$app->forgetInstance(HealthSnapshot::class);
 
         return $fake;
+    }
+
+    /**
+     * Send one message to many recipients through rate-limited queued jobs.
+     *
+     * @param  iterable<mixed>  $recipients
+     * @param  WhatsAppMessage|string|\Closure(mixed): (WhatsAppMessage|string|null)  $message
+     */
+    public static function bulk(iterable $recipients, WhatsAppMessage|string|\Closure $message): PendingBulk
+    {
+        return new PendingBulk($recipients, $message);
     }
 
     public static function web(string $sessionId): WebSession

@@ -135,6 +135,10 @@ WhatsApp only allows editing within ~15 minutes.
 
 Cached by the Laravel side for `WHATSAPP_UI_CHATS_CACHE_SECONDS` (default 3s).
 
+### `GET /sessions/:id/chats/:chatId/messages?limit=50`
+
+Recent messages in one chat, oldest first, in the same shape as the `message` event. `limit` defaults to 50 and is capped at 500. Used by `whatsapp:web:sync` and the UI's "Import recent history" button.
+
 ### `POST /sessions/:id/chats/:chatId/seen`
 
 Marks the chat as read: sends read receipts and clears its unread counter. No body. Returns `{ ok: true }`. The admin UI calls this when you open a conversation.

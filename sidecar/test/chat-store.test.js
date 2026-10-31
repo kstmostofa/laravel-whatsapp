@@ -86,6 +86,7 @@ test('reads chats straight from the in-page store', async () => {
       mimetype: null,
       filename: null,
       hasQuotedMsg: false,
+      ack: null,
     },
   }]);
 });

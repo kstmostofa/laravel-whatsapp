@@ -146,8 +146,19 @@ When broadcasting is on, `Events\Web\MessageReceived`, `QrGenerated`, `MessageAc
 
 | Env var | Default | Purpose |
 |---|---|---|
-| `WHATSAPP_QUEUE_CONNECTION` | _Laravel default_ | Queue connection for `SendMessage` job |
+| `WHATSAPP_QUEUE_CONNECTION` | _Laravel default_ | Queue connection for the `SendMessage` and `SendBulkMessage` jobs |
 | `WHATSAPP_QUEUE` | **`default`** | Queue name |
+
+## Bulk sending
+
+| Env var | Default | Purpose |
+|---|---|---|
+| `WHATSAPP_BULK_CLOUD_PER_MINUTE` | `1000` | Cloud messages per minute, per phone number |
+| `WHATSAPP_BULK_WEB_PER_MINUTE` | `10` | Web messages per minute, per session |
+| `WHATSAPP_BULK_WEB_DELAY_MIN` / `_MAX` | `3` / `10` | Random gap between Web sends, in seconds |
+| `WHATSAPP_BULK_RETRY_HOURS` | `12` | How long a rate-limited job keeps retrying |
+
+See [Bulk sending](/bulk).
 
 ## Full config file
 
