@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- **Laravel 11 support.** Laravel 11 stopped receiving security fixes in
+  March 2026, and several framework advisories since then (including an API
+  token authentication bypass) are only fixed in 12.x and 13.x. Recent
+  Composer versions refuse to install the affected releases. Upgrade to
+  Laravel 12 or 13 to use this version; 1.0.x keeps working on Laravel 11.
+
 ### Added
 - `Events\Web\MessageCreated` for the sidecar's `message_create` event, so
   messages sent from the paired phone reach Laravel. With persistence on they
