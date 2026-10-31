@@ -116,7 +116,9 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
             return;
         }
 
-        if (! class_exists(\Livewire\Livewire::class)) {
+        // The bundled views are built on Flux components — without Flux the
+        // routes would register but every page would crash on `<flux:*>`.
+        if (! class_exists(\Livewire\Livewire::class) || ! class_exists(\Flux\FluxServiceProvider::class)) {
             return;
         }
 
@@ -148,16 +150,25 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
 
     protected function registerPersistenceListeners(): void
     {
-        if (! config('laravel-whatsapp.persist.incoming_messages', false)) {
-            return;
+        $events = $this->app['events'];
+
+        if (config('laravel-whatsapp.persist.incoming_messages', false)) {
+            $listener = \Kstmostofa\LaravelWhatsApp\Listeners\PersistIncomingMessage::class;
+
+            $events->listen(\Kstmostofa\LaravelWhatsApp\Events\Web\MessageReceived::class, $listener);
+            $events->listen(\Kstmostofa\LaravelWhatsApp\Events\Web\MessageCreated::class, $listener);
+            $events->listen(\Kstmostofa\LaravelWhatsApp\Events\Web\MessageAck::class, $listener);
+            $events->listen(\Kstmostofa\LaravelWhatsApp\Events\Web\MessageRevoked::class, $listener);
+            $events->listen(\Kstmostofa\LaravelWhatsApp\Events\MessageReceived::class, $listener);
         }
 
-        $events = $this->app['events'];
-        $listener = \Kstmostofa\LaravelWhatsApp\Listeners\PersistIncomingMessage::class;
+        if (config('laravel-whatsapp.persist.sessions', false)) {
+            $listener = \Kstmostofa\LaravelWhatsApp\Listeners\PersistSessionState::class;
 
-        $events->listen(\Kstmostofa\LaravelWhatsApp\Events\Web\MessageReceived::class, $listener);
-        $events->listen(\Kstmostofa\LaravelWhatsApp\Events\Web\MessageAck::class, $listener);
-        $events->listen(\Kstmostofa\LaravelWhatsApp\Events\MessageReceived::class, $listener);
+            $events->listen(\Kstmostofa\LaravelWhatsApp\Events\Web\QrGenerated::class, $listener);
+            $events->listen(\Kstmostofa\LaravelWhatsApp\Events\Web\SessionReady::class, $listener);
+            $events->listen(\Kstmostofa\LaravelWhatsApp\Events\Web\Disconnected::class, $listener);
+        }
     }
 
     protected function registerWebhookRoutes(): void

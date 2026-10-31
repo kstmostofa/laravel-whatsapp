@@ -12,7 +12,7 @@ Checklist + working configs for running the package on a real server.
 - [ ] UI routes are wrapped in your own auth middleware (default is only `['web']`)
 - [ ] Webhook URL in Meta App config is HTTPS and points at `https://yourapp.com/webhooks/whatsapp`
 - [ ] Database migrations have been run (`php artisan migrate`)
-- [ ] Queue worker is running if you use `WhatsApp::messages()->queue(...)`
+- [ ] Queue worker is running if you dispatch the `SendMessage` job
 - [ ] `whatsapp:web:listen` is supervised (if Web backend is enabled)
 - [ ] `whatsapp:sidecar:start` runs on boot (if Web backend is enabled)
 - [ ] Backup strategy includes `storage/app/whatsapp-sidecar/sessions/` (loss = re-scan QR)
@@ -61,7 +61,7 @@ stopwaitsecs=15
 ```
 
 ::: tip --foreground flag
-The default `whatsapp:sidecar:start` detaches and exits — that's right for manual ops, **wrong** for Supervisor (which thinks the process died and keeps respawning it). The `--foreground` flag keeps the Node process in the parent shell so Supervisor manages it directly.
+The default `whatsapp:sidecar:start` detaches and exits — that's right for manual ops, **wrong** for Supervisor (which thinks the process died and keeps respawning it). The `--foreground` flag keeps the Node process attached and blocks until it exits, so Supervisor manages it directly. With the `pcntl` extension, SIGTERM and SIGINT are forwarded to Node so it can close WhatsApp sessions cleanly. Without `pcntl`, add `stopasgroup=true` and `killasgroup=true` so the signal still reaches Node.
 :::
 
 ## SSE listener under Supervisor
@@ -90,7 +90,7 @@ sudo supervisorctl start whatsapp-sidecar whatsapp-web-listen-main
 
 ## Queue worker
 
-If you use `->queue()` to send messages, run a queue worker:
+If you dispatch the `SendMessage` job, run a queue worker:
 
 ```ini
 [program:whatsapp-queue]
@@ -210,16 +210,16 @@ WHATSAPP_UI_CONTACTS_CACHE_SECONDS=30
 - Sidecar reachable + responding
 - Sidecar session count
 - Cloud API credentials valid
-- Recent message dispatch errors
+- Phone number quality rating (`RED` counts as degraded)
 
-Wire it into your monitoring stack (Healthchecks.io, Better Stack, etc.) — exit code is non-zero on `degraded` and `down`.
+Wire it into your monitoring stack (Healthchecks.io, Better Stack, etc.). With `--exit-code`, the command exits `1` on `degraded` and `2` on `down`.
 
 ```bash
 # crontab — ping every 5 min
-*/5 * * * * cd /var/www/your-app && php artisan whatsapp:health --format=json | curl -fsS -X POST -H "Content-Type: application/json" --data-binary @- https://hc-ping.com/your-uuid
+*/5 * * * * cd /var/www/your-app && php artisan whatsapp:health --json | curl -fsS -X POST -H "Content-Type: application/json" --data-binary @- https://hc-ping.com/your-uuid
 ```
 
-The same data powers the `/whatsapp/health` page in the UI.
+The same data powers the `/whatsapp/status` page in the UI.
 
 ## Security headers
 

@@ -6,6 +6,8 @@ Three Eloquent models, all using the `UsesWhatsAppConnection` trait so they hono
 
 `Kstmostofa\LaravelWhatsApp\Models\WaSession` — represents one paired session (Web) or one phone-number ID (Cloud).
 
+Web rows are written automatically by the `PersistSessionState` listener when `WHATSAPP_PERSIST_SESSIONS=true`.
+
 | Column | Type | Notes |
 |---|---|---|
 | `id` | string PK | session ID — `'main'`, `'sales'`, etc. |

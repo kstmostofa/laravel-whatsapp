@@ -188,6 +188,8 @@ php artisan whatsapp:web:listen main
 | `qr` | `Events\Web\QrGenerated` |
 | `disconnected` | `Events\Web\Disconnected` |
 | `message_ack` | `Events\Web\MessageAck` |
+| `message_create` | `Events\Web\MessageCreated` (includes messages sent from the phone) |
+| `message_revoke` | `Events\Web\MessageRevoked` (deleted for everyone) |
 
 Listen for them:
 ```php
@@ -216,7 +218,7 @@ Event::listen(MessageAck::class, function ($event) {
 ```
 
 ::: tip Persisting events
-Set `WHATSAPP_PERSIST_INCOMING=true` and the package's built-in listener writes everything to `wa_messages` — including ack updates (the existing row is updated, not duplicated). The bubble UI then shows the right single/double/blue-check ticks automatically.
+Set `WHATSAPP_PERSIST_INCOMING=true` and the package's built-in listener writes everything to `wa_messages` — including ack updates (the existing row is updated, not duplicated), messages you send from the phone, and delete-for-everyone revokes. The bubble UI then shows the right single/double/blue-check ticks automatically. Session lifecycle goes to `wa_sessions` when `WHATSAPP_PERSIST_SESSIONS` is on.
 :::
 
 ### Production: Supervisor / systemd

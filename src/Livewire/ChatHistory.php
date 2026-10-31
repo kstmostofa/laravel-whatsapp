@@ -57,10 +57,26 @@ class ChatHistory extends Component
         $this->messagesLimit = (int) config('laravel-whatsapp.ui.messages_initial', 50);
         $this->error = null;
 
+        $this->markSeen($chatId);
+
         // Tell the Alpine root to jump to the bottom — Livewire's morph will
         // have replaced the conversation pane, and the previous x-init on the
         // outer x-data block only fires once on first mount.
         $this->dispatch('chat-opened');
+    }
+
+    /**
+     * Clear the chat's unread badge. Best-effort: a failure here must not stop
+     * the conversation from opening.
+     */
+    protected function markSeen(string $chatId): void
+    {
+        try {
+            app(WebClient::class)->session($this->session)->markChatSeen($chatId);
+            Cache::forget("laravel-whatsapp:chats:{$this->session}");
+        } catch (SidecarException) {
+            // Session not ready or sidecar down — the list will show it anyway.
+        }
     }
 
     /**
@@ -258,21 +274,28 @@ class ChatHistory extends Component
                 default                                              => 'document',
             };
 
-            WaMessage::updateOrCreate(
-                ['wa_message_id' => $result['id'] ?? null, 'backend' => 'web'],
-                [
-                    'session_id' => $this->session,
-                    'direction' => 'outbound',
-                    'chat_id' => $this->selectedChat,
-                    'to_id' => $this->selectedChat,
-                    'type' => $type,
-                    'body' => $type === 'text' ? $this->reply : (trim($this->reply) !== '' ? $this->reply : null),
-                    'payload' => $result,
-                    'status' => 'sent',
-                    'ack' => 0,
-                    'wa_timestamp' => now(),
-                ],
-            );
+            $filename = $this->attachment instanceof UploadedFile ? $this->attachment->getClientOriginalName() : null;
+            $attributes = [
+                'session_id' => $this->session,
+                'direction' => 'outbound',
+                'chat_id' => $this->selectedChat,
+                'to_id' => $this->selectedChat,
+                'type' => $type,
+                'body' => $type === 'text' ? $this->reply : (trim($this->reply) !== '' ? $this->reply : null),
+                // Keep the filename so document bubbles can show it.
+                'payload' => $result + array_filter(['filename' => $filename]),
+                'status' => 'sent',
+                'ack' => 0,
+                'wa_timestamp' => now(),
+            ];
+
+            $messageId = isset($result['id']) && is_scalar($result['id']) ? (string) $result['id'] : '';
+
+            // No ID means nothing stable to upsert on — matching on NULL would
+            // overwrite whichever other ID-less row came first.
+            $messageId === ''
+                ? WaMessage::create($attributes + ['backend' => 'web', 'wa_message_id' => null])
+                : WaMessage::updateOrCreate(['wa_message_id' => $messageId, 'backend' => 'web'], $attributes);
         } catch (\Throwable) {
             // wa_messages table missing — skip silently, message still went out.
         }

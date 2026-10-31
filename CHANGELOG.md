@@ -7,6 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- **Laravel 11 support.** Laravel 11 stopped receiving security fixes in
+  March 2026, and several framework advisories since then (including an API
+  token authentication bypass) are only fixed in 12.x and 13.x. Recent
+  Composer versions refuse to install the affected releases. Upgrade to
+  Laravel 12 or 13 to use this version; 1.0.x keeps working on Laravel 11.
+
+### Added
+- `Events\Web\MessageCreated` for the sidecar's `message_create` event, so
+  messages sent from the paired phone reach Laravel. With persistence on they
+  are stored as outbound and show up in the conversations UI.
+- `Events\Web\MessageRevoked` for delete-for-everyone. With persistence on the
+  row is kept and marked deleted, so the UI shows "This message was deleted".
+- `PersistSessionState` listener that writes Web session lifecycle (status,
+  pairing time, phone number, push name, disconnect reason) to `wa_sessions`.
+  Controlled by `WHATSAPP_PERSIST_SESSIONS`, which defaults to the value of
+  `WHATSAPP_PERSIST_INCOMING`.
+- `whatsapp:sidecar:start --foreground` for Supervisor / systemd. Forwards
+  SIGTERM and SIGINT to Node when `pcntl` is available.
+- `WebSession::markChatSeen()` and `POST /sessions/:id/chats/:chatId/seen`.
+  Opening a chat in the UI now marks it read and clears its unread badge.
+- `SessionReady` now carries the paired account (`wid()`, `phone()`,
+  `pushname()`).
+- Sidecar messages include `mimetype`, `filename` and `hasQuotedMsg`.
+- Accessors the docs already described: `MediaReceived::mimeType()`,
+  `InteractiveReplied::buttonId()` / `buttonText()`,
+  `MessageStatusUpdate::recipientId()` / `errors()`, `QrGenerated::qr()`, and
+  `to()`, `messageId()`, `chatId()` on Web `MessageReceived`.
+
+### Fixed
+- `WhatsApp::send()` ignored `WHATSAPP_UI_DEFAULT_SESSION` and always used
+  `main` for Web sends.
+- Outbound messages were stored with the sender as `chat_id`, so they landed
+  in the wrong conversation.
+- Sending from the UI when the sidecar returned no message ID could overwrite
+  another ID-less row.
+- Document bubbles always said "Document" — the filename is now kept.
+- Starting a session that had disconnected or failed did nothing. It is now
+  torn down and booted again.
+- The admin UI no longer registers when Livewire is installed without Flux,
+  where every page crashed.
+- Compose with the Web backend and the Template type silently sent an empty
+  text. It now shows an error.
+- `whatsapp:web:listen` could hang forever on a half-open connection. The
+  sidecar now sends a heartbeat every 20s and the listener reconnects after
+  60s of silence. It also stops cleanly on SIGTERM / SIGINT.
+
+### Security
+- The sidecar rejects session IDs outside `A-Z a-z 0-9 _ -` (max 64). Before,
+  `DELETE /sessions/:id` built a filesystem path from the raw ID.
+- The sidecar logs a warning at boot when `SIDECAR_TOKEN` is empty.
+
+### Docs
+- Corrected `whatsapp:health --json` (was `--format=json`), the `/whatsapp/status`
+  page (was `/whatsapp/health`), the sidecar `/health` path and auth, the group
+  create body (`name`), the status post body, SSE payload shapes, and removed
+  references to a non-existent `->queue()` method.
+
 ## [1.0.3] - 2026-09-05
 
 Resilience release for the web sidecar — both fixes are for WhatsApp Web

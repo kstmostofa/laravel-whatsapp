@@ -55,6 +55,18 @@ class UiTest extends TestCase
             ->assertSet('qrFor', null); // empty input is silently no-op
     }
 
+    public function test_compose_rejects_templates_on_the_web_backend(): void
+    {
+        Livewire::test(Compose::class)
+            ->set('backend', 'web')
+            ->set('to', '966512345678@c.us')
+            ->set('type', 'template')
+            ->set('templateName', 'hello_world')
+            ->call('send')
+            ->assertSet('result', null)
+            ->assertSee('Templates are a Cloud API feature');
+    }
+
     public function test_compose_validates_recipient(): void
     {
         Livewire::test(Compose::class)

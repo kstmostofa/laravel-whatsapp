@@ -38,4 +38,20 @@ class MessageStatusUpdate
     {
         return $this->payload['recipient_id'] ?? null;
     }
+
+    /** Alias of recipient(). */
+    public function recipientId(): ?string
+    {
+        return $this->recipient();
+    }
+
+    /**
+     * Meta's error objects when `status()` is `failed`.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function errors(): array
+    {
+        return is_array($this->payload['errors'] ?? null) ? $this->payload['errors'] : [];
+    }
 }

@@ -102,27 +102,7 @@ class SidecarManager
         $this->ensureDirectory(dirname($this->logFile()));
         $this->ensureDirectory($this->sessionDir());
 
-        $env = [
-            'PORT' => (string) $this->port(),
-            'HOST' => $this->host(),
-            'SIDECAR_TOKEN' => (string) ($this->token() ?? ''),
-            'SESSION_DIR' => $this->sessionDir(),
-            'SIDECAR_PID_FILE' => $this->pidFile(),
-            'AUTO_START_SESSIONS' => filter_var(
-                $this->config['sidecar']['auto_start_sessions'] ?? true,
-                FILTER_VALIDATE_BOOLEAN,
-            ) ? 'true' : 'false',
-            'PATH' => getenv('PATH') ?: ($this->isWindows() ? '' : '/usr/local/bin:/usr/bin:/bin'),
-        ];
-
-        // Let Puppeteer reuse a system browser when configured (e.g. after
-        // installing with --skip-chromium). spawnUnix only exports this
-        // whitelist, so it must be added here to reach the Node process.
-        $chrome = $this->config['sidecar']['chrome_path'] ?? null;
-        if (is_string($chrome) && $chrome !== '') {
-            $env['PUPPETEER_EXECUTABLE_PATH'] = $chrome;
-        }
-
+        $env = $this->sidecarEnv();
         $pidFile = $this->pidFile();
 
         // Spawn the Node sidecar fully detached so it outlives this PHP process.
@@ -157,6 +137,99 @@ class SidecarManager
         }
 
         return $pid;
+    }
+
+    /**
+     * Run the sidecar attached to the current process and block until it
+     * exits. This is what process supervisors want: they own the lifecycle,
+     * see the real exit code, and capture stdout/stderr themselves.
+     *
+     * SIGTERM / SIGINT sent to PHP are forwarded to Node so the sidecar can
+     * close its WhatsApp sessions cleanly.
+     *
+     * @param  callable(string, string): void|null  $onOutput  receives ('out'|'err', chunk)
+     */
+    public function runForeground(?callable $onOutput = null): int
+    {
+        if (! $this->isInstalled()) {
+            throw new SidecarException(
+                'Sidecar not installed. Run `php artisan whatsapp:sidecar:install` first.'
+            );
+        }
+
+        if ($this->isRunning()) {
+            throw new SidecarException('Sidecar already running (pid '.$this->pid().').');
+        }
+
+        $this->ensureDirectory(dirname($this->pidFile()));
+        $this->ensureDirectory($this->sessionDir());
+
+        $process = new Process(
+            [$this->config['sidecar']['node_binary'], $this->path().DIRECTORY_SEPARATOR.'index.js'],
+            $this->path(),
+            $this->sidecarEnv() + $this->inheritedEnv(),
+            null,
+            null, // no timeout — runs until stopped
+        );
+
+        $process->start();
+
+        if (function_exists('pcntl_signal')) {
+            pcntl_async_signals(true);
+            foreach ([SIGTERM, SIGINT] as $signal) {
+                pcntl_signal($signal, function (int $received) use ($process) {
+                    if ($process->isRunning()) {
+                        $process->signal($received);
+                    }
+                });
+            }
+        }
+
+        $exit = $process->wait(function (string $type, string $buffer) use ($onOutput, $process) {
+            if ($onOutput) {
+                $onOutput($type === Process::ERR ? 'err' : 'out', $buffer);
+            }
+
+            // Process also buffers everything it reads. This one runs for
+            // weeks, so drop what we've already handed on.
+            $process->clearOutput();
+            $process->clearErrorOutput();
+        });
+
+        @unlink($this->pidFile());
+
+        return $exit ?? 1;
+    }
+
+    /**
+     * Environment handed to the Node process.
+     *
+     * @return array<string, string>
+     */
+    protected function sidecarEnv(): array
+    {
+        $env = [
+            'PORT' => (string) $this->port(),
+            'HOST' => $this->host(),
+            'SIDECAR_TOKEN' => (string) ($this->token() ?? ''),
+            'SESSION_DIR' => $this->sessionDir(),
+            'SIDECAR_PID_FILE' => $this->pidFile(),
+            'AUTO_START_SESSIONS' => filter_var(
+                $this->config['sidecar']['auto_start_sessions'] ?? true,
+                FILTER_VALIDATE_BOOLEAN,
+            ) ? 'true' : 'false',
+            'PATH' => getenv('PATH') ?: ($this->isWindows() ? '' : '/usr/local/bin:/usr/bin:/bin'),
+        ];
+
+        // Let Puppeteer reuse a system browser when configured (e.g. after
+        // installing with --skip-chromium). spawnUnix only exports this
+        // whitelist, so it must be added here to reach the Node process.
+        $chrome = $this->config['sidecar']['chrome_path'] ?? null;
+        if (is_string($chrome) && $chrome !== '') {
+            $env['PUPPETEER_EXECUTABLE_PATH'] = $chrome;
+        }
+
+        return $env;
     }
 
     public function stop(): bool

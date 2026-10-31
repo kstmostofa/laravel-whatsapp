@@ -14,7 +14,7 @@ const qrcode = require('qrcode');
 const path = require('path');
 const fs = require('fs');
 const { Client, LocalAuth, MessageMedia, Location } = require('whatsapp-web.js');
-const { discoverPersistedSessions } = require('./session-store');
+const { discoverPersistedSessions, isValidSessionId } = require('./session-store');
 const { serializeMessageId, serializeWid } = require('./wa-id');
 const { readChatsFromStore } = require('./chat-store');
 
@@ -26,6 +26,12 @@ const PID_FILE = process.env.SIDECAR_PID_FILE || '';
 const AUTO_START_SESSIONS = !['0', 'false', 'no', 'off'].includes(
   String(process.env.AUTO_START_SESSIONS ?? 'true').toLowerCase(),
 );
+// SSE comment sent on idle streams so proxies don't close them and the PHP
+// listener can tell a quiet stream from a dead one.
+const SSE_HEARTBEAT_MS = 20000;
+
+// Sessions in these states hold a dead client — /start should replace them.
+const DEAD_STATUSES = new Set(['disconnected', 'auth_failure', 'error']);
 
 if (!fs.existsSync(SESSION_DIR)) fs.mkdirSync(SESSION_DIR, { recursive: true });
 
@@ -76,6 +82,7 @@ function broadcast(sessionId, event, data) {
 
 function serializeMessage(m) {
   if (!m) return null;
+  const data = m._data || {};
   return {
     // Never read `m.id._serialized` directly — minified WhatsApp Web builds
     // drop that key and every message would come through with `id: null`.
@@ -92,6 +99,9 @@ function serializeMessage(m) {
     fromMe: m.fromMe,
     author: serializeWid(m.author),
     deviceType: m.deviceType,
+    mimetype: data.mimetype ?? null,
+    filename: data.filename ?? null,
+    hasQuotedMsg: !!m.hasQuotedMsg,
   };
 }
 
@@ -134,7 +144,16 @@ async function listChats(session) {
 
 async function bootSession(sessionId) {
   const existing = sessions.get(sessionId);
-  if (existing) return existing;
+  if (existing && !DEAD_STATUSES.has(existing.status)) return existing;
+
+  // A disconnected / failed client can't recover on its own — tear it down and
+  // boot a fresh one so /start actually restarts the session. Subscribers stay
+  // attached so the SSE bridge sees the new QR / ready events.
+  const subscribers = existing ? existing.subscribers : new Set();
+  if (existing) {
+    try { await existing.client.destroy(); } catch (_) { /* already gone */ }
+    sessions.delete(sessionId);
+  }
 
   // Reuse a system Chrome/Chromium when PUPPETEER_EXECUTABLE_PATH is set
   // (e.g. installed with --skip-chromium). Falls back to Puppeteer's bundled
@@ -150,7 +169,7 @@ async function bootSession(sessionId) {
     },
   });
 
-  const session = { client, status: 'initializing', qrDataUri: null, subscribers: new Set() };
+  const session = { client, status: 'initializing', qrDataUri: null, subscribers };
   sessions.set(sessionId, session);
 
   client.on('qr', async (qr) => {
@@ -171,7 +190,14 @@ async function bootSession(sessionId) {
 
   client.on('ready', () => {
     session.status = 'ready';
-    broadcast(sessionId, 'ready', {});
+    const info = client.info || {};
+    broadcast(sessionId, 'ready', {
+      info: {
+        wid: serializeWid(info.wid),
+        pushname: info.pushname ?? null,
+        platform: info.platform ?? null,
+      },
+    });
   });
 
   client.on('disconnected', (reason) => {
@@ -236,6 +262,15 @@ async function buildOutgoingMedia({ url, base64, mimeType, filename }) {
 const app = express();
 app.use(express.json({ limit: '50mb' }));
 app.use(auth);
+
+// Every `:id` route is a session ID, and DELETE /sessions/:id turns it into a
+// filesystem path. Reject anything outside the safe charset up front.
+app.param('id', (req, res, next, id) => {
+  if (!isValidSessionId(id)) {
+    return res.status(400).json({ error: 'invalid session id (allowed: A-Z a-z 0-9 _ -, max 64)' });
+  }
+  next();
+});
 
 app.get('/health', (_, res) => {
   res.json({ ok: true, sessions: sessions.size, uptime: process.uptime() });
@@ -394,6 +429,16 @@ app.get('/sessions/:id/chats', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// Mark a chat as read: sends read receipts and clears the unread counter.
+app.post('/sessions/:id/chats/:chatId/seen', async (req, res, next) => {
+  try {
+    const s = getSession(req.params.id);
+    requireReady(s);
+    const ok = await s.client.sendSeen(req.params.chatId);
+    res.json({ ok: ok !== false });
+  } catch (e) { next(e); }
+});
+
 app.get('/sessions/:id/groups', async (req, res, next) => {
   try {
     const s = getSession(req.params.id);
@@ -409,8 +454,10 @@ app.post('/sessions/:id/groups', async (req, res, next) => {
   try {
     const s = getSession(req.params.id);
     requireReady(s);
-    const { name, participants } = req.body;
-    const group = await s.client.createGroup(name, participants);
+    // `subject` is accepted as an alias — older docs used that name.
+    const { participants } = req.body || {};
+    const name = req.body?.name ?? req.body?.subject;
+    const group = await s.client.createGroup(name, participants || []);
     res.json(group);
   } catch (e) { next(e); }
 });
@@ -591,7 +638,16 @@ app.get('/sessions/:id/events', (req, res, next) => {
     res.flushHeaders();
     res.write(`event: hello\ndata: ${JSON.stringify({ sessionId: req.params.id, status: s.status })}\n\n`);
     s.subscribers.add(res);
-    req.on('close', () => s.subscribers.delete(res));
+    const heartbeat = setInterval(() => {
+      try { res.write(': ping\n\n'); } catch (_) { /* subscriber gone */ }
+    }, SSE_HEARTBEAT_MS);
+    req.on('close', () => {
+      clearInterval(heartbeat);
+      // Read the live entry — the session object may have been replaced by a restart.
+      const current = sessions.get(req.params.id);
+      if (current) current.subscribers.delete(res);
+      s.subscribers.delete(res);
+    });
   } catch (e) { next(e); }
 });
 
@@ -603,6 +659,9 @@ app.use((err, _req, res, _next) => {
 
 const server = app.listen(PORT, HOST, () => {
   console.log(`[laravel-wa-sidecar] listening on http://${HOST}:${PORT}`);
+  if (!TOKEN) {
+    console.warn('[laravel-wa-sidecar] SIDECAR_TOKEN is empty — every endpoint is unauthenticated. Set WHATSAPP_WEB_TOKEN.');
+  }
   autoStartPersistedSessions().catch((e) => {
     console.error(`[laravel-wa-sidecar] failed to auto-start persisted sessions: ${e.message}`);
   });

@@ -79,7 +79,12 @@ class Compose extends Component
 
     protected function sendViaWeb(): array
     {
-        $messages = app(WebClient::class)->session($this->sessionId)->messages();
+        if ($this->type === 'template') {
+            throw new SidecarException('Templates are a Cloud API feature. Pick the Cloud API backend or another message type.');
+        }
+
+        $session = $this->sessionId ?: (string) config('laravel-whatsapp.ui.default_session', 'main');
+        $messages = app(WebClient::class)->session($session)->messages();
 
         return match ($this->type) {
             'image' => $messages->sendImage($this->to, ['url' => $this->mediaUrl, 'caption' => $this->caption ?: null]),

@@ -105,6 +105,17 @@ class WebSession
         return $response['data'] ?? $response;
     }
 
+    /**
+     * Mark every message in a chat as read on WhatsApp (blue ticks for the
+     * sender) and clear its unread counter.
+     *
+     * @return array<string, mixed>
+     */
+    public function markChatSeen(string $chatId): array
+    {
+        return $this->client->request('POST', "sessions/{$this->sessionId}/chats/".rawurlencode($chatId).'/seen');
+    }
+
     public function messages(): MessagesResource
     {
         return new MessagesResource($this->client, $this->sessionId);

@@ -67,7 +67,7 @@ Sidecar transport error: Connection refused
 
 Check:
 1. `php artisan whatsapp:sidecar:status` — running?
-2. `curl -i http://127.0.0.1:3000/healthz` — responds?
+2. `curl -i -H "Authorization: Bearer $WHATSAPP_WEB_TOKEN" http://127.0.0.1:3000/health` — responds?
 3. `WHATSAPP_WEB_HOST` matches between sidecar bind and Laravel's connect setting
 4. `WHATSAPP_WEB_PORT` matches
 5. If `WHATSAPP_WEB_TOKEN` is set, Laravel uses it as `Authorization: Bearer`. Mismatch = 401.
@@ -300,7 +300,7 @@ Apply BEFORE running migrations. If you set it after, the migration is now looki
 
 ```bash
 # Full health snapshot
-php artisan whatsapp:health --format=json
+php artisan whatsapp:health --json
 
 # Last 100 sidecar log lines
 tail -n 100 storage/logs/whatsapp-sidecar.log storage/logs/whatsapp-sidecar.err.log

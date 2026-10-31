@@ -29,6 +29,12 @@ class QrGenerated implements ShouldBroadcast
         return $this->payload['dataUri'] ?? null;
     }
 
+    /** Alias of dataUri(). */
+    public function qr(): ?string
+    {
+        return $this->dataUri();
+    }
+
     public function broadcastAs(): string
     {
         return 'qr.generated';
