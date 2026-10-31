@@ -5,6 +5,7 @@ namespace Kstmostofa\LaravelWhatsApp;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Kstmostofa\LaravelWhatsApp\Client\CloudClient;
+use Kstmostofa\LaravelWhatsApp\Console\Commands\ContactsSyncCommand;
 use Kstmostofa\LaravelWhatsApp\Console\Commands\HealthCheckCommand;
 use Kstmostofa\LaravelWhatsApp\Console\Commands\SidecarInstallCommand;
 use Kstmostofa\LaravelWhatsApp\Console\Commands\SidecarStartCommand;
@@ -96,13 +97,30 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
                 SidecarStatusCommand::class,
                 WebListenCommand::class,
                 HealthCheckCommand::class,
+                ContactsSyncCommand::class,
             ]);
         }
 
+        $this->registerNotificationChannel();
         $this->registerWebhookRoutes();
         $this->registerViews();
         $this->registerUi();
         $this->registerPersistenceListeners();
+    }
+
+    /**
+     * Make `'whatsapp'` usable in a notification's via(). Deferred until the
+     * ChannelManager is first resolved so apps that never notify pay nothing.
+     */
+    protected function registerNotificationChannel(): void
+    {
+        if (! class_exists(\Illuminate\Notifications\ChannelManager::class)) {
+            return;
+        }
+
+        $this->callAfterResolving(\Illuminate\Notifications\ChannelManager::class, function ($manager, $app) {
+            $manager->extend('whatsapp', fn () => $app->make(\Kstmostofa\LaravelWhatsApp\Notifications\WhatsAppChannel::class));
+        });
     }
 
     protected function registerViews(): void
@@ -160,6 +178,10 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
             $events->listen(\Kstmostofa\LaravelWhatsApp\Events\Web\MessageAck::class, $listener);
             $events->listen(\Kstmostofa\LaravelWhatsApp\Events\Web\MessageRevoked::class, $listener);
             $events->listen(\Kstmostofa\LaravelWhatsApp\Events\MessageReceived::class, $listener);
+            $events->listen(\Kstmostofa\LaravelWhatsApp\Events\MediaReceived::class, $listener);
+            $events->listen(\Kstmostofa\LaravelWhatsApp\Events\InteractiveReplied::class, $listener);
+            $events->listen(\Kstmostofa\LaravelWhatsApp\Events\MessageSent::class, $listener);
+            $events->listen(\Kstmostofa\LaravelWhatsApp\Events\MessageStatusUpdate::class, $listener);
         }
 
         if (config('laravel-whatsapp.persist.sessions', false)) {

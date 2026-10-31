@@ -2,7 +2,11 @@
 
 namespace Kstmostofa\LaravelWhatsApp\Listeners;
 
+use Kstmostofa\LaravelWhatsApp\Events\InteractiveReplied as CloudInteractiveReplied;
+use Kstmostofa\LaravelWhatsApp\Events\MediaReceived as CloudMediaReceived;
 use Kstmostofa\LaravelWhatsApp\Events\MessageReceived as CloudMessageReceived;
+use Kstmostofa\LaravelWhatsApp\Events\MessageSent as CloudMessageSent;
+use Kstmostofa\LaravelWhatsApp\Events\MessageStatusUpdate as CloudMessageStatusUpdate;
 use Kstmostofa\LaravelWhatsApp\Events\Web\MessageAck as WebMessageAck;
 use Kstmostofa\LaravelWhatsApp\Events\Web\MessageCreated as WebMessageCreated;
 use Kstmostofa\LaravelWhatsApp\Events\Web\MessageReceived as WebMessageReceived;
@@ -36,7 +40,15 @@ class PersistIncomingMessage
             } elseif ($event instanceof WebMessageReceived) {
                 $this->persistWeb($event);
             } elseif ($event instanceof CloudMessageReceived) {
-                $this->persistCloud($event);
+                $this->persistCloud($event, $event->text());
+            } elseif ($event instanceof CloudMediaReceived) {
+                $this->persistCloud($event, $event->caption());
+            } elseif ($event instanceof CloudInteractiveReplied) {
+                $this->persistCloud($event, $event->replyTitle());
+            } elseif ($event instanceof CloudMessageSent) {
+                $this->persistCloudOutbound($event);
+            } elseif ($event instanceof CloudMessageStatusUpdate) {
+                $this->persistCloudStatus($event);
             }
         } catch (\Throwable) {
             // Table missing / DB unreachable — don't break the event flow.
@@ -63,16 +75,18 @@ class PersistIncomingMessage
         ]);
     }
 
-    protected function persistCloud(CloudMessageReceived $event): void
+    protected function persistCloud(CloudMessageReceived|CloudMediaReceived|CloudInteractiveReplied $event, ?string $body): void
     {
-        $this->store('cloud', $event->messageId(), [
+        $messageId = $event->payload['id'] ?? null;
+
+        $this->store('cloud', is_string($messageId) ? $messageId : null, [
             'session_id' => $event->phoneNumberId,
             'direction' => 'inbound',
             'chat_id' => $event->from(),
             'from_id' => $event->from(),
             'to_id' => $event->phoneNumberId,
             'type' => $event->payload['type'] ?? 'text',
-            'body' => $event->text(),
+            'body' => $body,
             'payload' => $event->payload,
             'status' => 'received',
             'wa_timestamp' => isset($event->payload['timestamp'])
@@ -103,6 +117,68 @@ class PersistIncomingMessage
             ['wa_message_id' => $messageId, 'backend' => $backend],
             $attributes,
         );
+    }
+
+    /**
+     * Outbound Cloud messages. `chat_id` is the normalized recipient number —
+     * the same digits Meta uses as `from` on their replies, so both
+     * directions land in one conversation.
+     */
+    protected function persistCloudOutbound(CloudMessageSent $event): void
+    {
+        $this->store('cloud', $event->messageId(), [
+            'session_id' => $event->phoneNumberId,
+            'direction' => 'outbound',
+            'chat_id' => $event->to(),
+            'from_id' => $event->phoneNumberId,
+            'to_id' => $event->to(),
+            'type' => $event->type() ?? 'text',
+            'body' => $event->body(),
+            'payload' => ['request' => $event->payload, 'response' => $event->response],
+            'status' => 'accepted',
+            'ack' => self::CLOUD_ACKS['accepted'],
+            'wa_timestamp' => now(),
+        ]);
+    }
+
+    /**
+     * Meta's delivery statuses, mapped onto the same ack scale the Web
+     * backend uses so the UI ticks work for both.
+     */
+    protected const CLOUD_ACKS = [
+        'failed' => -1,
+        'accepted' => 0,
+        'sent' => 1,
+        'delivered' => 2,
+        'read' => 3,
+        'played' => 4,
+    ];
+
+    protected function persistCloudStatus(CloudMessageStatusUpdate $event): void
+    {
+        $messageId = $event->messageId();
+        $status = $event->status();
+
+        if ($messageId === null || $status === null) {
+            return;
+        }
+
+        $ack = self::CLOUD_ACKS[$status] ?? null;
+
+        $query = WaMessage::query()
+            ->where('backend', 'cloud')
+            ->where('wa_message_id', $messageId);
+
+        // Webhooks can arrive out of order — never move a message backwards
+        // (e.g. a late `delivered` after `read`). Failures always win.
+        if ($ack !== null && $ack >= 0) {
+            $query->where(fn ($q) => $q->whereNull('ack')->orWhere('ack', '<', $ack));
+        }
+
+        $query->update(array_filter([
+            'status' => $status,
+            'ack' => $ack,
+        ], fn ($v) => $v !== null));
     }
 
     /**

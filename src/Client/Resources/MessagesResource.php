@@ -2,7 +2,9 @@
 
 namespace Kstmostofa\LaravelWhatsApp\Client\Resources;
 
+use Illuminate\Container\Container;
 use Kstmostofa\LaravelWhatsApp\Client\CloudClient;
+use Kstmostofa\LaravelWhatsApp\Events\MessageSent;
 use Kstmostofa\LaravelWhatsApp\Support\Recipient;
 
 class MessagesResource extends Resource
@@ -172,6 +174,26 @@ class MessagesResource extends Resource
             $body['context'] = ['message_id' => $contextMessageId];
         }
 
-        return $this->request('POST', $this->endpoint(), ['json' => $body]);
+        $response = $this->request('POST', $this->endpoint(), ['json' => $body]);
+
+        $this->announce($body, $response);
+
+        return $response;
+    }
+
+    /**
+     * Fire MessageSent so listeners (and the built-in persistence) see every
+     * outbound message, however it was sent.
+     *
+     * @param  array<string, mixed>  $body
+     * @param  array<string, mixed>  $response
+     */
+    protected function announce(array $body, array $response): void
+    {
+        $container = Container::getInstance();
+
+        if ($container->bound('events')) {
+            $container->make('events')->dispatch(new MessageSent($this->phoneNumberId, $body, $response));
+        }
     }
 }

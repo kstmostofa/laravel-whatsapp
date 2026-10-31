@@ -20,6 +20,8 @@
 | **Livewire + Flux UI** | Drop-in admin at `/whatsapp` — Dashboard, Sessions+QR, Compose, Conversations (chat-bubble UI with media, edit/delete, search, sound, ack ticks), Groups, Contacts, Webhooks log, Status. Works with Tailwind, Bootstrap, or no CSS framework at all. |
 | **Eloquent models** | Opt-in `WaSession` / `WaMessage` / `WaContact` with separate-DB support via `WHATSAPP_DB_CONNECTION`. |
 | **Background bridge** | `whatsapp:web:listen` daemon turns sidecar SSE events into Laravel events. |
+| **Notifications** | `'whatsapp'` notification channel with a `WhatsAppMessage` builder — text, templates, media, either backend. |
+| **Testing** | `WhatsApp::fake()` records every send from both backends, with `assertSentTo()` and friends. |
 | **Health monitoring** | `WhatsApp::status` page + `php artisan whatsapp:health [--json]` for CI/monitoring. |
 
 ---
@@ -73,6 +75,13 @@ WhatsApp::web('main')->messages()->sendImage('9665XXXXXXXX@c.us', ['url' => 'htt
 // Or queue it
 SendMessage::dispatch('+9665XXXXXXXX', 'Queued hello');
 
+// As a Laravel notification
+$user->notify(new OrderShipped($order));   // via() => ['whatsapp'], toWhatsApp() => WhatsAppMessage
+
+// In tests
+WhatsApp::fake();
+WhatsApp::assertSentTo('+9665XXXXXXXX', fn ($m) => str_contains($m->body, 'shipped'));
+
 // Inbound — listen via Laravel events
 Event::listen(\Kstmostofa\LaravelWhatsApp\Events\Web\MessageReceived::class, function ($event) {
     Log::info('Got message', ['from' => $event->from(), 'body' => $event->body()]);
@@ -114,6 +123,7 @@ Full setup details + dark mode + screenshots → [docs site](https://kstmostofa.
 | `whatsapp:sidecar:start [--foreground]` / `:stop` / `:status` | Lifecycle of the Node process. `--foreground` is for Supervisor / systemd |
 | `whatsapp:web:listen [session]` | Long-running: sidecar SSE → Laravel events |
 | `whatsapp:health [--json]` [`--exit-code`] | Health probe — pipe into cron / monitoring |
+| `whatsapp:contacts:sync [session] [--all]` | Copy Web contacts into `wa_contacts` — safe to schedule |
 
 ## Production checklist
 
@@ -141,7 +151,7 @@ Detailed deployment guide → [docs/production](https://kstmostofa.github.io/lar
 
 ## Status
 
-- **55 tests passing**, 154 assertions (testbench + mocked Guzzle + Livewire smoke tests), plus 20 sidecar tests (`npm test` in `sidecar/`)
+- **74 tests passing**, 200 assertions (testbench + mocked Guzzle + Livewire smoke tests), plus 20 sidecar tests (`npm test` in `sidecar/`)
 - **Compatible with Laravel 12 / 13** — tests run green against L13.11 + PHPUnit 12 on PHP 8.5
 - PHP minimum: **8.2** on Laravel 12, **8.4** on Laravel 13 (Symfony 8 transitive)
 - Laravel 11 support was dropped: it is past end of life and has unpatched security advisories

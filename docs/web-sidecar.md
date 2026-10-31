@@ -161,6 +161,21 @@ $one = WhatsApp::web('main')->contacts()->get('9665XXXXXXXX@c.us');
 $exists = WhatsApp::web('main')->contacts()->exists('9665XXXXXXXX');  // { number, exists: bool }
 ```
 
+### Syncing contacts to the database
+
+```bash
+php artisan whatsapp:contacts:sync           # default session
+php artisan whatsapp:contacts:sync sales     # a specific session
+php artisan whatsapp:contacts:sync --all     # every ready session
+```
+
+Upserts each contact into `wa_contacts` on `(session_id, wa_id)`, so it is safe to schedule:
+
+```php
+// routes/console.php
+Schedule::command('whatsapp:contacts:sync --all')->hourly();
+```
+
 ## Status / Stories
 
 Cloud API can't post to Status. Web sidecar can:
