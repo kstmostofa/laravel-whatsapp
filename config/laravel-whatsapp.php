@@ -237,6 +237,35 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Bulk sending — WhatsApp::bulk()
+    |--------------------------------------------------------------------------
+    |
+    | Each recipient becomes one queued SendBulkMessage job, rate limited per
+    | sender (phone_number_id for Cloud, session for Web).
+    |
+    | Cloud: Meta's default throughput is 80 messages/second per number, and
+    | your daily limit depends on your messaging tier — keep per_minute below
+    | both.
+    |
+    | Web: keep it low. Fast, regular sending from a personal number is the
+    | quickest way to get it banned. Jobs are also spaced out by a random
+    | delay between web_delay_min and web_delay_max seconds.
+    |
+    */
+
+    'bulk' => [
+        'per_minute' => [
+            'cloud' => (int) env('WHATSAPP_BULK_CLOUD_PER_MINUTE', 1000),
+            'web' => (int) env('WHATSAPP_BULK_WEB_PER_MINUTE', 10),
+        ],
+        'web_delay_min' => (int) env('WHATSAPP_BULK_WEB_DELAY_MIN', 3),
+        'web_delay_max' => (int) env('WHATSAPP_BULK_WEB_DELAY_MAX', 10),
+        // Rate-limited jobs are released back to the queue; give up after this long.
+        'retry_hours' => (int) env('WHATSAPP_BULK_RETRY_HOURS', 12),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Queue used by SendMessage and bulk jobs
     |--------------------------------------------------------------------------
     */

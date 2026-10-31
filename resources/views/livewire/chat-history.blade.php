@@ -213,7 +213,13 @@
                         <flux:text size="sm" class="!text-zinc-500 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 inline-block px-4 py-2 rounded-md">
                             No persisted messages for this chat
                         </flux:text>
-                        <flux:text size="xs" class="!text-zinc-400 mt-3">Run <code class="font-mono">php artisan whatsapp:web:listen</code> with <code class="font-mono">WHATSAPP_PERSIST_INCOMING=true</code></flux:text>
+                        <div class="mt-4">
+                            <flux:button size="sm" icon="arrow-down-tray" wire:click="importHistory" wire:loading.attr="disabled" wire:target="importHistory">
+                                <span wire:loading.remove wire:target="importHistory">Import recent history</span>
+                                <span wire:loading wire:target="importHistory">Importing…</span>
+                            </flux:button>
+                        </div>
+                        <flux:text size="xs" class="!text-zinc-400 mt-3">New messages appear while <code class="font-mono">php artisan whatsapp:web:listen</code> runs with <code class="font-mono">WHATSAPP_PERSIST_INCOMING=true</code></flux:text>
                     </div>
                 @else
                     @foreach ($messages as $m)

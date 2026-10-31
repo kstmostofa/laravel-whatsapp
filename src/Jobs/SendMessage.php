@@ -24,18 +24,6 @@ class SendMessage implements ShouldQueue
 
     public int $backoff = 5;
 
-    /**
-     * Meta error codes that should NOT be retried — they'll never succeed.
-     * See: https://developers.facebook.com/docs/whatsapp/cloud-api/support/error-codes/
-     */
-    protected const PERMANENT_ERROR_CODES = [
-        100, // Invalid parameter
-        131026, // Message undeliverable (e.g. not on WhatsApp)
-        131047, // Re-engagement message — 24h window expired, template required
-        131051, // Unsupported message type
-        368,    // Temporarily blocked for policies violations  (no point retrying soon)
-    ];
-
     public function __construct(
         public string $to,
         public string $body,
@@ -53,7 +41,7 @@ class SendMessage implements ShouldQueue
             $client->messages($this->phoneNumberId)
                 ->sendText($this->to, $this->body, $this->previewUrl, $this->contextMessageId);
         } catch (CloudApiException $e) {
-            if (in_array($e->metaErrorCode(), self::PERMANENT_ERROR_CODES, true)) {
+            if ($e->isPermanent()) {
                 $this->fail($e);
 
                 return;

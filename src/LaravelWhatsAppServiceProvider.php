@@ -12,6 +12,7 @@ use Kstmostofa\LaravelWhatsApp\Console\Commands\SidecarStartCommand;
 use Kstmostofa\LaravelWhatsApp\Console\Commands\SidecarStatusCommand;
 use Kstmostofa\LaravelWhatsApp\Console\Commands\SidecarStopCommand;
 use Kstmostofa\LaravelWhatsApp\Console\Commands\WebListenCommand;
+use Kstmostofa\LaravelWhatsApp\Console\Commands\WebSyncCommand;
 use Kstmostofa\LaravelWhatsApp\Health\HealthSnapshot;
 use Kstmostofa\LaravelWhatsApp\Web\SidecarManager;
 use Kstmostofa\LaravelWhatsApp\Web\WebClient;
@@ -98,14 +99,36 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
                 WebListenCommand::class,
                 HealthCheckCommand::class,
                 ContactsSyncCommand::class,
+                WebSyncCommand::class,
             ]);
         }
 
         $this->registerNotificationChannel();
+        $this->registerBulkRateLimiter();
         $this->registerWebhookRoutes();
         $this->registerViews();
         $this->registerUi();
         $this->registerPersistenceListeners();
+    }
+
+    /**
+     * Per-sender throughput limit for WhatsApp::bulk() jobs. Apps can
+     * replace it by defining their own `whatsapp-bulk` limiter.
+     */
+    protected function registerBulkRateLimiter(): void
+    {
+        if (\Illuminate\Support\Facades\RateLimiter::limiter(\Kstmostofa\LaravelWhatsApp\Jobs\SendBulkMessage::LIMITER) !== null) {
+            return;
+        }
+
+        \Illuminate\Support\Facades\RateLimiter::for(
+            \Kstmostofa\LaravelWhatsApp\Jobs\SendBulkMessage::LIMITER,
+            function (\Kstmostofa\LaravelWhatsApp\Jobs\SendBulkMessage $job) {
+                $perMinute = (int) config('laravel-whatsapp.bulk.per_minute.'.$job->backend(), 60);
+
+                return \Illuminate\Cache\RateLimiting\Limit::perMinute(max(1, $perMinute))->by($job->rateLimitKey());
+            },
+        );
     }
 
     /**

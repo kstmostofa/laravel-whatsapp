@@ -91,6 +91,7 @@ function collectChats() {
       mimetype: m.mimetype ?? null,
       filename: m.filename ?? null,
       hasQuotedMsg: !!m.quotedMsg,
+      ack: typeof m.ack === 'number' ? m.ack : null,
     };
   });
 

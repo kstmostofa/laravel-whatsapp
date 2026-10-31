@@ -46,7 +46,12 @@ class MessageAck implements ShouldBroadcast
 
     public function ackLabel(): string
     {
-        return match ($this->ack()) {
+        return self::labelFor($this->ack());
+    }
+
+    public static function labelFor(?int $ack): string
+    {
+        return match ($ack) {
             self::ACK_ERROR => 'error',
             self::ACK_PENDING => 'pending',
             self::ACK_SERVER => 'server',

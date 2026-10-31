@@ -6,6 +6,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Kstmostofa\LaravelWhatsApp\Exceptions\SidecarException;
 use Kstmostofa\LaravelWhatsApp\Models\WaMessage;
+use Kstmostofa\LaravelWhatsApp\Web\HistoryImporter;
 use Kstmostofa\LaravelWhatsApp\Web\WebClient;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -76,6 +77,30 @@ class ChatHistory extends Component
             Cache::forget("laravel-whatsapp:chats:{$this->session}");
         } catch (SidecarException) {
             // Session not ready or sidecar down — the list will show it anyway.
+        }
+    }
+
+    /**
+     * Pull recent history for the open chat from WhatsApp into wa_messages.
+     * Offered when a chat has no stored messages yet.
+     */
+    public function importHistory(): void
+    {
+        if (! $this->selectedChat) {
+            return;
+        }
+
+        $this->error = null;
+
+        try {
+            app(HistoryImporter::class)->importChat(
+                $this->session,
+                $this->selectedChat,
+                (int) config('laravel-whatsapp.ui.messages_initial', 50),
+            );
+            $this->dispatch('chat-opened');
+        } catch (SidecarException $e) {
+            $this->error = $e->getMessage();
         }
     }
 

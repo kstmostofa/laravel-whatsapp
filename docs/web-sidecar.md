@@ -161,6 +161,24 @@ $one = WhatsApp::web('main')->contacts()->get('9665XXXXXXXX@c.us');
 $exists = WhatsApp::web('main')->contacts()->exists('9665XXXXXXXX');  // { number, exists: bool }
 ```
 
+### Importing chat history
+
+The listener only stores messages that arrive while it runs, so a fresh install starts with empty conversations. Import recent history to fill them in:
+
+```bash
+php artisan whatsapp:web:sync                                  # 20 most recent chats, 50 messages each
+php artisan whatsapp:web:sync sales --chats=100 --limit=200    # more chats, deeper history
+php artisan whatsapp:web:sync --chat=966512345678@c.us         # specific chats
+```
+
+Imports upsert on the message ID, so running it again, or importing messages the listener already stored, never creates duplicates. Imported messages don't fire Laravel events, so your listeners and broadcasts only see live traffic. In the UI, an empty conversation shows an **Import recent history** button that does the same for that chat.
+
+From PHP:
+
+```php
+WhatsApp::web('main')->history('966512345678@c.us', limit: 100);   // raw messages
+```
+
 ### Syncing contacts to the database
 
 ```bash

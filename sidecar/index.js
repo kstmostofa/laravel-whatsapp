@@ -102,6 +102,7 @@ function serializeMessage(m) {
     mimetype: data.mimetype ?? null,
     filename: data.filename ?? null,
     hasQuotedMsg: !!m.hasQuotedMsg,
+    ack: typeof m.ack === 'number' ? m.ack : null,
   };
 }
 
@@ -426,6 +427,23 @@ app.get('/sessions/:id/chats', async (req, res, next) => {
     res.json(chats.map(({ id, name, isGroup, unreadCount, timestamp, lastMessage }) => ({
       id, name, isGroup, unreadCount, timestamp, lastMessage,
     })));
+  } catch (e) { next(e); }
+});
+
+// Recent message history for one chat, oldest first. Used to backfill
+// wa_messages for chats that existed before the listener was running.
+// `limit` is capped so one call can't pull an entire years-long chat.
+const HISTORY_MAX = 500;
+
+app.get('/sessions/:id/chats/:chatId/messages', async (req, res, next) => {
+  try {
+    const s = getSession(req.params.id);
+    requireReady(s);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), HISTORY_MAX);
+    const chat = await s.client.getChatById(req.params.chatId);
+    if (!chat) return res.status(404).json({ error: 'chat not found' });
+    const messages = await chat.fetchMessages({ limit });
+    res.json(messages.map(serializeMessage).filter(Boolean));
   } catch (e) { next(e); }
 });
 

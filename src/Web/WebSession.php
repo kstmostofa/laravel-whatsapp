@@ -116,6 +116,21 @@ class WebSession
         return $this->client->request('POST', "sessions/{$this->sessionId}/chats/".rawurlencode($chatId).'/seen');
     }
 
+    /**
+     * Recent messages in a chat, oldest first, in the same shape as the
+     * `message` event. The sidecar caps `$limit` at 500.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function history(string $chatId, int $limit = 50): array
+    {
+        $response = $this->client->request('GET', "sessions/{$this->sessionId}/chats/".rawurlencode($chatId).'/messages', [
+            'query' => ['limit' => $limit],
+        ]);
+
+        return array_values(array_filter($response, 'is_array'));
+    }
+
     public function messages(): MessagesResource
     {
         return new MessagesResource($this->client, $this->sessionId);
