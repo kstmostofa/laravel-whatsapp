@@ -22,6 +22,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   compiles only the package's and Flux's sources, not the host app's.
   A new test fails whenever the UI renders a class the shipped stylesheet
   doesn't contain, so the next Flux change is caught in CI.
+- **Live-tested against WhatsApp Web 2.3000.105x with whatsapp-web.js
+  1.34.7 (the latest stable).** Fixes found pairing a real account:
+  - Chat and group listing failed: `getChats()` throws `r`, and the 1.0.3
+    fallback read `window.Store`, which whatsapp-web.js 1.30+ no longer
+    creates. The fallback now also reads `WAWebCollections`.
+  - History import failed the same way. `GET …/chats/:chatId/messages`
+    now falls back to reading the in-page message store, and resolves a
+    phone-number chat ID to its `@lid` key: most chats on current accounts
+    are keyed by `@lid`, including "Message yourself".
+  - Sessions could stay at `authenticated` forever: whatsapp-web.js never
+    emitted `ready` when a step of its startup failed silently. A watchdog
+    now finishes the startup 30 seconds after `authenticated` once the page
+    is connected, attaching the event listeners exactly once.
+  - Sends returned no message ID (`sendMessage()` resolves to `undefined`),
+    so callers couldn't quote, react to, edit or delete what they sent. The
+    sidecar now recovers the ID from the matching `message_create` event.
+  - Message IDs were rebuilt without the direction suffix current builds
+    use (`…_out`), so `getMessageById()` never found them. The full
+    serialized key is used verbatim when present.
+  - The contacts endpoint returned each contact several times (1367 entries
+    for 672 contacts); it now returns one entry per ID, and
+    `whatsapp:contacts:sync` counts unique contacts.
+  - Stopping or destroying a session now emits `disconnected`, so
+    `wa_sessions` no longer shows a stale status.
+
+### Known issues
+- With whatsapp-web.js 1.34.7 on current WhatsApp Web, **editing,
+  forwarding and sending media fail inside whatsapp-web.js** (`r`, or
+  "Data passed to getter must include an id property" for media), and
+  reaction events don't arrive. Sending text, quoted replies, reacting,
+  receiving messages and acks, chat and group listing, history import and
+  contact sync work. These need fixes in whatsapp-web.js or further
+  in-page fallbacks.
 
 ## [1.2.0] - 2026-11-01
 

@@ -66,16 +66,24 @@ function serializeMessageId(id) {
 
   if (isNonEmptyString(id._serialized)) return id._serialized;
 
+  // Current WhatsApp Web builds keep the full serialized key under a
+  // minified property (e.g. `$1`) and append a direction suffix:
+  // `true_<remote>_<id>_out`. Use that verbatim — a key rebuilt without the
+  // suffix doesn't resolve with getMessageById().
+  const found = findSerialized(id, MESSAGE_ID_PATTERN);
+  if (found) return found;
+
   const remote = serializeWid(id.remote);
   if (isNonEmptyString(remote) && isNonEmptyString(id.id)) {
     const parts = [id.fromMe ? 'true' : 'false', remote, id.id];
     const participant = serializeWid(id.participant);
     if (participant) parts.push(participant);
+    if (isNonEmptyString(id.self)) parts.push(id.self);
 
     return parts.join('_');
   }
 
-  return findSerialized(id, MESSAGE_ID_PATTERN);
+  return null;
 }
 
 module.exports = { serializeWid, serializeMessageId };
