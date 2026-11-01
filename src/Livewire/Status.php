@@ -2,6 +2,7 @@
 
 namespace Kstmostofa\LaravelWhatsApp\Livewire;
 
+use Illuminate\Contracts\View\View;
 use Kstmostofa\LaravelWhatsApp\Health\HealthSnapshot;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -38,6 +39,9 @@ class Status extends Component
         $this->logTail = implode("\n", array_slice($lines, -20));
     }
 
+    /**
+     * @return View
+     */
     public function render()
     {
         return view('laravel-whatsapp::livewire.status', [

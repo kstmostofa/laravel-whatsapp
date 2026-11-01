@@ -23,12 +23,10 @@ use Kstmostofa\LaravelWhatsApp\Support\MessageSender;
  */
 class WhatsAppChannel
 {
-    public function __construct(protected Container $container)
-    {
-    }
+    public function __construct(protected Container $container) {}
 
     /**
-     * @return array<string, mixed>|null  the backend's response, or null when skipped
+     * @return array<string, mixed>|null the backend's response, or null when skipped
      */
     public function send(object $notifiable, Notification $notification): ?array
     {

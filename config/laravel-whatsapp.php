@@ -1,5 +1,18 @@
 <?php
 
+use Kstmostofa\LaravelWhatsApp\Events\InteractiveReplied;
+use Kstmostofa\LaravelWhatsApp\Events\MediaReceived;
+use Kstmostofa\LaravelWhatsApp\Events\MessageReceived;
+use Kstmostofa\LaravelWhatsApp\Events\MessageStatusUpdate;
+use Kstmostofa\LaravelWhatsApp\Events\TemplateStatusUpdate;
+use Kstmostofa\LaravelWhatsApp\Events\Web\Disconnected;
+use Kstmostofa\LaravelWhatsApp\Events\Web\MessageAck;
+use Kstmostofa\LaravelWhatsApp\Events\Web\MessageCreated;
+use Kstmostofa\LaravelWhatsApp\Events\Web\MessageReaction;
+use Kstmostofa\LaravelWhatsApp\Events\Web\MessageRevoked;
+use Kstmostofa\LaravelWhatsApp\Events\Web\QrGenerated;
+use Kstmostofa\LaravelWhatsApp\Events\Web\SessionReady;
+
 return [
 
     /*
@@ -53,11 +66,11 @@ return [
     */
 
     'events' => [
-        'message' => \Kstmostofa\LaravelWhatsApp\Events\MessageReceived::class,
-        'status' => \Kstmostofa\LaravelWhatsApp\Events\MessageStatusUpdate::class,
-        'interactive' => \Kstmostofa\LaravelWhatsApp\Events\InteractiveReplied::class,
-        'media' => \Kstmostofa\LaravelWhatsApp\Events\MediaReceived::class,
-        'template_status' => \Kstmostofa\LaravelWhatsApp\Events\TemplateStatusUpdate::class,
+        'message' => MessageReceived::class,
+        'status' => MessageStatusUpdate::class,
+        'interactive' => InteractiveReplied::class,
+        'media' => MediaReceived::class,
+        'template_status' => TemplateStatusUpdate::class,
     ],
 
     /*
@@ -118,17 +131,17 @@ return [
         ],
 
         'events' => [
-            'message' => \Kstmostofa\LaravelWhatsApp\Events\Web\MessageReceived::class,
-            'ready' => \Kstmostofa\LaravelWhatsApp\Events\Web\SessionReady::class,
-            'qr' => \Kstmostofa\LaravelWhatsApp\Events\Web\QrGenerated::class,
-            'disconnected' => \Kstmostofa\LaravelWhatsApp\Events\Web\Disconnected::class,
-            'message_ack' => \Kstmostofa\LaravelWhatsApp\Events\Web\MessageAck::class,
+            'message' => Kstmostofa\LaravelWhatsApp\Events\Web\MessageReceived::class,
+            'ready' => SessionReady::class,
+            'qr' => QrGenerated::class,
+            'disconnected' => Disconnected::class,
+            'message_ack' => MessageAck::class,
             // Fires for every message created on the account, including ones
             // sent from the paired phone. Inbound messages also fire `message`,
             // so listeners usually only care about `fromMe()` here.
-            'message_create' => \Kstmostofa\LaravelWhatsApp\Events\Web\MessageCreated::class,
-            'message_revoke' => \Kstmostofa\LaravelWhatsApp\Events\Web\MessageRevoked::class,
-            'message_reaction' => \Kstmostofa\LaravelWhatsApp\Events\Web\MessageReaction::class,
+            'message_create' => MessageCreated::class,
+            'message_revoke' => MessageRevoked::class,
+            'message_reaction' => MessageReaction::class,
         ],
     ],
 

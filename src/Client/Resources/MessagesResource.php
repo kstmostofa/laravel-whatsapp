@@ -120,7 +120,7 @@ class MessagesResource extends Resource
     }
 
     /**
-     * @param  array{type: string, body?: array, header?: array, footer?: array, action: array}  $interactive
+     * @param  array{type: string, body?: array<string, mixed>, header?: array<string, mixed>, footer?: array<string, mixed>, action: array<string, mixed>}  $interactive
      * @return array<string, mixed>
      */
     public function sendInteractive(string $to, array $interactive): array

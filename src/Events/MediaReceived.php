@@ -14,15 +14,14 @@ class MediaReceived
     use Dispatchable, SerializesModels;
 
     /**
-     * @param  array<string, mixed>  $payload   single `messages[]` entry (type is image/video/audio/document/sticker)
+     * @param  array<string, mixed>  $payload  single `messages[]` entry (type is image/video/audio/document/sticker)
      * @param  array<string, mixed>  $metadata
      */
     public function __construct(
         public string $phoneNumberId,
         public array $payload,
         public array $metadata = [],
-    ) {
-    }
+    ) {}
 
     public function mediaType(): ?string
     {

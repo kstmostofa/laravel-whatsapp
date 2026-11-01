@@ -35,7 +35,7 @@ use Kstmostofa\LaravelWhatsApp\Web\WebSession;
  * @method static BusinessProfileResource businessProfile(?string $phoneNumberId = null)
  * @method static PhoneNumberResource phoneNumber(?string $phoneNumberId = null)
  * @method static TemplatesResource templates(?string $businessAccountId = null)
- * @method static array request(string $method, string $path, array $options = [])
+ * @method static array<string, mixed> request(string $method, string $path, array<string, mixed> $options = [])
  *
  * Available after WhatsApp::fake():
  * @method static array<int, SentMessage> sent(?callable $filter = null)
@@ -115,7 +115,7 @@ class WhatsApp extends Facade
      */
     public static function send(string $to, string $body, ?string $backend = null, ?string $sessionId = null): array
     {
-        return static::$app->make(\Kstmostofa\LaravelWhatsApp\MessageRouter::class)
+        return static::$app->make(MessageRouter::class)
             ->sendText($to, $body, $backend, $sessionId);
     }
 }

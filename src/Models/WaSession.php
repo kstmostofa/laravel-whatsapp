@@ -3,18 +3,20 @@
 namespace Kstmostofa\LaravelWhatsApp\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Kstmostofa\LaravelWhatsApp\Models\Concerns\UsesWhatsAppConnection;
 
 /**
  * @property string $id
- * @property string $backend  'web' | 'cloud'
+ * @property string $backend 'web' | 'cloud'
  * @property string $status
  * @property ?string $phone_number
  * @property ?string $push_name
- * @property ?\Illuminate\Support\Carbon $last_qr_at
- * @property ?\Illuminate\Support\Carbon $ready_at
- * @property ?\Illuminate\Support\Carbon $disconnected_at
- * @property ?array $meta
+ * @property ?Carbon $last_qr_at
+ * @property ?Carbon $ready_at
+ * @property ?Carbon $disconnected_at
+ * @property ?array<string, mixed> $meta
  */
 class WaSession extends Model
 {
@@ -35,11 +37,17 @@ class WaSession extends Model
         'meta' => 'array',
     ];
 
+    /**
+     * @return HasMany<WaMessage, $this>
+     */
     public function messages()
     {
         return $this->hasMany(WaMessage::class, 'session_id');
     }
 
+    /**
+     * @return HasMany<WaContact, $this>
+     */
     public function contacts()
     {
         return $this->hasMany(WaContact::class, 'session_id');

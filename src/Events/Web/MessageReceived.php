@@ -26,9 +26,11 @@ class MessageReceived implements ShouldBroadcast
     public function __construct(
         public string $sessionId,
         public array $payload,
-    ) {
-    }
+    ) {}
 
+    /**
+     * @return array<string, mixed>
+     */
     public function message(): array
     {
         return $this->payload['message'] ?? [];

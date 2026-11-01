@@ -7,7 +7,6 @@ use Kstmostofa\LaravelWhatsApp\Client\CloudClient;
 use Kstmostofa\LaravelWhatsApp\Health\HealthSnapshot;
 use Kstmostofa\LaravelWhatsApp\Tests\Support\MocksGuzzle;
 use Kstmostofa\LaravelWhatsApp\Tests\TestCase;
-use Kstmostofa\LaravelWhatsApp\Web\WebClient;
 
 class HealthSnapshotTest extends TestCase
 {
@@ -17,9 +16,9 @@ class HealthSnapshotTest extends TestCase
     {
         $snapshots = $this->app->make(HealthSnapshot::class);
 
-        $this->assertSame('down',     $snapshots->aggregate(['ok', 'down']));
+        $this->assertSame('down', $snapshots->aggregate(['ok', 'down']));
         $this->assertSame('degraded', $snapshots->aggregate(['ok', 'degraded']));
-        $this->assertSame('ok',       $snapshots->aggregate(['ok', 'not_configured']));
+        $this->assertSame('ok', $snapshots->aggregate(['ok', 'not_configured']));
         $this->assertSame('not_configured', $snapshots->aggregate(['not_configured', 'not_configured']));
     }
 

@@ -17,7 +17,7 @@ class MediaResource extends Resource
     /**
      * Upload a file and get back a media_id usable in sendImage/Video/Audio/Document/Sticker.
      *
-     * @return array<string, mixed>  ['id' => '<media-id>']
+     * @return array<string, mixed> ['id' => '<media-id>']
      */
     public function upload(string $absolutePath, string $mimeType): array
     {

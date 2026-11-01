@@ -143,6 +143,9 @@ class PersistIncomingMessage
      */
     protected const LOCAL_PAYLOAD_KEYS = ['reactions', 'filename', 'quoted'];
 
+    /**
+     * @param  array<string, mixed>|null  $existing
+     */
     protected function keepLocalPayloadKeys(?array $existing, mixed $incoming): mixed
     {
         if (! is_array($existing) || ! is_array($incoming)) {

@@ -71,9 +71,7 @@ class WebClient
      */
     public function sessions(): array
     {
-        $response = $this->request('GET', 'sessions');
-
-        return is_array($response) ? $response : [];
+        return array_values(array_filter($this->request('GET', 'sessions'), 'is_array'));
     }
 
     /**

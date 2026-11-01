@@ -21,6 +21,7 @@ use Symfony\Component\HttpFoundation\Response;
 class AvatarProxyController extends Controller
 {
     protected const CACHE_TTL = 1800; // 30 minutes
+
     protected const MISS_MARKER = '__no_avatar__';
 
     public function show(string $session, string $contactId, WebClient $client): Response
@@ -62,7 +63,7 @@ class AvatarProxyController extends Controller
     }
 
     /**
-     * @return array{0: int, 1: string, 2: string}  [status, contentType, body]
+     * @return array{0: int, 1: string, 2: string} [status, contentType, body]
      */
     protected function fetchFromSidecar(string $session, string $contactId, WebClient $client): array
     {

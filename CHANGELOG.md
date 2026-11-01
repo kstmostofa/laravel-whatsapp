@@ -151,6 +151,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `DELETE /sessions/:id` built a filesystem path from the raw ID.
 - The sidecar logs a warning at boot when `SIDECAR_TOKEN` is empty.
 
+### Development
+- Larastan at level 6 (`composer analyse`) and Laravel Pint (`composer lint`,
+  `composer format`), with `composer check` running both plus PHPUnit. A new
+  Quality workflow runs them in CI along with the sidecar's Node tests, which
+  CI never ran before.
+- The codebase was reformatted with Pint in one formatting-only commit, listed
+  in `.git-blame-ignore-revs`.
+
 ### Docs
 - Corrected `whatsapp:health --json` (was `--format=json`), the `/whatsapp/status`
   page (was `/whatsapp/health`), the sidecar `/health` path and auth, the group

@@ -19,8 +19,7 @@ class SentMessage
         public readonly string $type,
         public readonly ?string $body,
         public readonly array $payload,
-    ) {
-    }
+    ) {}
 
     public function isCloud(): bool
     {

@@ -15,9 +15,10 @@ use Symfony\Component\Process\Process;
  */
 class SidecarManager
 {
-    public function __construct(protected array $config)
-    {
-    }
+    /**
+     * @param  array<string, mixed>  $config  the `laravel-whatsapp.web` config array
+     */
+    public function __construct(protected array $config) {}
 
     public function path(): string
     {
@@ -198,7 +199,7 @@ class SidecarManager
 
         @unlink($this->pidFile());
 
-        return $exit ?? 1;
+        return $exit;
     }
 
     /**
@@ -285,7 +286,7 @@ class SidecarManager
      * Run `npm ci` (or `npm install`) in the sidecar dir.
      *
      * @param  array<string, string>  $env  Extra env vars forwarded to the npm process
-     *                                       (e.g. ['PUPPETEER_SKIP_DOWNLOAD' => 'true'])
+     *                                      (e.g. ['PUPPETEER_SKIP_DOWNLOAD' => 'true'])
      */
     public function install(?callable $onOutput = null, array $env = []): void
     {
@@ -399,7 +400,7 @@ class SidecarManager
 
         if (is_resource($proc)) {
             $status = proc_get_status($proc);
-            $pid = (int) ($status['pid'] ?? 0);
+            $pid = (int) $status['pid'];
 
             if ($pid > 0) {
                 $this->ensureDirectory(dirname($this->pidFile()));

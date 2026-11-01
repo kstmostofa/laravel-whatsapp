@@ -2,7 +2,10 @@
 
 namespace Kstmostofa\LaravelWhatsApp\Tests;
 
+use Flux\FluxServiceProvider;
+use Kstmostofa\LaravelWhatsApp\Facades\WhatsApp;
 use Kstmostofa\LaravelWhatsApp\LaravelWhatsAppServiceProvider;
+use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 abstract class TestCase extends Orchestra
@@ -10,8 +13,8 @@ abstract class TestCase extends Orchestra
     protected function getPackageProviders($app)
     {
         return [
-            \Livewire\LivewireServiceProvider::class,
-            \Flux\FluxServiceProvider::class,
+            LivewireServiceProvider::class,
+            FluxServiceProvider::class,
             LaravelWhatsAppServiceProvider::class,
         ];
     }
@@ -19,7 +22,7 @@ abstract class TestCase extends Orchestra
     protected function getPackageAliases($app)
     {
         return [
-            'WhatsApp' => \Kstmostofa\LaravelWhatsApp\Facades\WhatsApp::class,
+            'WhatsApp' => WhatsApp::class,
         ];
     }
 

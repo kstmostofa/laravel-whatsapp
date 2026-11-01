@@ -42,6 +42,9 @@ class HealthCheckCommand extends Command
         };
     }
 
+    /**
+     * @param  array<string, mixed>  $snapshot
+     */
     protected function renderTable(array $snapshot): void
     {
         $this->line('');

@@ -9,9 +9,7 @@ use Kstmostofa\LaravelWhatsApp\Models\WaWebhookEvent;
 
 class WebhookController extends Controller
 {
-    public function __construct(protected WebhookDispatcher $dispatcher)
-    {
-    }
+    public function __construct(protected WebhookDispatcher $dispatcher) {}
 
     /**
      * One-time verification handshake during webhook setup in Meta's dashboard.

@@ -21,11 +21,10 @@ class TemplateCatalog
     public function __construct(
         protected Container $container,
         protected Cache $cache,
-    ) {
-    }
+    ) {}
 
     /**
-     * @return array<int, TemplateDefinition>  sorted by name, then language
+     * @return array<int, TemplateDefinition> sorted by name, then language
      */
     public function approved(): array
     {

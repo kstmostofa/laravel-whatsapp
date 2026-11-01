@@ -20,12 +20,14 @@ use Kstmostofa\LaravelWhatsApp\Web\WebClient;
  */
 class MessageRouter
 {
+    /**
+     * @param  array<string, mixed>  $config  the `laravel-whatsapp` config array
+     */
     public function __construct(
         protected CloudClient $cloud,
         protected WebClient $web,
         protected array $config,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string, mixed>

@@ -2,6 +2,7 @@
 
 namespace Kstmostofa\LaravelWhatsApp\Livewire;
 
+use Illuminate\Contracts\View\View;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Kstmostofa\LaravelWhatsApp\Models\WaMessage;
 use Kstmostofa\LaravelWhatsApp\Models\WaWebhookEvent;
@@ -83,6 +84,9 @@ class WebhooksLog extends Component
         $this->notice = "Replayed {$ok} failed deliveries, {$failed} still failing.";
     }
 
+    /**
+     * @return View
+     */
     public function render()
     {
         $tableError = null;

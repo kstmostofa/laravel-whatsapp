@@ -1,0 +1,5 @@
+# Formatting-only commits. GitHub skips these in blame; locally run:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# Apply Laravel Pint formatting
+e25d580482faaecfd85c6e4993f9bb56d6be28ab

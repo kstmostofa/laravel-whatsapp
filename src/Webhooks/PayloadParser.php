@@ -13,7 +13,7 @@ class PayloadParser
 {
     /**
      * @param  array<string, mixed>  $payload
-     * @return iterable<int, array{kind: string, phone_number_id: string, payload: array, metadata: array}>
+     * @return iterable<int, array{kind: string, phone_number_id: string, payload: array<string, mixed>, metadata: array<string, mixed>}>
      */
     public static function events(array $payload): iterable
     {

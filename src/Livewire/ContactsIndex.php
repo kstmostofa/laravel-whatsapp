@@ -2,6 +2,7 @@
 
 namespace Kstmostofa\LaravelWhatsApp\Livewire;
 
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Cache;
 use Kstmostofa\LaravelWhatsApp\Exceptions\SidecarException;
 use Kstmostofa\LaravelWhatsApp\Web\WebClient;
@@ -22,6 +23,7 @@ class ContactsIndex extends Component
     #[Validate('nullable|string|max:64')]
     public string $existsCheck = '';
 
+    /** @var array{number: string, exists: bool}|null */
     public ?array $existsResult = null;
 
     public ?string $error = null;
@@ -46,6 +48,9 @@ class ContactsIndex extends Component
         }
     }
 
+    /**
+     * @return View
+     */
     public function render()
     {
         $contacts = [];

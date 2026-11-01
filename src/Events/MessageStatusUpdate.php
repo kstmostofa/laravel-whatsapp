@@ -14,15 +14,14 @@ class MessageStatusUpdate
     use Dispatchable, SerializesModels;
 
     /**
-     * @param  array<string, mixed>  $payload   single `statuses[]` entry from Meta
+     * @param  array<string, mixed>  $payload  single `statuses[]` entry from Meta
      * @param  array<string, mixed>  $metadata  display_phone_number, phone_number_id
      */
     public function __construct(
         public string $phoneNumberId,
         public array $payload,
         public array $metadata = [],
-    ) {
-    }
+    ) {}
 
     public function status(): ?string
     {

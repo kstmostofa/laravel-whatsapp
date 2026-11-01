@@ -2,7 +2,9 @@
 
 namespace Kstmostofa\LaravelWhatsApp\Livewire;
 
+use Illuminate\Contracts\View\View;
 use Kstmostofa\LaravelWhatsApp\Client\CloudClient;
+use Kstmostofa\LaravelWhatsApp\Client\Resources\MessagesResource;
 use Kstmostofa\LaravelWhatsApp\Exceptions\CloudApiException;
 use Kstmostofa\LaravelWhatsApp\Exceptions\SidecarException;
 use Kstmostofa\LaravelWhatsApp\MessageRouter;
@@ -49,7 +51,11 @@ class Compose extends Component
     #[Validate('nullable|string|max:160')]
     public string $templateKey = '';
 
-    /** Placeholder values keyed by TemplateDefinition field id (`body__1`, `header__media`, …). */
+    /**
+     * Placeholder values keyed by TemplateDefinition field id (`body__1`, `header__media`, …).
+     *
+     * @var array<string, string|null>
+     */
     #[Validate(['templateParams' => 'array', 'templateParams.*' => 'nullable|string|max:1024'])]
     public array $templateParams = [];
 
@@ -90,6 +96,9 @@ class Compose extends Component
         }
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     protected function dispatchSend(): array
     {
         $backend = $this->backend === 'auto'
@@ -101,6 +110,9 @@ class Compose extends Component
             : $this->sendViaCloud();
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     protected function sendViaWeb(): array
     {
         if ($this->type === 'template') {
@@ -117,6 +129,9 @@ class Compose extends Component
         };
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     protected function sendViaCloud(): array
     {
         $messages = app(CloudClient::class)->messages();
@@ -130,7 +145,8 @@ class Compose extends Component
     }
 
     /**
-     * @param  \Kstmostofa\LaravelWhatsApp\Client\Resources\MessagesResource  $messages
+     * @param  MessagesResource  $messages
+     * @return array<string, mixed>
      */
     protected function sendTemplate($messages): array
     {
@@ -168,6 +184,9 @@ class Compose extends Component
         }
     }
 
+    /**
+     * @return View
+     */
     public function render()
     {
         $templates = [];

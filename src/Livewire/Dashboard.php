@@ -2,6 +2,8 @@
 
 namespace Kstmostofa\LaravelWhatsApp\Livewire;
 
+use Illuminate\Contracts\View\View;
+use Illuminate\Support\Collection;
 use Kstmostofa\LaravelWhatsApp\Exceptions\SidecarException;
 use Kstmostofa\LaravelWhatsApp\Livewire\Concerns\ListensForBroadcasts;
 use Kstmostofa\LaravelWhatsApp\Models\WaMessage;
@@ -33,6 +35,9 @@ class Dashboard extends Component
         ]);
     }
 
+    /**
+     * @return View
+     */
     public function render()
     {
         $manager = app(SidecarManager::class);
@@ -77,11 +82,22 @@ class Dashboard extends Component
     /** Eloquent calls fail if migrations haven't run — degrade gracefully. */
     protected function safeCount(callable $fn): ?int
     {
-        try { return (int) $fn(); } catch (\Throwable) { return null; }
+        try {
+            return (int) $fn();
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
+    /**
+     * @return Collection<int, mixed>
+     */
     protected function safeQuery(callable $fn)
     {
-        try { return $fn(); } catch (\Throwable) { return collect(); }
+        try {
+            return $fn();
+        } catch (\Throwable) {
+            return collect();
+        }
     }
 }

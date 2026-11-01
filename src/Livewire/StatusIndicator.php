@@ -2,6 +2,7 @@
 
 namespace Kstmostofa\LaravelWhatsApp\Livewire;
 
+use Illuminate\Contracts\View\View;
 use Kstmostofa\LaravelWhatsApp\Health\HealthSnapshot;
 use Livewire\Component;
 
@@ -16,6 +17,9 @@ class StatusIndicator extends Component
         app(HealthSnapshot::class)->flush();
     }
 
+    /**
+     * @return View
+     */
     public function render()
     {
         $snapshot = app(HealthSnapshot::class)->gather();

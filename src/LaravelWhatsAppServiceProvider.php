@@ -2,8 +2,17 @@
 
 namespace Kstmostofa\LaravelWhatsApp;
 
+use Flux\FluxServiceProvider;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Contracts\Broadcasting\Factory;
+use Illuminate\Contracts\Cache\Repository;
+use Illuminate\Notifications\ChannelManager;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Kstmostofa\LaravelWhatsApp\Broadcasting\SessionChannel;
 use Kstmostofa\LaravelWhatsApp\Client\CloudClient;
 use Kstmostofa\LaravelWhatsApp\Console\Commands\ContactsSyncCommand;
 use Kstmostofa\LaravelWhatsApp\Console\Commands\HealthCheckCommand;
@@ -12,13 +21,42 @@ use Kstmostofa\LaravelWhatsApp\Console\Commands\SidecarInstallCommand;
 use Kstmostofa\LaravelWhatsApp\Console\Commands\SidecarStartCommand;
 use Kstmostofa\LaravelWhatsApp\Console\Commands\SidecarStatusCommand;
 use Kstmostofa\LaravelWhatsApp\Console\Commands\SidecarStopCommand;
+use Kstmostofa\LaravelWhatsApp\Console\Commands\WebhooksReplayCommand;
 use Kstmostofa\LaravelWhatsApp\Console\Commands\WebListenCommand;
 use Kstmostofa\LaravelWhatsApp\Console\Commands\WebSyncCommand;
-use Kstmostofa\LaravelWhatsApp\Console\Commands\WebhooksReplayCommand;
+use Kstmostofa\LaravelWhatsApp\Events\InteractiveReplied;
+use Kstmostofa\LaravelWhatsApp\Events\MediaReceived;
+use Kstmostofa\LaravelWhatsApp\Events\MessageReceived;
+use Kstmostofa\LaravelWhatsApp\Events\MessageSent;
+use Kstmostofa\LaravelWhatsApp\Events\MessageStatusUpdate;
+use Kstmostofa\LaravelWhatsApp\Events\TemplateStatusUpdate;
+use Kstmostofa\LaravelWhatsApp\Events\Web\Disconnected;
+use Kstmostofa\LaravelWhatsApp\Events\Web\MessageAck;
+use Kstmostofa\LaravelWhatsApp\Events\Web\MessageCreated;
+use Kstmostofa\LaravelWhatsApp\Events\Web\MessageReaction;
+use Kstmostofa\LaravelWhatsApp\Events\Web\MessageRevoked;
+use Kstmostofa\LaravelWhatsApp\Events\Web\QrGenerated;
+use Kstmostofa\LaravelWhatsApp\Events\Web\SessionReady;
 use Kstmostofa\LaravelWhatsApp\Health\HealthSnapshot;
+use Kstmostofa\LaravelWhatsApp\Jobs\SendBulkMessage;
+use Kstmostofa\LaravelWhatsApp\Listeners\PersistIncomingMessage;
+use Kstmostofa\LaravelWhatsApp\Listeners\PersistSessionState;
+use Kstmostofa\LaravelWhatsApp\Livewire\ChatHistory;
+use Kstmostofa\LaravelWhatsApp\Livewire\Compose;
+use Kstmostofa\LaravelWhatsApp\Livewire\ContactsIndex;
+use Kstmostofa\LaravelWhatsApp\Livewire\Dashboard;
+use Kstmostofa\LaravelWhatsApp\Livewire\GroupsIndex;
+use Kstmostofa\LaravelWhatsApp\Livewire\SessionsIndex;
+use Kstmostofa\LaravelWhatsApp\Livewire\Status;
+use Kstmostofa\LaravelWhatsApp\Livewire\StatusIndicator;
+use Kstmostofa\LaravelWhatsApp\Livewire\WebhooksLog;
+use Kstmostofa\LaravelWhatsApp\Notifications\WhatsAppChannel;
+use Kstmostofa\LaravelWhatsApp\Templates\TemplateCatalog;
 use Kstmostofa\LaravelWhatsApp\Web\SidecarManager;
 use Kstmostofa\LaravelWhatsApp\Web\WebClient;
 use Kstmostofa\LaravelWhatsApp\Webhooks\VerifySignatureMiddleware;
+use Kstmostofa\LaravelWhatsApp\Webhooks\WebhookController;
+use Livewire\Livewire;
 
 class LaravelWhatsAppServiceProvider extends ServiceProvider
 {
@@ -69,7 +107,7 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
                 sidecar: $app->make(SidecarManager::class),
                 web: $app->make(WebClient::class),
                 cloud: $app->make(CloudClient::class),
-                cache: $app->make(\Illuminate\Contracts\Cache\Repository::class),
+                cache: $app->make(Repository::class),
             );
         });
     }
@@ -124,16 +162,16 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
     {
         $ability = config('laravel-whatsapp.broadcasting.ability');
 
-        if (! \Kstmostofa\LaravelWhatsApp\Broadcasting\SessionChannel::enabled()
-            || ! \Kstmostofa\LaravelWhatsApp\Broadcasting\SessionChannel::isPrivate()
+        if (! SessionChannel::enabled()
+            || ! SessionChannel::isPrivate()
             || ! is_string($ability) || $ability === '') {
             return;
         }
 
-        $this->callAfterResolving(\Illuminate\Contracts\Broadcasting\Factory::class, function ($broadcast) use ($ability) {
+        $this->callAfterResolving(Factory::class, function ($broadcast) use ($ability) {
             $broadcast->channel(
-                \Kstmostofa\LaravelWhatsApp\Broadcasting\SessionChannel::pattern(),
-                fn ($user, string $session) => \Illuminate\Support\Facades\Gate::forUser($user)->allows($ability, $session),
+                SessionChannel::pattern(),
+                fn ($user, string $session) => Gate::forUser($user)->allows($ability, $session),
             );
         });
     }
@@ -144,16 +182,16 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
      */
     protected function registerBulkRateLimiter(): void
     {
-        if (\Illuminate\Support\Facades\RateLimiter::limiter(\Kstmostofa\LaravelWhatsApp\Jobs\SendBulkMessage::LIMITER) !== null) {
+        if (RateLimiter::limiter(SendBulkMessage::LIMITER) !== null) {
             return;
         }
 
-        \Illuminate\Support\Facades\RateLimiter::for(
-            \Kstmostofa\LaravelWhatsApp\Jobs\SendBulkMessage::LIMITER,
-            function (\Kstmostofa\LaravelWhatsApp\Jobs\SendBulkMessage $job) {
+        RateLimiter::for(
+            SendBulkMessage::LIMITER,
+            function (SendBulkMessage $job) {
                 $perMinute = (int) config('laravel-whatsapp.bulk.per_minute.'.$job->backend(), 60);
 
-                return \Illuminate\Cache\RateLimiting\Limit::perMinute(max(1, $perMinute))->by($job->rateLimitKey());
+                return Limit::perMinute(max(1, $perMinute))->by($job->rateLimitKey());
             },
         );
     }
@@ -164,12 +202,12 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
      */
     protected function registerNotificationChannel(): void
     {
-        if (! class_exists(\Illuminate\Notifications\ChannelManager::class)) {
+        if (! class_exists(ChannelManager::class)) {
             return;
         }
 
-        $this->callAfterResolving(\Illuminate\Notifications\ChannelManager::class, function ($manager, $app) {
-            $manager->extend('whatsapp', fn () => $app->make(\Kstmostofa\LaravelWhatsApp\Notifications\WhatsAppChannel::class));
+        $this->callAfterResolving(ChannelManager::class, function ($manager, $app) {
+            $manager->extend('whatsapp', fn () => $app->make(WhatsAppChannel::class));
         });
     }
 
@@ -186,7 +224,7 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
 
         // The bundled views are built on Flux components — without Flux the
         // routes would register but every page would crash on `<flux:*>`.
-        if (! class_exists(\Livewire\Livewire::class) || ! class_exists(\Flux\FluxServiceProvider::class)) {
+        if (! class_exists(Livewire::class) || ! class_exists(FluxServiceProvider::class)) {
             return;
         }
 
@@ -195,21 +233,21 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
         // routes — e.g. ['web', 'auth', 'can:manage-whatsapp'].
         $middleware = (array) config('laravel-whatsapp.ui.middleware', ['web']);
         if (app()->environment('production') && ! array_intersect(['auth', 'auth:web', 'auth:sanctum'], $middleware)) {
-            \Illuminate\Support\Facades\Log::warning(
+            Log::warning(
                 'laravel-whatsapp: UI is enabled in production with no auth middleware. Wrap the routes via config(\'laravel-whatsapp.ui.middleware\') — e.g. [\'web\', \'auth\', \'can:manage-whatsapp\'].'
             );
         }
 
         // Use dot-style component names (Livewire 4 parses `::` as a view namespace).
-        \Livewire\Livewire::component('whatsapp.dashboard', \Kstmostofa\LaravelWhatsApp\Livewire\Dashboard::class);
-        \Livewire\Livewire::component('whatsapp.sessions-index', \Kstmostofa\LaravelWhatsApp\Livewire\SessionsIndex::class);
-        \Livewire\Livewire::component('whatsapp.compose', \Kstmostofa\LaravelWhatsApp\Livewire\Compose::class);
-        \Livewire\Livewire::component('whatsapp.chat-history', \Kstmostofa\LaravelWhatsApp\Livewire\ChatHistory::class);
-        \Livewire\Livewire::component('whatsapp.groups-index', \Kstmostofa\LaravelWhatsApp\Livewire\GroupsIndex::class);
-        \Livewire\Livewire::component('whatsapp.contacts-index', \Kstmostofa\LaravelWhatsApp\Livewire\ContactsIndex::class);
-        \Livewire\Livewire::component('whatsapp.webhooks-log', \Kstmostofa\LaravelWhatsApp\Livewire\WebhooksLog::class);
-        \Livewire\Livewire::component('whatsapp.status', \Kstmostofa\LaravelWhatsApp\Livewire\Status::class);
-        \Livewire\Livewire::component('whatsapp.status-indicator', \Kstmostofa\LaravelWhatsApp\Livewire\StatusIndicator::class);
+        Livewire::component('whatsapp.dashboard', Dashboard::class);
+        Livewire::component('whatsapp.sessions-index', SessionsIndex::class);
+        Livewire::component('whatsapp.compose', Compose::class);
+        Livewire::component('whatsapp.chat-history', ChatHistory::class);
+        Livewire::component('whatsapp.groups-index', GroupsIndex::class);
+        Livewire::component('whatsapp.contacts-index', ContactsIndex::class);
+        Livewire::component('whatsapp.webhooks-log', WebhooksLog::class);
+        Livewire::component('whatsapp.status', Status::class);
+        Livewire::component('whatsapp.status-indicator', StatusIndicator::class);
 
         Route::middleware(config('laravel-whatsapp.ui.middleware', ['web']))
             ->prefix(config('laravel-whatsapp.ui.route_prefix', 'whatsapp'))
@@ -223,31 +261,31 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
         // A template was approved / rejected / paused — the Compose picker's
         // cached list is stale.
         $events->listen(
-            \Kstmostofa\LaravelWhatsApp\Events\TemplateStatusUpdate::class,
-            fn () => $this->app->make(\Kstmostofa\LaravelWhatsApp\Templates\TemplateCatalog::class)->flush(),
+            TemplateStatusUpdate::class,
+            fn () => $this->app->make(TemplateCatalog::class)->flush(),
         );
 
         if (config('laravel-whatsapp.persist.incoming_messages', false)) {
-            $listener = \Kstmostofa\LaravelWhatsApp\Listeners\PersistIncomingMessage::class;
+            $listener = PersistIncomingMessage::class;
 
-            $events->listen(\Kstmostofa\LaravelWhatsApp\Events\Web\MessageReceived::class, $listener);
-            $events->listen(\Kstmostofa\LaravelWhatsApp\Events\Web\MessageCreated::class, $listener);
-            $events->listen(\Kstmostofa\LaravelWhatsApp\Events\Web\MessageAck::class, $listener);
-            $events->listen(\Kstmostofa\LaravelWhatsApp\Events\Web\MessageRevoked::class, $listener);
-            $events->listen(\Kstmostofa\LaravelWhatsApp\Events\Web\MessageReaction::class, $listener);
-            $events->listen(\Kstmostofa\LaravelWhatsApp\Events\MessageReceived::class, $listener);
-            $events->listen(\Kstmostofa\LaravelWhatsApp\Events\MediaReceived::class, $listener);
-            $events->listen(\Kstmostofa\LaravelWhatsApp\Events\InteractiveReplied::class, $listener);
-            $events->listen(\Kstmostofa\LaravelWhatsApp\Events\MessageSent::class, $listener);
-            $events->listen(\Kstmostofa\LaravelWhatsApp\Events\MessageStatusUpdate::class, $listener);
+            $events->listen(Events\Web\MessageReceived::class, $listener);
+            $events->listen(MessageCreated::class, $listener);
+            $events->listen(MessageAck::class, $listener);
+            $events->listen(MessageRevoked::class, $listener);
+            $events->listen(MessageReaction::class, $listener);
+            $events->listen(MessageReceived::class, $listener);
+            $events->listen(MediaReceived::class, $listener);
+            $events->listen(InteractiveReplied::class, $listener);
+            $events->listen(MessageSent::class, $listener);
+            $events->listen(MessageStatusUpdate::class, $listener);
         }
 
         if (config('laravel-whatsapp.persist.sessions', false)) {
-            $listener = \Kstmostofa\LaravelWhatsApp\Listeners\PersistSessionState::class;
+            $listener = PersistSessionState::class;
 
-            $events->listen(\Kstmostofa\LaravelWhatsApp\Events\Web\QrGenerated::class, $listener);
-            $events->listen(\Kstmostofa\LaravelWhatsApp\Events\Web\SessionReady::class, $listener);
-            $events->listen(\Kstmostofa\LaravelWhatsApp\Events\Web\Disconnected::class, $listener);
+            $events->listen(QrGenerated::class, $listener);
+            $events->listen(SessionReady::class, $listener);
+            $events->listen(Disconnected::class, $listener);
         }
     }
 
@@ -262,11 +300,11 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
         Route::middleware($webhook['middleware'] ?? ['api'])
             ->group(function () use ($webhook) {
                 Route::get($webhook['route'], [
-                    \Kstmostofa\LaravelWhatsApp\Webhooks\WebhookController::class, 'verify',
+                    WebhookController::class, 'verify',
                 ])->name('whatsapp.webhook.verify');
 
                 Route::post($webhook['route'], [
-                    \Kstmostofa\LaravelWhatsApp\Webhooks\WebhookController::class, 'receive',
+                    WebhookController::class, 'receive',
                 ])
                     ->middleware(VerifySignatureMiddleware::class)
                     ->name('whatsapp.webhook.receive');

@@ -14,7 +14,9 @@ class GroupManagementTest extends TestCase
     use MocksGuzzle;
 
     protected const GROUP = '120363000000000001@g.us';
+
     protected const ME = '966500000000@c.us';
+
     protected const MEMBER = '966511111111@c.us';
 
     protected function groupList(bool $meAdmin = true): Response

@@ -26,8 +26,7 @@ class MessageReaction implements ShouldBroadcast
     public function __construct(
         public string $sessionId,
         public array $payload,
-    ) {
-    }
+    ) {}
 
     public function messageId(): ?string
     {

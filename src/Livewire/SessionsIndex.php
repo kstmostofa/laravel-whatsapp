@@ -2,6 +2,7 @@
 
 namespace Kstmostofa\LaravelWhatsApp\Livewire;
 
+use Illuminate\Contracts\View\View;
 use Kstmostofa\LaravelWhatsApp\Exceptions\SidecarException;
 use Kstmostofa\LaravelWhatsApp\Livewire\Concerns\ListensForBroadcasts;
 use Kstmostofa\LaravelWhatsApp\Web\WebClient;
@@ -33,6 +34,7 @@ class SessionsIndex extends Component
     public ?string $error = null;
 
     /** Session IDs from the last render — what we subscribe to over Echo. Server-set only. */
+    /** @var array<int, string> */
     #[Locked]
     public array $knownSessions = [];
 
@@ -153,6 +155,9 @@ class SessionsIndex extends Component
         $this->qrFor = $this->qrDataUri = $this->qrStatus = null;
     }
 
+    /**
+     * @return View
+     */
     public function render()
     {
         $sessions = [];

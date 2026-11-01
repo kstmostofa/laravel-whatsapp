@@ -9,6 +9,11 @@
 /CHANGELOG.md           export-ignore
 /package.json           export-ignore
 /phpunit.xml            export-ignore
+/phpstan.neon.dist      export-ignore
+/pint.json              export-ignore
+/.git-blame-ignore-revs export-ignore
+/sidecar/test           export-ignore
+/CNAME                  export-ignore
 
 # Normalise line endings — Windows contributors shouldn't poison the diff.
 * text=auto eol=lf

@@ -20,6 +20,7 @@ class ChatActionsTest extends TestCase
     use RefreshDatabase;
 
     protected const CHAT = '966511111111@c.us';
+
     protected const INBOUND = 'false_966511111111@c.us_IN1';
 
     protected function setUp(): void
