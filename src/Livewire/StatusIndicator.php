@@ -16,6 +16,9 @@ class StatusIndicator extends Component
         app(HealthSnapshot::class)->flush();
     }
 
+    /**
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         $snapshot = app(HealthSnapshot::class)->gather();

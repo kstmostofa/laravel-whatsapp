@@ -1,0 +1,21 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 6
+    paths:
+        - src
+        - database
+    tmpDir: build/phpstan
+
+    # Most arrays here are decoded JSON from Meta or the sidecar. Their
+    # docblock shapes describe what we expect, not what is guaranteed, so the
+    # defensive is_array()/?? checks on them stay.
+    treatPhpDocTypesAsCertain: false
+
+    ignoreErrors:
+        # Larastan can't resolve the package's `laravel-whatsapp::` view namespace.
+        -
+            identifier: argument.type
+            message: '#^Parameter \#1 \$view of function view expects view-string\|null, string given\.$#'
+            path: src/Livewire/*

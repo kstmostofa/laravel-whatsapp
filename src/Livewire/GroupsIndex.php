@@ -288,6 +288,9 @@ class GroupsIndex extends Component
         }
     }
 
+    /**
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         $groups = [];

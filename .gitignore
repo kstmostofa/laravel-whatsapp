@@ -35,3 +35,4 @@ sidecar/.wwebjs_cache/
 sidecar/.wwebjs_auth/
 sidecar/sessions/
 *.log
+/build

@@ -38,7 +38,7 @@ class HealthSnapshot
     }
 
     /**
-     * @return array{sidecar: array, cloud: array, overall: string}
+     * @return array{sidecar: array<string, mixed>, cloud: array<string, mixed>, overall: string}
      */
     public function gather(bool $fresh = false): array
     {
@@ -101,7 +101,7 @@ class HealthSnapshot
     }
 
     /**
-     * @return array{status: string, installed: bool, running: bool, pid: ?int, reachable: bool, latency_ms: ?int, uptime: ?int, sessions: array, endpoint: string, error: ?string}
+     * @return array{status: string, installed: bool, running: bool, pid: ?int, reachable: bool, latency_ms: ?int, uptime: ?int, sessions: array<int, array<string, mixed>>, endpoint: string, error: ?string}
      */
     protected function collectSidecar(): array
     {

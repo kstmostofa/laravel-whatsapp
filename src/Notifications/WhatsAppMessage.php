@@ -18,6 +18,8 @@ namespace Kstmostofa\LaravelWhatsApp\Notifications;
  *
  * Without viaCloud()/viaWeb() the backend is picked from the recipient, the
  * same way WhatsApp::send() does it. Templates always go through Cloud.
+ *
+ * @phpstan-consistent-constructor
  */
 class WhatsAppMessage
 {

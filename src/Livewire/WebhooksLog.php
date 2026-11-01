@@ -83,6 +83,9 @@ class WebhooksLog extends Component
         $this->notice = "Replayed {$ok} failed deliveries, {$failed} still failing.";
     }
 
+    /**
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         $tableError = null;

@@ -481,6 +481,9 @@ class ChatHistory extends Component
         ];
     }
 
+    /**
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         $chats = [];

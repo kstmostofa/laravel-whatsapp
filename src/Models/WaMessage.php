@@ -16,10 +16,14 @@ use Kstmostofa\LaravelWhatsApp\Models\Concerns\UsesWhatsAppConnection;
  * @property ?string $to_id
  * @property string $type
  * @property ?string $body
- * @property ?array $payload
+ * @property ?array<string, mixed> $payload
  * @property ?string $status
  * @property ?int $ack    whatsapp-web.js ack level: -1 error, 0 pending, 1 server, 2 device, 3 read, 4 played
  * @property ?\Illuminate\Support\Carbon $wa_timestamp
+ * @property ?\Illuminate\Support\Carbon $deleted_at  shown as a "deleted" placeholder; not SoftDeletes
+ * @property bool $deleted_for_everyone
+ * @property ?\Illuminate\Support\Carbon $created_at
+ * @property ?\Illuminate\Support\Carbon $updated_at
  * @property ?string $media_path  set once StoreMessageMedia copied the media to the configured disk
  * @property ?string $media_mime
  * @property ?int $media_size
@@ -41,6 +45,9 @@ class WaMessage extends Model
         'media_size' => 'integer',
     ];
 
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo<WaSession, $this>
+     */
     public function session()
     {
         return $this->belongsTo(WaSession::class, 'session_id');
@@ -51,16 +58,28 @@ class WaMessage extends Model
         return $this->media_path !== null && $this->media_path !== '';
     }
 
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<WaMessage>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<WaMessage>
+     */
     public function scopeInbound($query)
     {
         return $query->where('direction', 'inbound');
     }
 
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<WaMessage>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<WaMessage>
+     */
     public function scopeOutbound($query)
     {
         return $query->where('direction', 'outbound');
     }
 
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<WaMessage>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<WaMessage>
+     */
     public function scopeForChat($query, string $chatId)
     {
         return $query->where('chat_id', $chatId);

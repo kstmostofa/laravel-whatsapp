@@ -29,6 +29,9 @@ class MessageReceived implements ShouldBroadcast
     ) {
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function message(): array
     {
         return $this->payload['message'] ?? [];

@@ -12,6 +12,7 @@ class BusinessProfileResource extends Resource
     }
 
     /**
+     * @param  array<int, string>  $fields
      * @return array<string, mixed>
      */
     public function get(array $fields = ['about', 'address', 'description', 'email', 'profile_picture_url', 'websites', 'vertical']): array

@@ -14,7 +14,7 @@ use Kstmostofa\LaravelWhatsApp\Models\Concerns\UsesWhatsAppConnection;
  * @property ?\Illuminate\Support\Carbon $last_qr_at
  * @property ?\Illuminate\Support\Carbon $ready_at
  * @property ?\Illuminate\Support\Carbon $disconnected_at
- * @property ?array $meta
+ * @property ?array<string, mixed> $meta
  */
 class WaSession extends Model
 {
@@ -35,11 +35,17 @@ class WaSession extends Model
         'meta' => 'array',
     ];
 
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<WaMessage, $this>
+     */
     public function messages()
     {
         return $this->hasMany(WaMessage::class, 'session_id');
     }
 
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<WaContact, $this>
+     */
     public function contacts()
     {
         return $this->hasMany(WaContact::class, 'session_id');

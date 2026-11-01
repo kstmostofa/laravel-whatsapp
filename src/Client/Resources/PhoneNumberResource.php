@@ -12,6 +12,7 @@ class PhoneNumberResource extends Resource
     }
 
     /**
+     * @param  array<int, string>  $fields
      * @return array<string, mixed>
      */
     public function get(array $fields = ['verified_name', 'display_phone_number', 'quality_rating', 'code_verification_status', 'platform_type', 'throughput']): array

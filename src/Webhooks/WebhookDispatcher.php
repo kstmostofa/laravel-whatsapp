@@ -31,7 +31,7 @@ class WebhookDispatcher
                 $this->events->dispatch(new $eventClass(
                     $event['phone_number_id'],
                     $event['payload'],
-                    $event['metadata'] ?? [],
+                    $event['metadata'],
                 ));
                 $count++;
             }

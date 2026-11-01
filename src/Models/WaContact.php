@@ -16,7 +16,7 @@ use Kstmostofa\LaravelWhatsApp\Models\Concerns\UsesWhatsAppConnection;
  * @property bool $is_my_contact
  * @property bool $is_blocked
  * @property ?\Illuminate\Support\Carbon $last_seen_at
- * @property ?array $meta
+ * @property ?array<string, mixed> $meta
  */
 class WaContact extends Model
 {
@@ -34,6 +34,9 @@ class WaContact extends Model
         'meta' => 'array',
     ];
 
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo<WaSession, $this>
+     */
     public function session()
     {
         return $this->belongsTo(WaSession::class, 'session_id');

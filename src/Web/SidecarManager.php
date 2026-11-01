@@ -15,6 +15,9 @@ use Symfony\Component\Process\Process;
  */
 class SidecarManager
 {
+    /**
+     * @param  array<string, mixed>  $config  the `laravel-whatsapp.web` config array
+     */
     public function __construct(protected array $config)
     {
     }
@@ -198,7 +201,7 @@ class SidecarManager
 
         @unlink($this->pidFile());
 
-        return $exit ?? 1;
+        return $exit;
     }
 
     /**
@@ -399,7 +402,7 @@ class SidecarManager
 
         if (is_resource($proc)) {
             $status = proc_get_status($proc);
-            $pid = (int) ($status['pid'] ?? 0);
+            $pid = (int) $status['pid'];
 
             if ($pid > 0) {
                 $this->ensureDirectory(dirname($this->pidFile()));

@@ -33,6 +33,7 @@ class SessionsIndex extends Component
     public ?string $error = null;
 
     /** Session IDs from the last render — what we subscribe to over Echo. Server-set only. */
+    /** @var array<int, string> */
     #[Locked]
     public array $knownSessions = [];
 
@@ -153,6 +154,9 @@ class SessionsIndex extends Component
         $this->qrFor = $this->qrDataUri = $this->qrStatus = null;
     }
 
+    /**
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         $sessions = [];

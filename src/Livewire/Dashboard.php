@@ -33,6 +33,9 @@ class Dashboard extends Component
         ]);
     }
 
+    /**
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         $manager = app(SidecarManager::class);
@@ -80,6 +83,9 @@ class Dashboard extends Component
         try { return (int) $fn(); } catch (\Throwable) { return null; }
     }
 
+    /**
+     * @return \Illuminate\Support\Collection<int, mixed>
+     */
     protected function safeQuery(callable $fn)
     {
         try { return $fn(); } catch (\Throwable) { return collect(); }

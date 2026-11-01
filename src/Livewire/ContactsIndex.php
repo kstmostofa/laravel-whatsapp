@@ -22,6 +22,7 @@ class ContactsIndex extends Component
     #[Validate('nullable|string|max:64')]
     public string $existsCheck = '';
 
+    /** @var array{number: string, exists: bool}|null */
     public ?array $existsResult = null;
 
     public ?string $error = null;
@@ -46,6 +47,9 @@ class ContactsIndex extends Component
         }
     }
 
+    /**
+     * @return \Illuminate\Contracts\View\View
+     */
     public function render()
     {
         $contacts = [];
