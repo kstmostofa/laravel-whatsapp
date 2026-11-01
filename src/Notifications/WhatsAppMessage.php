@@ -35,6 +35,9 @@ class WhatsAppMessage
     /** Named Cloud account from `laravel-whatsapp.accounts`. */
     public ?string $account = null;
 
+    /** Message ID to quote. WhatsApp shows the reply with the original above it. */
+    public ?string $replyTo = null;
+
     /** @var array{name: string, language: string, components: array<int, array<string, mixed>>}|null */
     public ?array $template = null;
 
@@ -91,6 +94,17 @@ class WhatsAppMessage
     public function document(string $url, ?string $filename = null, ?string $caption = null): static
     {
         return $this->withMedia('document', $url, $caption, $filename);
+    }
+
+    /**
+     * Quote an earlier message — WhatsApp shows the reply with the original
+     * above it. Works for text and media; templates can't quote.
+     */
+    public function replyTo(string $messageId): static
+    {
+        $this->replyTo = $messageId;
+
+        return $this;
     }
 
     /** Let Cloud API render a link preview for URLs in a text body. */

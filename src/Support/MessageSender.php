@@ -91,13 +91,13 @@ class MessageSender
             ], fn ($v) => $v !== null);
 
             return match ($message->media['type']) {
-                'image' => $messages->sendImage($to, $block),
-                'video' => $messages->sendVideo($to, $block),
-                default => $messages->sendDocument($to, $block),
+                'image' => $messages->sendImage($to, $block, $message->replyTo),
+                'video' => $messages->sendVideo($to, $block, $message->replyTo),
+                default => $messages->sendDocument($to, $block, $message->replyTo),
             };
         }
 
-        return $messages->sendText($to, $this->requireBody($message), $message->previewUrl);
+        return $messages->sendText($to, $this->requireBody($message), $message->previewUrl, $message->replyTo);
     }
 
     /**
@@ -117,6 +117,7 @@ class MessageSender
                 'url' => $message->media['url'],
                 'caption' => $message->media['caption'],
                 'filename' => $message->media['filename'],
+                'quotedMessageId' => $message->replyTo,
             ], fn ($v) => $v !== null);
 
             return match ($message->media['type']) {
@@ -126,7 +127,7 @@ class MessageSender
             };
         }
 
-        return $messages->sendText($to, $this->requireBody($message));
+        return $messages->sendText($to, $this->requireBody($message), $message->replyTo);
     }
 
     protected function requireBody(WhatsAppMessage $message): string

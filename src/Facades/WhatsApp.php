@@ -11,6 +11,7 @@ use Kstmostofa\LaravelWhatsApp\Client\Resources\MessagesResource;
 use Kstmostofa\LaravelWhatsApp\Client\Resources\PhoneNumberResource;
 use Kstmostofa\LaravelWhatsApp\Client\Resources\TemplatesResource;
 use Kstmostofa\LaravelWhatsApp\Health\HealthSnapshot;
+use Kstmostofa\LaravelWhatsApp\Inbound\InboundRouter;
 use Kstmostofa\LaravelWhatsApp\MessageRouter;
 use Kstmostofa\LaravelWhatsApp\Notifications\WhatsAppMessage;
 use Kstmostofa\LaravelWhatsApp\Support\PendingBulk;
@@ -107,6 +108,15 @@ class WhatsApp extends Facade
     public static function cloud(?string $account = null): CloudClient
     {
         return static::$app->make(CloudAccounts::class)->client($account);
+    }
+
+    /**
+     * Declarative replies to incoming messages on both backends. Declare
+     * routes in a service provider's boot().
+     */
+    public static function router(): InboundRouter
+    {
+        return static::$app->make(InboundRouter::class);
     }
 
     public static function web(string $sessionId): WebSession
