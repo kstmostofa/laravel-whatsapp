@@ -16,7 +16,10 @@ const fs = require('fs');
 const { Client, LocalAuth, MessageMedia, Location } = require('whatsapp-web.js');
 const { discoverPersistedSessions, isValidSessionId } = require('./session-store');
 const { serializeMessageId, serializeWid } = require('./wa-id');
-const { readChatsFromStore } = require('./chat-store');
+const { readChatsFromStore, readMessagesFromStore } = require('./chat-store');
+const { checkStuckSession, defaultCreateInfo } = require('./ready-watchdog');
+const { dedupeContacts } = require('./contacts');
+const { sendAndCapture, bodyMatcher } = require('./send-capture');
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '127.0.0.1';
@@ -29,6 +32,14 @@ const AUTO_START_SESSIONS = !['0', 'false', 'no', 'off'].includes(
 // SSE comment sent on idle streams so proxies don't close them and the PHP
 // listener can tell a quiet stream from a dead one.
 const SSE_HEARTBEAT_MS = 20000;
+
+// whatsapp-web.js can leave a connected session at `authenticated` without
+// ever emitting `ready` (see ready-watchdog.js). Check after this long, then
+// every READY_RECHECK_MS, up to READY_MAX_CHECKS times.
+const READY_GRACE_MS = 30000;
+const READY_RECHECK_MS = 15000;
+const READY_MAX_CHECKS = 12;
+const createClientInfo = defaultCreateInfo();
 
 // Sessions in these states hold a dead client — /start should replace them.
 const DEAD_STATUSES = new Set(['disconnected', 'auth_failure', 'error']);
@@ -217,6 +228,7 @@ async function bootSession(sessionId) {
   client.on('authenticated', () => {
     session.status = 'authenticated';
     broadcast(sessionId, 'authenticated', {});
+    watchForStuckReady(sessionId, session);
   });
 
   client.on('auth_failure', (msg) => {
@@ -267,6 +279,38 @@ async function bootSession(sessionId) {
   });
 
   return session;
+}
+
+function watchForStuckReady(sessionId, session, checks = 0) {
+  clearTimeout(session.readyTimer);
+  if (checks >= READY_MAX_CHECKS) return;
+
+  session.readyTimer = setTimeout(async () => {
+    // Stopped, restarted, or ready in the meantime.
+    if (sessions.get(sessionId) !== session || session.status !== 'authenticated') return;
+
+    try {
+      const result = await checkStuckSession(session, {
+        createInfo: createClientInfo,
+        log: (message) => console.warn(`[laravel-wa-sidecar] ${sessionId}: ${message}`),
+      });
+      if (result === 'not-connected') watchForStuckReady(sessionId, session, checks + 1);
+    } catch (e) {
+      console.warn(`[laravel-wa-sidecar] ${sessionId}: ready check failed (${e.message}); retrying`);
+      watchForStuckReady(sessionId, session, checks + 1);
+    }
+  }, checks === 0 ? READY_GRACE_MS : READY_RECHECK_MS);
+}
+
+// sendMessage() with the message ID recovered when whatsapp-web.js doesn't
+// return one (see send-capture.js).
+function sendCaptured(session, to, content, options, matchBody) {
+  return sendAndCapture(
+    session.client,
+    () => session.client.sendMessage(to, content, options),
+    bodyMatcher(matchBody),
+    (m) => serializeMessageId(m && m.id),
+  );
 }
 
 async function autoStartPersistedSessions() {
@@ -333,7 +377,11 @@ app.post('/sessions/:id/start', async (req, res, next) => {
 app.post('/sessions/:id/stop', async (req, res, next) => {
   try {
     const s = getSession(req.params.id);
+    clearTimeout(s.readyTimer);
     try { await s.client.destroy(); } catch (_) { /* already gone */ }
+    // client.destroy() emits nothing, so tell listeners ourselves.
+    s.status = 'disconnected';
+    broadcast(req.params.id, 'disconnected', { reason: 'STOPPED' });
     sessions.delete(req.params.id);
     res.json({ ok: true });
   } catch (e) { next(e); }
@@ -342,7 +390,13 @@ app.post('/sessions/:id/stop', async (req, res, next) => {
 app.delete('/sessions/:id', async (req, res, next) => {
   try {
     const s = sessions.get(req.params.id);
-    if (s) { try { await s.client.destroy(); } catch (_) {} sessions.delete(req.params.id); }
+    if (s) {
+      clearTimeout(s.readyTimer);
+      try { await s.client.destroy(); } catch (_) {}
+      s.status = 'disconnected';
+      broadcast(req.params.id, 'disconnected', { reason: 'DESTROYED' });
+      sessions.delete(req.params.id);
+    }
     // Also wipe persisted auth so next start triggers a fresh QR.
     const authDir = path.join(SESSION_DIR, `session-${req.params.id}`);
     if (fs.existsSync(authDir)) fs.rmSync(authDir, { recursive: true, force: true });
@@ -386,11 +440,11 @@ app.post('/sessions/:id/messages', async (req, res, next) => {
     let result;
     switch (b.type) {
       case 'text':
-        result = await s.client.sendMessage(to, b.body ?? '', b.quotedMessageId ? { quotedMessageId: b.quotedMessageId } : {});
+        result = await sendCaptured(s, to, b.body ?? '', b.quotedMessageId ? { quotedMessageId: b.quotedMessageId } : {}, b.body);
         break;
 
       case 'reply':
-        result = await s.client.sendMessage(to, b.body ?? '', { quotedMessageId: b.quotedMessageId });
+        result = await sendCaptured(s, to, b.body ?? '', { quotedMessageId: b.quotedMessageId }, b.body);
         break;
 
       case 'image':
@@ -406,7 +460,7 @@ app.post('/sessions/:id/messages', async (req, res, next) => {
           sendAudioAsVoice: b.sendAudioAsVoice === true && b.type === 'audio',
         };
         if (b.quotedMessageId) options.quotedMessageId = b.quotedMessageId;
-        result = await s.client.sendMessage(to, media, options);
+        result = await sendCaptured(s, to, media, options, b.caption);
         break;
       }
 
@@ -496,10 +550,18 @@ app.get('/sessions/:id/chats/:chatId/messages', async (req, res, next) => {
     const s = getSession(req.params.id);
     requireReady(s);
     const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), HISTORY_MAX);
-    const chat = await s.client.getChatById(req.params.chatId);
-    if (!chat) return res.status(404).json({ error: 'chat not found' });
-    const messages = await chat.fetchMessages({ limit });
-    res.json(messages.map(serializeMessage).filter(Boolean));
+    let messages;
+    try {
+      const chat = await s.client.getChatById(req.params.chatId);
+      if (!chat) return res.status(404).json({ error: 'chat not found' });
+      messages = (await chat.fetchMessages({ limit })).map(serializeMessage).filter(Boolean);
+    } catch (e) {
+      // Same drift as getChats(): whatsapp-web.js's chat/message serializers
+      // break on WhatsApp Web updates. Read the in-page store ourselves.
+      console.warn(`[laravel-wa-sidecar] fetchMessages() failed (${e.message}); reading the in-page message store instead`);
+      messages = await readMessagesFromStore(s.client.pupPage, req.params.chatId, limit);
+    }
+    res.json(messages);
   } catch (e) { next(e); }
 });
 
@@ -626,7 +688,7 @@ app.get('/sessions/:id/contacts', async (req, res, next) => {
     const s = getSession(req.params.id);
     requireReady(s);
     const contacts = await s.client.getContacts();
-    res.json(contacts.map((c) => ({
+    res.json(dedupeContacts(contacts.map((c) => ({
       id: serializeWid(c.id),
       name: c.name,
       pushname: c.pushname,
@@ -636,7 +698,7 @@ app.get('/sessions/:id/contacts', async (req, res, next) => {
       isMyContact: c.isMyContact,
       isBlocked: c.isBlocked,
       isBusiness: c.isBusiness,
-    })));
+    }))));
   } catch (e) { next(e); }
 });
 
@@ -727,13 +789,13 @@ app.post('/sessions/:id/status', async (req, res, next) => {
         const options = {};
         if (b.backgroundColor) options.backgroundColor = b.backgroundColor;
         if (typeof b.font === 'number') options.font = b.font;
-        result = await s.client.sendMessage('status@broadcast', b.body ?? '', options);
+        result = await sendCaptured(s, 'status@broadcast', b.body ?? '', options, b.body);
         break;
       }
       case 'image':
       case 'video': {
         const media = await buildOutgoingMedia(b);
-        result = await s.client.sendMessage('status@broadcast', media, { caption: b.caption });
+        result = await sendCaptured(s, 'status@broadcast', media, { caption: b.caption }, b.caption);
         break;
       }
       default:

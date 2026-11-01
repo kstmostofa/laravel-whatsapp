@@ -60,3 +60,18 @@ test('returns null when there is nothing usable', () => {
   assert.equal(serializeMessageId({}), null);
   assert.equal(serializeMessageId({ fromMe: false, remote: '9665XXXXXXXX@c.us' }), null);
 });
+
+test('prefers the full serialized key under a minified property over rebuilding it', () => {
+  // Shape seen on WhatsApp Web 2.3000.105x: direction suffix, `$1` holds the real key.
+  assert.equal(
+    serializeMessageId({ fromMe: true, remote: '1234567890@lid', id: '3EB0ABCD', self: 'out', $1: 'true_1234567890@lid_3EB0ABCD_out' }),
+    'true_1234567890@lid_3EB0ABCD_out',
+  );
+});
+
+test('a rebuilt key keeps the direction suffix', () => {
+  assert.equal(
+    serializeMessageId({ fromMe: false, remote: '1234567890@lid', id: '3EB0ABCD', self: 'in' }),
+    'false_1234567890@lid_3EB0ABCD_in',
+  );
+});

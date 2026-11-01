@@ -84,7 +84,8 @@ class ContactsSyncCommand extends Command
                 continue;
             }
 
-            $rows[] = [
+            // Keyed by ID: older sidecars return each contact several times.
+            $rows[$waId] = [
                 'session_id' => $sessionId,
                 'wa_id' => $waId,
                 'name' => $contact['name'] ?? null,
@@ -102,7 +103,7 @@ class ContactsSyncCommand extends Command
             ];
         }
 
-        foreach (array_chunk($rows, self::CHUNK) as $chunk) {
+        foreach (array_chunk(array_values($rows), self::CHUNK) as $chunk) {
             WaContact::query()->upsert(
                 $chunk,
                 ['session_id', 'wa_id'],

@@ -1,16 +1,20 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const { readChatsFromStore } = require('../chat-store');
+const { readChatsFromStore, readMessagesFromStore } = require('../chat-store');
 
 function collection(models) {
   return { getModelsArray: () => models };
 }
 
 /** A Puppeteer page stand-in: runs the page function against a fake `window`. */
-function fakePage(store) {
+function fakePage(store, { viaRequire = false } = {}) {
   return {
     evaluate(fn) {
-      global.window = { Store: store };
+      // Older whatsapp-web.js exposed `window.Store`; 1.30+ only has
+      // WhatsApp Web's module registry, reached through `window.require`.
+      global.window = viaRequire
+        ? { require: (name) => (name === 'WAWebCollections' ? store : undefined) }
+        : { Store: store };
       try {
         return Promise.resolve(fn());
       } finally {
@@ -147,5 +151,114 @@ test('reports a missing browser page', async () => {
   await assert.rejects(
     () => readChatsFromStore(null),
     (e) => e.http === 503 && /browser page is unavailable/.test(e.message),
+  );
+});
+
+test('reads chats through WAWebCollections when window.Store is gone (whatsapp-web.js 1.30+)', async () => {
+  const chats = await readChatsFromStore(fakePage({ Chat: collection([directChat(), groupChat()]) }, { viaRequire: true }));
+
+  assert.deepEqual(chats.map((c) => c.id), ['9665XXXXXXXX@c.us', '120363XXXXXXXX@g.us']);
+  assert.equal(chats[1].participants.length, 2);
+});
+
+test('falls back to WAWebCollections when window.Store exists but has no chats', async () => {
+  const page = {
+    evaluate(fn) {
+      global.window = {
+        Store: { Chat: {} },
+        require: (name) => (name === 'WAWebCollections' ? { Chat: collection([directChat()]) } : undefined),
+      };
+      try {
+        return Promise.resolve(fn());
+      } finally {
+        delete global.window;
+      }
+    },
+  };
+
+  assert.deepEqual((await readChatsFromStore(page)).map((c) => c.id), ['9665XXXXXXXX@c.us']);
+});
+
+test('a throwing module registry still reports the store as unavailable', async () => {
+  const page = {
+    evaluate(fn) {
+      global.window = { require: () => { throw new Error('module not found'); } };
+      try {
+        return Promise.resolve(fn());
+      } finally {
+        delete global.window;
+      }
+    },
+  };
+
+  await assert.rejects(readChatsFromStore(page), (e) => e.http === 503 && /store is unavailable/.test(e.message));
+});
+
+function storeWithChats(chats, extraModules = {}) {
+  const byId = new Map(chats.map((c) => [c.id._serialized || `${c.id.user}@${c.id.server}`, c]));
+  const Chat = { getModelsArray: () => chats, get: (id) => byId.get(id) };
+
+  return {
+    evaluate(fn, ...args) {
+      global.window = { require: (name) => (name === 'WAWebCollections' ? { Chat } : extraModules[name]) };
+      try {
+        return Promise.resolve(fn(...args));
+      } finally {
+        delete global.window;
+      }
+    },
+  };
+}
+
+function chatWithMessages(id, count) {
+  return {
+    id: { _serialized: id },
+    msgs: collection(Array.from({ length: count }, (_, i) => ({
+      id: { fromMe: i % 2 === 0, remote: id, id: `M${i}` },
+      from: id,
+      to: '966500000000@c.us',
+      body: `message ${i}`,
+      type: 'chat',
+      t: 1750000000 + i,
+      ack: 2,
+    }))),
+  };
+}
+
+test('reads a chat\'s recent messages, oldest first, capped at the limit', async () => {
+  const messages = await readMessagesFromStore(storeWithChats([chatWithMessages('966511111111@c.us', 5)]), '966511111111@c.us', 3);
+
+  assert.deepEqual(messages.map((m) => m.body), ['message 2', 'message 3', 'message 4']);
+  assert.equal(messages[0].id, 'true_966511111111@c.us_M2');
+  assert.equal(messages[0].fromMe, true);
+  assert.equal(messages[0].ack, 2);
+});
+
+test('resolves a phone-number id to the chat\'s @lid key', async () => {
+  const page = storeWithChats([chatWithMessages('111222333@lid', 2)], {
+    WAWebWidFactory: { createWid: (id) => ({ _serialized: id }) },
+    WAWebApiContact: { getCurrentLid: (w) => (w._serialized === '966511111111@c.us' ? { _serialized: '111222333@lid' } : null) },
+  });
+
+  assert.equal((await readMessagesFromStore(page, '966511111111@c.us', 10)).length, 2);
+});
+
+test('your own number resolves to your own @lid ("Message yourself")', async () => {
+  const page = storeWithChats([chatWithMessages('999888777@lid', 1)], {
+    WAWebWidFactory: { createWid: (id) => ({ _serialized: id }) },
+    WAWebApiContact: { getCurrentLid: () => null },
+    WAWebUserPrefsMeUser: {
+      getMaybeMePnUser: () => ({ _serialized: '966500000000@c.us' }),
+      getMaybeMeLidUser: () => ({ _serialized: '999888777@lid' }),
+    },
+  });
+
+  assert.equal((await readMessagesFromStore(page, '966500000000@c.us', 10)).length, 1);
+});
+
+test('an unknown chat is a 404, not an empty list', async () => {
+  await assert.rejects(
+    readMessagesFromStore(storeWithChats([]), '966511111111@c.us', 10),
+    (e) => e.http === 404 && e.message === 'chat not found',
   );
 });
