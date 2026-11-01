@@ -204,7 +204,7 @@ return [
         //                  vendor/kstmostofa/laravel-whatsapp/resources/views in app.css.
         //                  Pro: full theme customization, smallest tree-shaken bundle.
         //   'standalone' — link the pre-compiled stylesheet shipped with the package
-        //                  (dist/laravel-whatsapp.css, ~32 KB gzipped). No Tailwind / Vite /
+        //                  (dist/laravel-whatsapp.css, ~40 KB gzipped). No Tailwind / Vite /
         //                  npm needed on the host. Works whether the host uses Bootstrap,
         //                  plain CSS, or no framework at all. Brand colors baked in.
         //   'none'       — render UI HTML without injecting any CSS link. Use if you want to

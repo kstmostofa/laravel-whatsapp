@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- The package couldn't be installed into a new Laravel 13 app: the Laravel
+  13 skeleton ships Guzzle 8, but the package required Guzzle `^7.5`, so
+  `composer require` failed to resolve. Guzzle 8 is now allowed alongside 7.
+  CI tests Laravel 13 with both majors.
+- **The admin UI was unusable in standalone CSS mode with current Flux.**
+  `dist/laravel-whatsapp.css` had been compiled against the Flux release
+  of May 2026 and lacked the classes Flux 2.21 renders: cards and tables
+  drew black borders with no padding, and the card's border layer, missing
+  `pointer-events: none`, covered its contents so buttons and inputs
+  inside cards couldn't be clicked. The stylesheet is rebuilt against Flux
+  2.21 and the package's current views (~40 KB gzipped). The build now
+  compiles only the package's and Flux's sources, not the host app's.
+  A new test fails whenever the UI renders a class the shipped stylesheet
+  doesn't contain, so the next Flux change is caught in CI.
+
 ## [1.2.0] - 2026-11-01
 
 ### Upgrading

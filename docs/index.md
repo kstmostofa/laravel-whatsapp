@@ -49,7 +49,7 @@ features:
       width: 48
       height: 48
     title: Works with any CSS framework
-    details: Tailwind v4 (full theming) OR pre-compiled standalone CSS (~32 KB gz) that works on top of Bootstrap, plain CSS, or no framework at all.
+    details: Tailwind v4 (full theming) OR pre-compiled standalone CSS (~40 KB gz) that works on top of Bootstrap, plain CSS, or no framework at all.
     link: /ui#install-paths
 
   - icon:
