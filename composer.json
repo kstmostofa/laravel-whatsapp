@@ -75,7 +75,15 @@
     },
     "scripts": {
         "test": "vendor/bin/phpunit",
-        "test:coverage": "vendor/bin/phpunit --coverage-text"
+        "test:coverage": "vendor/bin/phpunit --coverage-text",
+        "format": "vendor/bin/pint",
+        "lint": "vendor/bin/pint --test",
+        "analyse": "vendor/bin/phpstan analyse --memory-limit=1G",
+        "check": [
+            "@lint",
+            "@analyse",
+            "@test"
+        ]
     },
     "minimum-stability": "stable",
     "prefer-stable": true,

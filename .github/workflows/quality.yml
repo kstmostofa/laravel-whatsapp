@@ -1,0 +1,70 @@
+# Code style, static analysis, and the Node sidecar's tests.
+# Runs on every PR and on pushes to main.
+
+name: Quality
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  pint:
+    name: Code style (Pint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer update --prefer-dist --no-interaction --no-progress
+
+      - name: Check formatting
+        run: vendor/bin/pint --test
+
+  phpstan:
+    name: Static analysis (Larastan)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: dom, curl, libxml, mbstring, zip, fileinfo, json, sqlite, pdo, pdo_sqlite
+          coverage: none
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer update --prefer-dist --no-interaction --no-progress
+
+      - name: Analyse
+        run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G --error-format=github
+
+  sidecar:
+    name: Sidecar tests (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['20', '22']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      # The unit tests cover the sidecar's own helpers and need no npm
+      # install (and no 600 MB Chromium download).
+      - name: Syntax check
+        run: node --check sidecar/index.js
+
+      - name: Run tests
+        working-directory: sidecar
+        run: npm test

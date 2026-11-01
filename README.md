@@ -156,6 +156,7 @@ Detailed deployment guide → [docs/production](https://kstmostofa.github.io/lar
 - [x] Bulk send job with rate limiting
 - [x] Laravel notification channel + `WhatsApp::fake()`
 - [x] Chat history import
+- [x] Larastan (level 6) + Pint in CI
 - [x] Native broadcasting integration with `Echo` channel listeners
 - [x] Template builder in Compose
 
@@ -173,4 +174,12 @@ MIT. See [LICENSE](LICENSE).
 
 ## Contributing
 
-Issues + PRs welcome at [github.com/kstmostofa/laravel-whatsapp](https://github.com/kstmostofa/laravel-whatsapp). Please run `vendor/bin/phpunit` locally before submitting.
+Issues + PRs welcome at [github.com/kstmostofa/laravel-whatsapp](https://github.com/kstmostofa/laravel-whatsapp). Before submitting, run:
+
+```bash
+composer check            # Pint style check, Larastan (level 6), and PHPUnit
+composer format           # fix code style
+cd sidecar && npm test    # sidecar unit tests (no npm install needed)
+```
+
+CI runs the same checks, plus the test suite across PHP 8.2–8.4 and Laravel 12 / 13.
