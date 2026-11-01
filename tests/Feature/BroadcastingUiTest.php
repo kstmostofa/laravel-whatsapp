@@ -38,6 +38,7 @@ class BroadcastingUiTest extends TestCase
             'echo:whatsapp.session.sales,.message.created' => 'refreshFromBroadcast',
             'echo:whatsapp.session.sales,.message.ack' => 'refreshFromBroadcast',
             'echo:whatsapp.session.sales,.message.revoked' => 'refreshFromBroadcast',
+            'echo:whatsapp.session.sales,.message.reaction' => 'refreshFromBroadcast',
         ], $this->listenersOf($test->instance()));
 
         $test->assertSeeHtml('wire:poll.60s');

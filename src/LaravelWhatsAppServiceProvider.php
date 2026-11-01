@@ -234,6 +234,7 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
             $events->listen(\Kstmostofa\LaravelWhatsApp\Events\Web\MessageCreated::class, $listener);
             $events->listen(\Kstmostofa\LaravelWhatsApp\Events\Web\MessageAck::class, $listener);
             $events->listen(\Kstmostofa\LaravelWhatsApp\Events\Web\MessageRevoked::class, $listener);
+            $events->listen(\Kstmostofa\LaravelWhatsApp\Events\Web\MessageReaction::class, $listener);
             $events->listen(\Kstmostofa\LaravelWhatsApp\Events\MessageReceived::class, $listener);
             $events->listen(\Kstmostofa\LaravelWhatsApp\Events\MediaReceived::class, $listener);
             $events->listen(\Kstmostofa\LaravelWhatsApp\Events\InteractiveReplied::class, $listener);

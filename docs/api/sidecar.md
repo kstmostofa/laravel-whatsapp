@@ -173,6 +173,32 @@ Create a group:
 { "participants": ["9665ZZZ@c.us"] }
 ```
 
+### `POST /sessions/:id/groups/:groupId/participants/promote`
+### `POST /sessions/:id/groups/:groupId/participants/demote`
+
+```json
+{ "participants": ["9665ZZZ@c.us"] }
+```
+
+Admin only.
+
+### `GET /sessions/:id/groups/:groupId/invite`
+### `POST /sessions/:id/groups/:groupId/invite/revoke`
+
+Returns `{ "code": "AbC…", "link": "https://chat.whatsapp.com/AbC…" }`. Revoking invalidates the old link and returns the new one. Admin only.
+
+### `PUT /sessions/:id/groups/:groupId/description`
+
+```json
+{ "description": "Weekly sync" }
+```
+
+### `POST /sessions/:id/messages/:messageId/forward`
+
+```json
+{ "to": "9665YYY@c.us" }
+```
+
 ### `POST /sessions/:id/groups/:groupId/leave`
 
 No body.

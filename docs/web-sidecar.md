@@ -114,7 +114,7 @@ WhatsApp::web('main')->messages()->sendDocument('+9665...', [
 
 Same shape for `sendVideo`, `sendAudio`, `sendSticker`.
 
-### Reply / react / delete / edit
+### Reply / react / forward / delete / edit
 
 ```php
 $msg = WhatsApp::web('main')->messages()->sendText('+9665...', 'Hi');
@@ -130,7 +130,21 @@ WhatsApp::web('main')->messages()->delete($msg['id'], forEveryone: true);
 
 // Edit — only within ~15 minutes
 WhatsApp::web('main')->messages()->edit($msg['id'], 'Hi! [edited]');
+
+// Forward to another chat (shows WhatsApp's "Forwarded" label)
+WhatsApp::web('main')->messages()->forward($msg['id'], '9665YYYYYYYY@c.us');
+
+// Remove your reaction
+WhatsApp::web('main')->messages()->react($msg['id'], '');
 ```
+
+Media sends accept `quotedMessageId` too, to reply with an image or document:
+
+```php
+WhatsApp::web('main')->messages()->sendImage('+9665...', ['url' => $url, 'quotedMessageId' => $msg['id']]);
+```
+
+Messages from the sidecar carry a `quoted` field when they reply to something: `{ stanzaId, body, type, from }`, enough to draw the quote without another lookup.
 
 ## Groups
 
@@ -146,6 +160,19 @@ WhatsApp::web('main')->groups()->addParticipants($group['gid']['_serialized'], [
 WhatsApp::web('main')->groups()->removeParticipants($group['gid']['_serialized'], ['9665ZZZZZZZZ@c.us']);
 WhatsApp::web('main')->groups()->setSubject($group['gid']['_serialized'], 'New name');
 WhatsApp::web('main')->groups()->leave($group['gid']['_serialized']);
+```
+
+Admin actions — you must be a group admin:
+
+```php
+$groups = WhatsApp::web('main')->groups();
+
+$groups->promoteParticipants($groupId, ['9665ZZZZZZZZ@c.us']);   // make admin
+$groups->demoteParticipants($groupId, ['9665ZZZZZZZZ@c.us']);    // remove admin
+$groups->setDescription($groupId, 'Weekly sync, Sundays 10am');
+
+$groups->inviteLink($groupId);     // ['code' => 'AbC…', 'link' => 'https://chat.whatsapp.com/AbC…']
+$groups->revokeInvite($groupId);   // old link stops working; returns the new one
 ```
 
 Send to a group like any other chat:
@@ -223,6 +250,7 @@ php artisan whatsapp:web:listen main
 | `message_ack` | `Events\Web\MessageAck` |
 | `message_create` | `Events\Web\MessageCreated` (includes messages sent from the phone) |
 | `message_revoke` | `Events\Web\MessageRevoked` (deleted for everyone) |
+| `message_reaction` | `Events\Web\MessageReaction` (added, changed, or removed) |
 
 Listen for them:
 ```php

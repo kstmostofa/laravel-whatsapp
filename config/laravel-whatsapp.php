@@ -128,6 +128,7 @@ return [
             // so listeners usually only care about `fromMe()` here.
             'message_create' => \Kstmostofa\LaravelWhatsApp\Events\Web\MessageCreated::class,
             'message_revoke' => \Kstmostofa\LaravelWhatsApp\Events\Web\MessageRevoked::class,
+            'message_reaction' => \Kstmostofa\LaravelWhatsApp\Events\Web\MessageReaction::class,
         ],
     ],
 

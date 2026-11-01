@@ -227,28 +227,20 @@
                         @php($isEditing = $isOut && $editingMessageId === $m->wa_message_id)
                         <div class="group flex items-end gap-1.5 {{ $isOut ? 'justify-end' : 'justify-start' }}">
 
-                            {{-- Outbound actions: 3-dot menu appears on hover, sits to the left of the bubble --}}
-                            @if ($isOut && $m->wa_message_id && ! $isEditing && ! $m->deleted_at)
-                                <div class="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                                    <flux:dropdown position="bottom" align="end">
-                                        <flux:button size="xs" variant="ghost" icon="ellipsis-vertical" aria-label="Message actions" />
-                                        <flux:menu>
-                                            @if ($m->type === 'text' && $m->body && ! $m->deleted_at)
-                                                <flux:menu.item icon="pencil-square" wire:click="startEdit('{{ $m->wa_message_id }}', @js($m->body))">
-                                                    Edit message
-                                                </flux:menu.item>
-                                                <flux:menu.separator />
-                                            @endif
-                                            <flux:menu.item icon="trash" variant="danger"
-                                                            wire:click="confirmDelete('{{ $m->wa_message_id }}')">
-                                                Delete message
-                                            </flux:menu.item>
-                                        </flux:menu>
-                                    </flux:dropdown>
-                                </div>
+                            @php($hasActions = $m->wa_message_id && ! $isEditing && ! $m->deleted_at)
+                            {{-- Message menu sits beside the bubble on the inner side: left of outbound, right of inbound --}}
+                            @if ($isOut && $hasActions)
+                                @include('laravel-whatsapp::livewire.partials.message-actions')
                             @endif
 
                             <div class="max-w-[70%] {{ $m->deleted_at ? 'bg-zinc-100 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700' : ($isOut ? 'bg-wa-bubble-light dark:bg-wa-bubble-dark border-wa-200 dark:border-wa-700' : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700') }} border rounded-2xl px-3.5 py-2 shadow-sm">
+                                @php($quoted = ! $m->deleted_at ? ($m->payload['quoted'] ?? null) : null)
+                                @if (is_array($quoted))
+                                    <div class="mb-1.5 border-l-4 border-wa-500 bg-black/5 dark:bg-white/5 rounded-md px-2.5 py-1.5 text-xs">
+                                        <div class="font-medium text-wa-700 dark:text-wa-300">{{ empty($quoted['from']) ? 'You' : (str_ends_with($quoted['from'], '@c.us') ? '+'.explode('@', $quoted['from'])[0] : $quoted['from']) }}</div>
+                                        <div class="text-zinc-600 dark:text-zinc-300 truncate">{{ \Illuminate\Support\Str::limit($quoted['body'] ?? ('('.($quoted['type'] ?? 'message').')'), 120) }}</div>
+                                    </div>
+                                @endif
                                 @if ($m->deleted_at)
                                     <div class="flex items-center gap-1.5 text-sm italic text-zinc-500 dark:text-zinc-400">
                                         <svg viewBox="0 0 16 16" fill="none" class="size-3.5"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/><path d="M5 5l6 6M11 5l-6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
@@ -312,7 +304,22 @@
                                         {!! $renderAck($m->ack) !!}
                                     @endif
                                 </div>
+                                @php($reactions = ! $m->deleted_at ? array_count_values(array_values($m->payload['reactions'] ?? [])) : [])
+                                @if (count($reactions) > 0)
+                                    <div class="-mb-4 mt-0.5 flex {{ $isOut ? 'justify-end' : 'justify-start' }}">
+                                        <div class="inline-flex items-center gap-1 rounded-full border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-1.5 py-0.5 text-sm shadow-sm"
+                                             title="{{ implode(' ', array_keys($reactions)) }}">
+                                            @foreach ($reactions as $emoji => $count)
+                                                <span>{{ $emoji }}@if ($count > 1)<span class="text-xs text-zinc-500 ms-0.5">{{ $count }}</span>@endif</span>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endif
                             </div>
+
+                            @if (! $isOut && $hasActions)
+                                @include('laravel-whatsapp::livewire.partials.message-actions')
+                            @endif
                         </div>
                     @endforeach
                 @endif
@@ -323,6 +330,21 @@
                 @error('attachment')
                     <div class="mb-2 text-xs text-rose-600 dark:text-rose-400">{{ $message }}</div>
                 @enderror
+
+                {{-- Replying-to bar --}}
+                @if ($replyTarget)
+                    <div class="mb-2 flex items-center gap-3 rounded-lg border-l-4 border-wa-500 bg-zinc-50 dark:bg-zinc-900 px-3 py-2">
+                        <flux:icon.arrow-uturn-left class="size-4 text-wa-600 flex-shrink-0" />
+                        <div class="flex-1 min-w-0">
+                            <div class="text-xs font-medium text-wa-700 dark:text-wa-300">Replying to {{ $replyTarget->direction === 'outbound' ? 'yourself' : 'message' }}</div>
+                            <div class="text-sm text-zinc-600 dark:text-zinc-300 truncate">{{ $replyTarget->body ?: '('.$replyTarget->type.')' }}</div>
+                        </div>
+                        <button type="button" wire:click="cancelReply" aria-label="Cancel reply"
+                                class="w-7 h-7 rounded-md flex items-center justify-center text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+                            <flux:icon.x-mark class="size-4" />
+                        </button>
+                    </div>
+                @endif
 
                 {{-- Attachment preview chip --}}
                 @if ($attachment)
@@ -376,6 +398,7 @@
                         :placeholder="$attachment ? 'Add a caption (optional)…' : 'Type a message…'"
                         class="flex-1"
                         x-on:keydown.enter.prevent="$event.shiftKey ? null : $wire.sendReply()"
+                        x-on:focus-composer.window="$nextTick(() => ($el.matches('textarea') ? $el : $el.querySelector('textarea'))?.focus())"
                     />
 
                     {{-- Send button — paper-airplane icon, swaps to spinner while submitting --}}
@@ -400,10 +423,35 @@
             </div>
         @endif
 
+        @if ($notice)
+            <div class="border-t border-wa-200 dark:border-wa-800 bg-wa-50 dark:bg-wa-900/30 text-wa-800 dark:text-wa-200 text-xs px-4 py-2">{{ $notice }}</div>
+        @endif
         @if ($error)
             <div class="border-t border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 text-xs px-4 py-2">{{ $error }}</div>
         @endif
     </flux:card>
+
+    {{-- Forward picker --}}
+    <flux:modal wire:model="showForward" @close="cancelForward" class="max-w-md w-full">
+        <div class="space-y-4">
+            <flux:heading size="lg">Forward to…</flux:heading>
+            <flux:input wire:model.live.debounce.250ms="forwardSearch" icon="magnifying-glass" placeholder="Search chats" size="sm" clearable />
+            <div class="max-h-80 overflow-y-auto -mx-2">
+                @forelse ($forwardTargets as $c)
+                    <button type="button" wire:click="forwardTo('{{ $c['id'] }}')"
+                            class="w-full text-left px-3 py-2 rounded-md flex items-center gap-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
+                        <flux:avatar size="xs" :initials="strtoupper(mb_substr($c['name'] ?? $c['id'], 0, 2))" />
+                        <div class="min-w-0">
+                            <div class="text-sm font-medium text-zinc-900 dark:text-white truncate">{{ $c['name'] ?? $c['id'] }}</div>
+                            <div class="text-xs text-zinc-500 font-mono truncate">{{ $c['id'] }}</div>
+                        </div>
+                    </button>
+                @empty
+                    <flux:text class="px-3 py-6 text-center !text-zinc-500">No matching chats</flux:text>
+                @endforelse
+            </div>
+        </div>
+    </flux:modal>
 
     {{-- Delete confirmation modal — opens when confirmDelete() sets $showDeleteConfirm --}}
     <flux:modal wire:model="showDeleteConfirm" @close="cancelDelete" class="max-w-md">

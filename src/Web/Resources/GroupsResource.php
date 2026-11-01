@@ -53,6 +53,62 @@ class GroupsResource extends Resource
     }
 
     /**
+     * Make participants group admins. You must be an admin yourself.
+     *
+     * @param  array<int, string>  $participants
+     * @return array<string, mixed>
+     */
+    public function promoteParticipants(string $groupId, array $participants): array
+    {
+        return $this->request('POST', "{$this->endpoint()}/".rawurlencode($groupId).'/participants/promote', [
+            'json' => compact('participants'),
+        ]);
+    }
+
+    /**
+     * Remove admin rights from participants.
+     *
+     * @param  array<int, string>  $participants
+     * @return array<string, mixed>
+     */
+    public function demoteParticipants(string $groupId, array $participants): array
+    {
+        return $this->request('POST', "{$this->endpoint()}/".rawurlencode($groupId).'/participants/demote', [
+            'json' => compact('participants'),
+        ]);
+    }
+
+    /**
+     * The group's invite link. Requires admin rights.
+     *
+     * @return array{code: ?string, link: ?string}
+     */
+    public function inviteLink(string $groupId): array
+    {
+        return $this->request('GET', "{$this->endpoint()}/".rawurlencode($groupId).'/invite');
+    }
+
+    /**
+     * Invalidate the current invite link and get a new one.
+     *
+     * @return array{code: ?string, link: ?string}
+     */
+    public function revokeInvite(string $groupId): array
+    {
+        return $this->request('POST', "{$this->endpoint()}/".rawurlencode($groupId).'/invite/revoke');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function setDescription(string $groupId, string $description): array
+    {
+        return $this->request('PUT', "{$this->endpoint()}/".rawurlencode($groupId).'/description', [
+            'json' => compact('description'),
+        ]);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function leave(string $groupId): array

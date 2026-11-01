@@ -21,6 +21,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Laravel 12 or 13 to use this version; 1.0.x keeps working on Laravel 11.
 
 ### Added
+- **Reply, react and forward in the chat UI.** Every message gets a menu
+  with WhatsApp's quick-reaction row, Reply (with a reply bar above the
+  composer and the quote shown in the sent bubble, for text and attachments)
+  and Forward (pick a chat). Reactions from everyone show as a chip under the
+  bubble.
+- `Events\Web\MessageReaction` for the sidecar's new `message_reaction`
+  event, broadcast as `message.reaction`. With persistence on, current
+  reactions are kept in `payload.reactions`, one per person.
+- `messages()->forward()`, and `quotedMessageId` on Web media sends.
+  Sidecar messages carry a `quoted` field with the quoted text and sender.
+- **Group management.** `groups()->promoteParticipants()`,
+  `demoteParticipants()`, `inviteLink()`, `revokeInvite()` and
+  `setDescription()`, and a Manage panel on the Groups page with the member
+  list and roles, promote / demote / remove, add by phone number, editing the
+  name and description, and the invite link. Admin tools are hidden when the
+  paired account isn't a group admin.
 - **Media persistence.** With `WHATSAPP_MEDIA_STORE=true`, every media
   message queues a `StoreMessageMedia` job that copies the file to
   `WHATSAPP_MEDIA_DISK` (Web from the sidecar, inbound Cloud from Meta) and
@@ -107,6 +123,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `to()`, `messageId()`, `chatId()` on Web `MessageReceived`.
 
 ### Fixed
+- "Edit message" only appeared for messages sent from the UI itself, not
+  for outbound messages stored from WhatsApp.
+- Re-saving a message from a fresh WhatsApp copy (edits, replays, history
+  imports) dropped package-maintained payload keys such as the filename.
+- The Groups page's Leave button built its JavaScript arguments with
+  `addslashes()`, which broke on some group names.
 - `WhatsApp::send()` ignored `WHATSAPP_UI_DEFAULT_SESSION` and always used
   `main` for Web sends.
 - Outbound messages were stored with the sender as `chat_id`, so they landed

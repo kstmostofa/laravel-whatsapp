@@ -103,6 +103,7 @@ Dispatched by `whatsapp:web:listen` as the sidecar's SSE stream emits.
 | `Events\Web\MessageAck` | `message_ack` |
 | `Events\Web\MessageCreated` | `message_create` |
 | `Events\Web\MessageRevoked` | `message_revoke` |
+| `Events\Web\MessageReaction` | `message_reaction` |
 
 All Web events carry `$sessionId` so listeners can disambiguate when multiple sessions are paired.
 
@@ -159,6 +160,20 @@ Broadcast name: `qr.generated`.
 
 Fired for every message created on the account, including ones you send from the paired phone. Same accessors as `MessageReceived`, which it extends. Inbound messages also fire `MessageReceived`, so filter on `fromMe()` if you only want outbound ones. Listeners for `MessageReceived` do not receive this event. Broadcast name: `message.created`.
 
+### `Events\Web\MessageReaction`
+
+Someone reacted to a message, changed their reaction, or removed it. Fires for your own reactions too.
+
+```php
+$event->messageId();   // the message reacted to
+$event->emoji();       // '👍', or '' when the reaction was removed
+$event->removed();     // true when emoji() is ''
+$event->senderId();    // who reacted
+$event->fromMe();
+```
+
+With persistence on, the current reactions are kept on the message row under `payload.reactions`, one emoji per person, with your own under the key `me`. Broadcast name: `message.reaction`.
+
 ### `Events\Web\MessageRevoked`
 
 Fired when a message is deleted for everyone, by either side.
@@ -194,6 +209,7 @@ When `WHATSAPP_BROADCAST=true`, the Web events push to channel `{prefix}.session
 | `Web\MessageCreated` | `message.created` |
 | `Web\MessageAck` | `message.ack` |
 | `Web\MessageRevoked` | `message.revoked` |
+| `Web\MessageReaction` | `message.reaction` |
 | `Web\QrGenerated` | `qr.generated` |
 | `Web\SessionReady` | `session.ready` |
 | `Web\Disconnected` | `session.disconnected` |
@@ -236,7 +252,7 @@ Or with closures via `Event::listen(...)` anywhere — but a class listener is m
 
 ## Built-in listener: `PersistIncomingMessage`
 
-Set `WHATSAPP_PERSIST_INCOMING=true` and the service provider registers `Kstmostofa\LaravelWhatsApp\Listeners\PersistIncomingMessage` against Cloud `MessageReceived`, `MediaReceived`, `InteractiveReplied`, `MessageSent` and `MessageStatusUpdate`, and Web `MessageReceived`, `MessageCreated`, `MessageAck` and `MessageRevoked`. Idempotent — re-delivered messages don't duplicate; ack updates update the existing row rather than insert a new one. Messages sent from the paired phone are stored as outbound, and delete-for-everyone marks the row deleted. Cloud sends are stored as outbound, and Cloud delivery statuses update the row's `status` and `ack` on the same scale as the Web backend (`sent` 1, `delivered` 2, `read` 3, `failed` -1). Late webhooks never move a message backwards.
+Set `WHATSAPP_PERSIST_INCOMING=true` and the service provider registers `Kstmostofa\LaravelWhatsApp\Listeners\PersistIncomingMessage` against Cloud `MessageReceived`, `MediaReceived`, `InteractiveReplied`, `MessageSent` and `MessageStatusUpdate`, and Web `MessageReceived`, `MessageCreated`, `MessageAck`, `MessageRevoked` and `MessageReaction`. Idempotent — re-delivered messages don't duplicate; ack updates update the existing row rather than insert a new one. Messages sent from the paired phone are stored as outbound, and delete-for-everyone marks the row deleted. Cloud sends are stored as outbound, and Cloud delivery statuses update the row's `status` and `ack` on the same scale as the Web backend (`sent` 1, `delivered` 2, `read` 3, `failed` -1). Late webhooks never move a message backwards.
 
 ## Built-in listener: `PersistSessionState`
 

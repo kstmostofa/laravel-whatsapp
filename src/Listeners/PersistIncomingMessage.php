@@ -9,6 +9,7 @@ use Kstmostofa\LaravelWhatsApp\Events\MessageSent as CloudMessageSent;
 use Kstmostofa\LaravelWhatsApp\Events\MessageStatusUpdate as CloudMessageStatusUpdate;
 use Kstmostofa\LaravelWhatsApp\Events\Web\MessageAck as WebMessageAck;
 use Kstmostofa\LaravelWhatsApp\Events\Web\MessageCreated as WebMessageCreated;
+use Kstmostofa\LaravelWhatsApp\Events\Web\MessageReaction as WebMessageReaction;
 use Kstmostofa\LaravelWhatsApp\Events\Web\MessageReceived as WebMessageReceived;
 use Kstmostofa\LaravelWhatsApp\Events\Web\MessageRevoked as WebMessageRevoked;
 use Kstmostofa\LaravelWhatsApp\Jobs\StoreMessageMedia;
@@ -33,6 +34,8 @@ class PersistIncomingMessage
                 $this->persistAck($event);
             } elseif ($event instanceof WebMessageRevoked) {
                 $this->persistRevoke($event);
+            } elseif ($event instanceof WebMessageReaction) {
+                $this->persistReaction($event);
             } elseif ($event instanceof WebMessageCreated) {
                 // Inbound messages also arrive as `message` — only outbound
                 // ones are new information here.
@@ -120,13 +123,39 @@ class PersistIncomingMessage
      */
     protected function store(string $backend, ?string $messageId, array $attributes): WaMessage
     {
-        $message = ($messageId === null || $messageId === '')
-            ? WaMessage::create($attributes + ['backend' => $backend, 'wa_message_id' => null])
-            : WaMessage::updateOrCreate(['wa_message_id' => $messageId, 'backend' => $backend], $attributes);
+        if ($messageId === null || $messageId === '') {
+            $message = WaMessage::create($attributes + ['backend' => $backend, 'wa_message_id' => null]);
+        } else {
+            $message = WaMessage::firstOrNew(['wa_message_id' => $messageId, 'backend' => $backend]);
+            $attributes['payload'] = $this->keepLocalPayloadKeys($message->payload, $attributes['payload'] ?? null);
+            $message->fill($attributes)->save();
+        }
 
         $this->queueMediaCopy($message);
 
         return $message;
+    }
+
+    /**
+     * Payload keys the package maintains itself, which a fresh copy of the
+     * message from WhatsApp doesn't carry — keep them across re-saves
+     * (edits, replayed events, history imports).
+     */
+    protected const LOCAL_PAYLOAD_KEYS = ['reactions', 'filename', 'quoted'];
+
+    protected function keepLocalPayloadKeys(?array $existing, mixed $incoming): mixed
+    {
+        if (! is_array($existing) || ! is_array($incoming)) {
+            return $incoming;
+        }
+
+        foreach (self::LOCAL_PAYLOAD_KEYS as $key) {
+            if (! isset($incoming[$key]) && isset($existing[$key])) {
+                $incoming[$key] = $existing[$key];
+            }
+        }
+
+        return $incoming;
     }
 
     /**
@@ -225,6 +254,34 @@ class PersistIncomingMessage
                 'deleted_at' => now(),
                 'deleted_for_everyone' => true,
             ]);
+    }
+
+    /**
+     * Keep the current reactions on the message row, one emoji per person —
+     * a new reaction from the same person replaces their old one, and an
+     * empty emoji removes it. Stored under `payload.reactions`.
+     */
+    protected function persistReaction(WebMessageReaction $event): void
+    {
+        $messageId = $event->messageId();
+
+        if ($messageId === null) {
+            return;
+        }
+
+        $message = WaMessage::query()
+            ->where('backend', 'web')
+            ->where('wa_message_id', $messageId)
+            ->first();
+
+        if (! $message) {
+            return;
+        }
+
+        $payload = $message->payload ?? [];
+        $payload['reactions'] = WebMessageReaction::apply($payload['reactions'] ?? [], $event->reactorKey(), $event->emoji());
+
+        $message->forceFill(['payload' => $payload])->save();
     }
 
     /**

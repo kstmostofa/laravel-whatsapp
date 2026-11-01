@@ -120,6 +120,21 @@ class MessagesResource extends Resource
     }
 
     /**
+     * Forward an existing message to another chat. WhatsApp shows it with
+     * the "Forwarded" label.
+     *
+     * @return array<string, mixed>
+     */
+    public function forward(string $messageId, string $to): array
+    {
+        return $this->request(
+            'POST',
+            "{$this->endpoint()}/".rawurlencode($messageId).'/forward',
+            ['json' => ['to' => $to]],
+        );
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function delete(string $messageId, bool $forEveryone = false): array
