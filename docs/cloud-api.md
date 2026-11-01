@@ -195,6 +195,41 @@ $components = $template->components([
 WhatsApp::messages()->sendTemplate('+9665…', $template->name, $template->language, $components);
 ```
 
+## Multiple phone numbers
+
+The top-level config is the `default` account. Add more numbers under `accounts` in `config/laravel-whatsapp.php`. Any key you leave out is inherited from the default, which is usually right for the token and WABA when every number belongs to the same Meta app:
+
+```php
+'accounts' => [
+    'sales' => [
+        'phone_number_id' => env('WHATSAPP_SALES_PHONE_NUMBER_ID'),
+    ],
+    'support' => [
+        'phone_number_id' => env('WHATSAPP_SUPPORT_PHONE_NUMBER_ID'),
+        'access_token' => env('WHATSAPP_SUPPORT_ACCESS_TOKEN'),          // a different Meta app
+        'business_account_id' => env('WHATSAPP_SUPPORT_BUSINESS_ACCOUNT_ID'),
+    ],
+],
+```
+
+Send from an account:
+
+```php
+WhatsApp::cloud('sales')->messages()->sendText('+9665…', 'Hi from sales');
+WhatsApp::cloud('support')->templates()->list();
+WhatsApp::cloud()->messages();            // the default account, same as WhatsApp::messages()
+```
+
+Webhooks for every number arrive on the same route. `$event->account()` tells you which account a Cloud event belongs to, so you can answer from the same number:
+
+```php
+Event::listen(MessageReceived::class, function (MessageReceived $event) {
+    WhatsApp::cloud($event->account())->messages()->sendText($event->from(), 'Thanks, we got it.');
+});
+```
+
+`account()` returns `null` for a number that isn't configured. Notifications and bulk sends use `WhatsAppMessage::fromAccount('sales')`, and bulk rate limits apply per number.
+
 ## Queued sends
 
 For high-volume or background sending, use the queued job:

@@ -4,6 +4,7 @@ namespace Kstmostofa\LaravelWhatsApp\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Kstmostofa\LaravelWhatsApp\Events\Concerns\ResolvesCloudAccount;
 
 /**
  * Fired for inbound text, location, contacts, and other non-media, non-interactive
@@ -13,7 +14,7 @@ use Illuminate\Queue\SerializesModels;
  */
 class MessageReceived
 {
-    use Dispatchable, SerializesModels;
+    use Dispatchable, ResolvesCloudAccount, SerializesModels;
 
     /**
      * @param  array<string, mixed>  $payload  single `messages[]` entry from Meta

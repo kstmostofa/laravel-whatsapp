@@ -3,6 +3,7 @@
 namespace Kstmostofa\LaravelWhatsApp\Facades;
 
 use Illuminate\Support\Facades\Facade;
+use Kstmostofa\LaravelWhatsApp\Client\CloudAccounts;
 use Kstmostofa\LaravelWhatsApp\Client\CloudClient;
 use Kstmostofa\LaravelWhatsApp\Client\Resources\BusinessProfileResource;
 use Kstmostofa\LaravelWhatsApp\Client\Resources\MediaResource;
@@ -96,6 +97,16 @@ class WhatsApp extends Facade
     public static function bulk(iterable $recipients, WhatsAppMessage|string|\Closure $message): PendingBulk
     {
         return new PendingBulk($recipients, $message);
+    }
+
+    /**
+     * A Cloud API client for a named account from `laravel-whatsapp.accounts`.
+     * Null or 'default' is the top-level config — the same client as the
+     * facade's own methods.
+     */
+    public static function cloud(?string $account = null): CloudClient
+    {
+        return static::$app->make(CloudAccounts::class)->client($account);
     }
 
     public static function web(string $sessionId): WebSession

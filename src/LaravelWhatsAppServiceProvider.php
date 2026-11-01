@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Kstmostofa\LaravelWhatsApp\Broadcasting\SessionChannel;
+use Kstmostofa\LaravelWhatsApp\Client\CloudAccounts;
 use Kstmostofa\LaravelWhatsApp\Client\CloudClient;
 use Kstmostofa\LaravelWhatsApp\Console\Commands\ContactsSyncCommand;
 use Kstmostofa\LaravelWhatsApp\Console\Commands\HealthCheckCommand;
@@ -78,6 +79,8 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
         });
 
         $this->app->alias(CloudClient::class, 'whatsapp');
+
+        $this->app->singleton(CloudAccounts::class);
 
         $this->app->singleton(SidecarManager::class, function ($app) {
             return new SidecarManager($app['config']->get('laravel-whatsapp.web'));

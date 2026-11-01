@@ -14,7 +14,7 @@
 
 | Layer | What it does |
 |---|---|
-| **Cloud API client** | Pure PHP. Templates, media, business profile, phone-number management, webhooks with HMAC verification. |
+| **Cloud API client** | Pure PHP. Templates, media, business profile, phone-number management, several numbers as named accounts, webhooks with HMAC verification. |
 | **Web sidecar** (bundled Node service) | `whatsapp-web.js` wrapped in a thin HTTP service. Personal-number QR pairing, groups and group admin, status, free-form messages anytime, contact lookup, chat history. |
 | **Unified facade** | `WhatsApp::messages()->sendTemplate(...)` for Cloud, `WhatsApp::web('main')->messages()->sendText(...)` for sidecar. `WhatsApp::send($to, $body)` auto-picks. |
 | **Livewire + Flux UI** | Drop-in admin at `/whatsapp` — Dashboard, Sessions+QR, Compose, Conversations (chat-bubble UI with media, reply, reactions, forward, edit/delete, search, sound, ack ticks, live updates over broadcasting), Groups with member management, Contacts, Webhooks log with replay, Status. Compose includes a template builder. Works with Tailwind, Bootstrap, or no CSS framework at all. |
@@ -51,7 +51,7 @@ WHATSAPP_VERIFY_TOKEN=any-string-you-make-up
 composer require livewire/livewire livewire/flux           # for the UI
 php artisan whatsapp:sidecar:install                       # one-time, ~600 MB Chrome download
 php artisan whatsapp:sidecar:start                         # boots in background
-php artisan whatsapp:web:listen main &                     # SSE → Laravel events (run under Supervisor in prod)
+php artisan whatsapp:web:listen --all &                    # SSE → Laravel events (run under Supervisor in prod)
 # Open http://your-app.test/whatsapp/sessions and click "Start" → scan QR with your phone
 ```
 
@@ -126,7 +126,7 @@ Full setup details + dark mode + screenshots → [docs site](https://kstmostofa.
 |---|---|
 | `whatsapp:sidecar:install` | Clone whatsapp-web.js, `npm ci`, download Chromium |
 | `whatsapp:sidecar:start [--foreground]` / `:stop` / `:status` | Lifecycle of the Node process. `--foreground` is for Supervisor / systemd |
-| `whatsapp:web:listen [session]` | Long-running: sidecar SSE → Laravel events |
+| `whatsapp:web:listen [session] [--all]` | Long-running: sidecar SSE → Laravel events. `--all` covers every session in one process |
 | `whatsapp:health [--json]` [`--exit-code`] | Health probe — pipe into cron / monitoring |
 | `whatsapp:contacts:sync [session] [--all]` | Copy Web contacts into `wa_contacts` — safe to schedule |
 | `whatsapp:web:sync [session] [--chats=20] [--limit=50] [--chat=…]` | Import recent chat history into `wa_messages` |
@@ -138,7 +138,7 @@ Full setup details + dark mode + screenshots → [docs site](https://kstmostofa.
 - [ ] Set strong `WHATSAPP_WEB_TOKEN` (shared secret between PHP and sidecar)
 - [ ] Set `WHATSAPP_APP_SECRET` (HMAC for Cloud webhook signatures)
 - [ ] Wrap `/whatsapp/*` routes in your own auth middleware: `config/laravel-whatsapp.php` → `ui.middleware`
-- [ ] Run `whatsapp:web:listen` under Supervisor / systemd, one process per session
+- [ ] Run `whatsapp:web:listen --all` under Supervisor / systemd
 - [ ] Optional: isolate WA data on a separate DB connection (`WHATSAPP_DB_CONNECTION=whatsapp`)
 - [ ] Optional: enable broadcasting (`WHATSAPP_BROADCAST=true`) + run Laravel Reverb for instant UI updates
 
@@ -162,7 +162,7 @@ Detailed deployment guide → [docs/production](https://kstmostofa.github.io/lar
 
 ## Status
 
-- **123 tests passing**, 370 assertions (testbench + mocked Guzzle + Livewire smoke tests), plus 20 sidecar tests (`npm test` in `sidecar/`)
+- **133 tests passing**, 393 assertions (testbench + mocked Guzzle + Livewire smoke tests), plus 20 sidecar tests (`npm test` in `sidecar/`)
 - **Compatible with Laravel 12 / 13** — CI runs the suite on PHP 8.2, 8.3 and 8.4 with Laravel 12, and PHP 8.4 with Laravel 13, plus Pint and Larastan (level 6)
 - PHP minimum: **8.2** on Laravel 12, **8.4** on Laravel 13 (Symfony 8 transitive)
 - Laravel 11 support was dropped in 1.1.0: it is past end of life and has unpatched security advisories

@@ -68,6 +68,8 @@ $event->recipientId();  // who the status is about
 $event->errors();       // array if status=failed
 ```
 
+Every Cloud event also has `account()`: the name of the configured account its phone number belongs to (`default`, `sales`, …), or `null`. See [Multiple phone numbers](/cloud-api#multiple-phone-numbers).
+
 ### `MessageSent`
 
 Fired by the Cloud client after every successful send, however it was made: the facade, the `SendMessage` job, or a notification.

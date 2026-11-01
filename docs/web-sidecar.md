@@ -288,7 +288,7 @@ Set `WHATSAPP_PERSIST_INCOMING=true` and the package's built-in listener writes 
 
 ```ini
 [program:whatsapp-web-listen]
-command=php /var/www/your-app/artisan whatsapp:web:listen main
+command=php /var/www/your-app/artisan whatsapp:web:listen --all
 autostart=true
 autorestart=true
 user=www-data
@@ -297,7 +297,7 @@ redirect_stderr=true
 stopwaitsecs=10
 ```
 
-One Supervisor program per session. The command reconnects automatically on dropped streams with backoff.
+`--all` subscribes to every session on one stream, including sessions started later. Each event still carries its own `sessionId`. Use `whatsapp:web:listen <session>` instead when you want a session in its own process. The command reconnects automatically on dropped streams.
 
 ## Error handling
 
@@ -331,7 +331,7 @@ WhatsApp::web('sales')->messages()->sendText('+966...', 'Hi from Sales');
 WhatsApp::web('support')->messages()->sendText('+966...', 'Hi from Support');
 ```
 
-Each session needs its own `whatsapp:web:listen <session>` process for inbound events.
+One `whatsapp:web:listen --all` process delivers inbound events for every session.
 
 ::: warning Memory
 Each session keeps a Puppeteer Chromium instance running. Budget **1–2 GB RAM per active session** in production. Don't run 50 sessions on a 1 GB VPS.

@@ -4,6 +4,7 @@ namespace Kstmostofa\LaravelWhatsApp\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Kstmostofa\LaravelWhatsApp\Events\Concerns\ResolvesCloudAccount;
 
 /**
  * Delivery lifecycle for an outbound message. `status` is one of:
@@ -11,7 +12,7 @@ use Illuminate\Queue\SerializesModels;
  */
 class MessageStatusUpdate
 {
-    use Dispatchable, SerializesModels;
+    use Dispatchable, ResolvesCloudAccount, SerializesModels;
 
     /**
      * @param  array<string, mixed>  $payload  single `statuses[]` entry from Meta

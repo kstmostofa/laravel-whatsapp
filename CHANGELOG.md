@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `whatsapp:web:listen --all` subscribes to every Web session on one stream,
+  including sessions started later, so one supervised process replaces one
+  per session. Backed by a new sidecar `GET /events` stream.
+- **Several Cloud API numbers.** Named accounts under
+  `laravel-whatsapp.accounts` inherit any key they leave out from the default.
+  Use them with `WhatsApp::cloud('sales')`, `WhatsAppMessage::fromAccount()`
+  for notifications and bulk sends, and `$event->account()` on Cloud events
+  to reply from the number a webhook arrived on. `WhatsApp::fake()` records
+  named-account sends with their own phone number ID.
+
 ## [1.1.0] - 2026-11-01
 
 ### Upgrading
