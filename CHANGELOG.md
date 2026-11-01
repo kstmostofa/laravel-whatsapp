@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-01
+
+### Upgrading
+- No new migrations and no required config changes. Run `composer update`.
+- If you published `config/laravel-whatsapp.php`, new nested settings are
+  now filled in automatically (see Fixed). You don't need to re-publish.
+
 ### Added
 - **Names instead of numbers in the UI.** With persistence on, the
   sender's own WhatsApp display name is saved to `wa_contacts` from every
@@ -43,6 +50,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   named-account sends with their own phone number ID.
 
 ### Fixed
+- Apps that published the config file before 1.1 never got settings added
+  since: their `web` array hid the new event mappings, so messages sent from
+  the phone, delete-for-everyone and reactions were silently not delivered,
+  and private broadcast channels were never authorized. The package config
+  is now merged recursively, so new nested keys fill in while your values
+  still win.
 - Incoming group messages stored the group as `from_id`. They now store the
   member who sent the message; `chat_id` is still the group.
 
@@ -53,6 +66,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Two new migrations. If you published the package migrations, publish them
   again — existing files are left alone — and migrate:
   `php artisan vendor:publish --tag=laravel-whatsapp-migrations && php artisan migrate`.
+- **Known issue, fixed in 1.2.0:** if you published the config file
+  before 1.1, add `message_create`, `message_revoke` and `message_reaction`
+  to `web.events` (copy them from the package config), or upgrade to 1.2.0.
+  Otherwise those events are never dispatched.
 
 ### Removed
 - **Laravel 11 support.** Laravel 11 stopped receiving security fixes in
@@ -303,7 +320,8 @@ Initial public release.
   - Laravel 11 / 12 → PHP 8.2+
   - Laravel 13 → PHP 8.4+ (Symfony 8 is pulled in transitively and requires 8.4)
 
-[Unreleased]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.0.3...v1.1.0
 [1.0.3]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.0.1...v1.0.2
