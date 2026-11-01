@@ -1,6 +1,6 @@
 {
   "name": "laravel-wa-sidecar",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "private": true,
   "description": "Minimal Node sidecar wrapping whatsapp-web.js, controlled by the kstmostofa/laravel-wa Laravel package.",
   "main": "index.js",
