@@ -1,6 +1,6 @@
 # Web sidecar (whatsapp-web.js)
 
-Bundled ~300-line Node service that wraps `whatsapp-web.js`. Gives you everything Meta's Cloud API doesn't expose — **personal-number QR pairing**, **groups**, **status/stories**, **free-form messages anytime**, **contact lookup**.
+Bundled Node service that wraps `whatsapp-web.js`. Gives you everything Meta's Cloud API doesn't expose — **personal-number QR pairing**, **groups**, **status/stories**, **free-form messages anytime**, **contact lookup**.
 
 ::: warning Use carefully
 The Web sidecar drives WhatsApp Web via browser automation. Meta's ToS technically prohibit this. Risks: account bans for high-volume sending, automated patterns, or spam. For production-grade marketing/transactional sends, use the [Cloud API](/cloud-api).
@@ -22,7 +22,7 @@ The Web sidecar drives WhatsApp Web via browser automation. Meta's ToS technical
             │  http://127.0.0.1:3000
             ▼
 ┌──────────────────────────────┐
-│ Sidecar (Node, ~300 LOC)     │
+│ Sidecar (Node)               │
 │  Express server               │
 │  whatsapp-web.js × N sessions │
 │  Puppeteer / Chromium         │

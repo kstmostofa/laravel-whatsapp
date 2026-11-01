@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-01
+
 ### Upgrading
 - Requires Laravel 12 or 13 (see Removed).
 - Two new migrations. If you published the package migrations, publish them
@@ -262,7 +264,8 @@ Initial public release.
   - Laravel 11 / 12 → PHP 8.2+
   - Laravel 13 → PHP 8.4+ (Symfony 8 is pulled in transitively and requires 8.4)
 
-[Unreleased]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.0.3...HEAD
+[Unreleased]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.0.3...v1.1.0
 [1.0.3]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.0.0...v1.0.1
