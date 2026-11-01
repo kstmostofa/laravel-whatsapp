@@ -31,7 +31,7 @@ features:
       width: 48
       height: 48
     title: Web sidecar
-    details: Bundled ~300-line Node service around whatsapp-web.js. Personal-number QR pairing, groups, free-form messages anytime, status, contact lookup.
+    details: Bundled Node service around whatsapp-web.js. Personal-number QR pairing, groups and group admin, free-form messages anytime, status, contact lookup, chat history import.
     link: /web-sidecar
     linkText: Sidecar docs
 
@@ -80,7 +80,15 @@ features:
       width: 48
       height: 48
     title: Rich messages
-    details: Send text, templates, images, videos, audio, documents, stickers, location, contacts, reactions, interactive (buttons/lists). Edit and delete-for-everyone. Inline image previews + audio player in the UI.
+    details: Send text, templates, images, videos, audio, documents, stickers, location, contacts, reactions, interactive (buttons/lists). Reply, forward, edit and delete-for-everyone. Inline image previews + audio player in the UI.
+
+  - icon:
+      src: /icons/bolt.svg
+      width: 48
+      height: 48
+    title: Notifications, bulk sends & testing
+    details: "A `whatsapp` notification channel, `WhatsApp::bulk()` with per-sender rate limiting, and `WhatsApp::fake()` with `assertSentTo()` for your test suite."
+    link: /notifications
 ---
 
 <style>

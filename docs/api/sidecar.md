@@ -1,6 +1,6 @@
 # Sidecar HTTP API
 
-The Node sidecar (`sidecar/index.js`, ~300 LOC) exposes a small HTTP API that Laravel's `WebClient` talks to. You can also call it directly — useful for debugging or wiring up non-PHP clients.
+The Node sidecar (`sidecar/index.js`) exposes a small HTTP API that Laravel's `WebClient` talks to. You can also call it directly — useful for debugging or wiring up non-PHP clients.
 
 ## Auth
 

@@ -15,16 +15,16 @@
 | Layer | What it does |
 |---|---|
 | **Cloud API client** | Pure PHP. Templates, media, business profile, phone-number management, webhooks with HMAC verification. |
-| **Web sidecar** (~300 LOC Node) | `whatsapp-web.js` wrapped in a thin HTTP service. Personal-number QR pairing, groups, status, free-form messages anytime, contact lookup. |
+| **Web sidecar** (bundled Node service) | `whatsapp-web.js` wrapped in a thin HTTP service. Personal-number QR pairing, groups and group admin, status, free-form messages anytime, contact lookup, chat history. |
 | **Unified facade** | `WhatsApp::messages()->sendTemplate(...)` for Cloud, `WhatsApp::web('main')->messages()->sendText(...)` for sidecar. `WhatsApp::send($to, $body)` auto-picks. |
-| **Livewire + Flux UI** | Drop-in admin at `/whatsapp` — Dashboard, Sessions+QR, Compose, Conversations (chat-bubble UI with media, edit/delete, search, sound, ack ticks), Groups, Contacts, Webhooks log, Status. Works with Tailwind, Bootstrap, or no CSS framework at all. |
-| **Eloquent models** | Opt-in `WaSession` / `WaMessage` / `WaContact` with separate-DB support via `WHATSAPP_DB_CONNECTION`. |
+| **Livewire + Flux UI** | Drop-in admin at `/whatsapp` — Dashboard, Sessions+QR, Compose, Conversations (chat-bubble UI with media, reply, reactions, forward, edit/delete, search, sound, ack ticks, live updates over broadcasting), Groups with member management, Contacts, Webhooks log with replay, Status. Compose includes a template builder. Works with Tailwind, Bootstrap, or no CSS framework at all. |
+| **Eloquent models** | Opt-in `WaSession` / `WaMessage` / `WaContact` / `WaWebhookEvent` with separate-DB support via `WHATSAPP_DB_CONNECTION`. |
 | **Background bridge** | `whatsapp:web:listen` daemon turns sidecar SSE events into Laravel events. |
 | **Notifications** | `'whatsapp'` notification channel with a `WhatsAppMessage` builder — text, templates, media, either backend. |
 | **Bulk sending** | `WhatsApp::bulk($numbers, $message)` — queued, rate limited per sender, opt-out list, job batches. |
 | **Media + webhook log** | Optional copies of media on your own disk before WhatsApp expires it, and a replayable log of raw webhook deliveries. |
 | **Testing** | `WhatsApp::fake()` records every send from both backends, with `assertSentTo()` and friends. |
-| **Health monitoring** | `WhatsApp::status` page + `php artisan whatsapp:health [--json]` for CI/monitoring. |
+| **Health monitoring** | `/whatsapp/status` page + `php artisan whatsapp:health [--json]` for CI/monitoring. |
 
 ---
 
@@ -163,10 +163,10 @@ Detailed deployment guide → [docs/production](https://kstmostofa.github.io/lar
 ## Status
 
 - **123 tests passing**, 370 assertions (testbench + mocked Guzzle + Livewire smoke tests), plus 20 sidecar tests (`npm test` in `sidecar/`)
-- **Compatible with Laravel 12 / 13** — tests run green against L13.11 + PHPUnit 12 on PHP 8.5
+- **Compatible with Laravel 12 / 13** — CI runs the suite on PHP 8.2, 8.3 and 8.4 with Laravel 12, and PHP 8.4 with Laravel 13, plus Pint and Larastan (level 6)
 - PHP minimum: **8.2** on Laravel 12, **8.4** on Laravel 13 (Symfony 8 transitive)
-- Laravel 11 support was dropped: it is past end of life and has unpatched security advisories
-- **Verified end-to-end in Laravel 12**: QR pairing, inbound webhook → DB → UI bubble, edit, delete, sound, attachments, dark-mode toggle
+- Laravel 11 support was dropped in 1.1.0: it is past end of life and has unpatched security advisories
+- **Verified end-to-end in Laravel 12** for the 1.0 feature set: QR pairing, inbound webhook → DB → UI bubble, edit, delete, sound, attachments, dark-mode toggle. Features added in 1.1 are covered by the automated tests above
 
 ## License
 
