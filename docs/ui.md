@@ -121,6 +121,7 @@ The `/whatsapp/chats` page is the most feature-rich:
 | **Double-check acks** | Inline SVG ticks. Single check = sent, double = delivered, blue double = read |
 | **Import history** | Empty conversations offer an **Import recent history** button that pulls the last messages from WhatsApp |
 | **Read receipts** | Opening a chat marks it read on WhatsApp and clears its unread badge |
+| **Names, not numbers** | Senders show by name: the name saved on the paired phone (after `whatsapp:contacts:sync`), else the display name they set on WhatsApp, learnt from their messages. Group messages show who sent them |
 | **Phone-sent messages** | Messages you send from the paired phone show up as outbound bubbles (needs `WHATSAPP_PERSIST_INCOMING=true`) |
 | **Edit message** | Dropdown menu → inline edit form. Calls `msg.edit()` on whatsapp-web.js side. WhatsApp's 15-min edit window applies |
 | **Reply** | Message menu → Reply. A bar above the composer shows what you're replying to; the sent bubble shows the quote. Works for text and attachments |

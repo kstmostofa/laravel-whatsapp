@@ -138,7 +138,7 @@
                                 @endif
                             </flux:table.cell>
                             <flux:table.cell class="font-mono text-xs">
-                                {{ $m->chat_id ? \Illuminate\Support\Str::limit($m->chat_id, 28) : '—' }}
+                                <span title="{{ $m->chat_id }}">{{ \Illuminate\Support\Str::limit($contacts->label($m->chat_id, $names), 28) }}</span>
                             </flux:table.cell>
                             <flux:table.cell>
                                 {{ $m->body ? \Illuminate\Support\Str::limit($m->body, 80) : ('('.($m->type ?? 'no body').')') }}

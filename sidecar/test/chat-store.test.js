@@ -82,6 +82,7 @@ test('reads chats straight from the in-page store', async () => {
       isStarred: false,
       fromMe: false,
       author: null,
+      notifyName: null,
       deviceType: null,
       mimetype: null,
       filename: null,

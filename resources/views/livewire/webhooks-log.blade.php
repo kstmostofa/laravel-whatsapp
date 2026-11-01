@@ -70,7 +70,7 @@
                                 <flux:badge :color="$m->direction === 'inbound' ? 'sky' : 'lime'" size="sm">{{ $m->direction }}</flux:badge>
                             </flux:table.cell>
                             <flux:table.cell>{{ $m->type }}</flux:table.cell>
-                            <flux:table.cell class="font-mono text-xs">{{ \Illuminate\Support\Str::limit($m->chat_id, 28) }}</flux:table.cell>
+                            <flux:table.cell class="text-xs" title="{{ $m->chat_id }}">{{ \Illuminate\Support\Str::limit($contacts->label($m->chat_id, $names), 28) }}</flux:table.cell>
                             <flux:table.cell>{{ \Illuminate\Support\Str::limit($m->body, 60) }}</flux:table.cell>
                             <flux:table.cell class="text-xs !text-zinc-500">{{ $m->status }}</flux:table.cell>
                         </flux:table.row>

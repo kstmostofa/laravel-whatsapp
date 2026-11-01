@@ -24,6 +24,7 @@ Routes are declared once, in a service provider's `boot()`. They run for every i
 | `hears('/^order (\d+)$/i', $handler)` | A regex (starts with `/`). Capture groups are passed to the handler after the message |
 | `onButton('id', $handler)` | A tapped Cloud button or list row, by the ID you gave it when sending |
 | `onType('image', $handler)` | A message type: `image`, `video`, `audio`, `document`, `location`, … or `media` for any media |
+| `onFlow($handler)` | A completed WhatsApp Flow (Cloud). The handler gets the submitted data as its second argument |
 | `fallback($handler)` | Anything no route matched |
 
 The first matching route wins, in the order you declared them. "Text" means the message body, a media caption, or a button's title.

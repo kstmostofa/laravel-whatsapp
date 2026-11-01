@@ -5,6 +5,7 @@ namespace Kstmostofa\LaravelWhatsApp\Livewire;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Cache;
 use Kstmostofa\LaravelWhatsApp\Exceptions\SidecarException;
+use Kstmostofa\LaravelWhatsApp\Support\ContactNames;
 use Kstmostofa\LaravelWhatsApp\Web\WebClient;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -320,7 +321,11 @@ class GroupsIndex extends Component
             }
         }
 
+        $contacts = app(ContactNames::class);
+
         return view('laravel-whatsapp::livewire.groups-index', [
+            'contacts' => $contacts,
+            'names' => $managed ? $contacts->lookup(array_column($managed['participants'] ?? [], 'id')) : [],
             'groups' => $groups,
             'managed' => $managed,
             'ownId' => $ownId,

@@ -166,7 +166,7 @@ Detailed deployment guide → [docs/production](https://kstmostofa.github.io/lar
 
 ## Status
 
-- **144 tests passing**, 408 assertions (testbench + mocked Guzzle + Livewire smoke tests), plus 20 sidecar tests (`npm test` in `sidecar/`)
+- **155 tests passing**, 437 assertions (testbench + mocked Guzzle + Livewire smoke tests), plus 20 sidecar tests (`npm test` in `sidecar/`)
 - **Compatible with Laravel 12 / 13** — CI runs the suite on PHP 8.2, 8.3 and 8.4 with Laravel 12, and PHP 8.4 with Laravel 13, plus Pint and Larastan (level 6)
 - PHP minimum: **8.2** on Laravel 12, **8.4** on Laravel 13 (Symfony 8 transitive)
 - Laravel 11 support was dropped in 1.1.0: it is past end of life and has unpatched security advisories

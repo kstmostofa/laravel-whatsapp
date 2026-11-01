@@ -70,18 +70,39 @@ WhatsApp::messages()->sendContacts('+9665...', [/* vCard objects */]);
 WhatsApp::messages()->sendReaction('+9665...', $messageId, '👍');
 ```
 
-### Interactive (buttons / lists)
+### Interactive messages
+
+Helpers build Meta's interactive payloads for you. Most take an optional `header` and `footer` text as named arguments.
 
 ```php
-WhatsApp::messages()->sendInteractive('+9665...', [
-    'type' => 'button',
-    'body' => ['text' => 'Confirm your order?'],
-    'action' => ['buttons' => [
-        ['type' => 'reply', 'reply' => ['id' => 'yes', 'title' => 'Yes']],
-        ['type' => 'reply', 'reply' => ['id' => 'no',  'title' => 'No']],
-    ]],
+$messages = WhatsApp::messages();
+
+// Up to 3 reply buttons: id => title
+$messages->sendButtons('+9665…', 'Confirm your order?', ['yes' => 'Yes', 'no' => 'No']);
+
+// A list behind a button: up to 10 rows, grouped in sections
+$messages->sendList('+9665…', 'Pick a branch', 'Branches', [
+    'Riyadh' => ['olaya' => 'Olaya', 'malqa' => ['title' => 'Malqa', 'description' => 'Open late']],
 ]);
+
+// One button that opens a link
+$messages->sendCtaUrl('+9665…', 'Your parcel is on its way', 'Track', 'https://shop.test/t/42');
+
+// Ask for the customer's location. The answer arrives as a normal location message.
+$messages->sendLocationRequest('+9665…', 'Where should we deliver?');
+
+// Commerce catalog products
+$messages->sendProduct('+9665…', $catalogId, 'SKU-9', body: 'Back in stock');
+$messages->sendProductList('+9665…', $catalogId, 'New in', 'This week', ['Shoes' => ['SKU-1', 'SKU-2']]);
+
+// WhatsApp Flows: open on a screen with initial data, or use your Flow's data endpoint
+$messages->sendFlow('+9665…', $flowId, 'Book now', 'Book a table', screen: 'BOOKING', data: ['guests' => 2]);
+$messages->sendFlow('+9665…', $flowId, 'Start', 'Quick survey', draft: true);   // test an unpublished Flow
 ```
+
+Button and list taps arrive as `InteractiveReplied`. Route them with [`onButton('yes', …)`](/routing#matching). A submitted Flow arrives as `InteractiveReplied` too: read it with `$event->flowResponse()`, or route it with `onFlow()`. Limits are checked before sending, so 4 buttons throws an `InvalidArgumentException` instead of a Meta error.
+
+For anything the helpers don't cover, `sendInteractive()` takes the raw `interactive` object.
 
 ### Reply / quote
 

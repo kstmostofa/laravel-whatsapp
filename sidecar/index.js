@@ -117,6 +117,8 @@ function serializeMessage(m) {
     isStarred: m.isStarred,
     fromMe: m.fromMe,
     author: serializeWid(m.author),
+    // The sender's WhatsApp display name, as they set it on their phone.
+    notifyName: data.notifyName ?? null,
     deviceType: m.deviceType,
     mimetype: data.mimetype ?? null,
     filename: data.filename ?? null,

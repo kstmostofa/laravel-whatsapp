@@ -9,6 +9,7 @@ use Kstmostofa\LaravelWhatsApp\Events\Web\MessageReaction;
 use Kstmostofa\LaravelWhatsApp\Exceptions\SidecarException;
 use Kstmostofa\LaravelWhatsApp\Livewire\Concerns\ListensForBroadcasts;
 use Kstmostofa\LaravelWhatsApp\Models\WaMessage;
+use Kstmostofa\LaravelWhatsApp\Support\ContactNames;
 use Kstmostofa\LaravelWhatsApp\Web\HistoryImporter;
 use Kstmostofa\LaravelWhatsApp\Web\WebClient;
 use Livewire\Attributes\Layout;
@@ -566,7 +567,14 @@ class ChatHistory extends Component
             ));
         }
 
+        // Names for group senders and for people in quoted replies.
+        $contacts = app(ContactNames::class);
+        $names = $contacts->lookup($messages->flatMap(fn ($m) => [$m->from_id, $m->payload['quoted']['from'] ?? null]));
+
         return view('laravel-whatsapp::livewire.chat-history', [
+            'contacts' => $contacts,
+            'names' => $names,
+            'isGroupChat' => str_ends_with((string) $this->selectedChat, '@g.us'),
             'forwardTargets' => array_slice($forwardTargets, 0, 30),
             'replyTarget' => $this->replyingTo ? $this->findMessage($this->replyingTo) : null,
             'quickReactions' => self::QUICK_REACTIONS,

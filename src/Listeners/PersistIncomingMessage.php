@@ -14,6 +14,7 @@ use Kstmostofa\LaravelWhatsApp\Events\Web\MessageReceived as WebMessageReceived;
 use Kstmostofa\LaravelWhatsApp\Events\Web\MessageRevoked as WebMessageRevoked;
 use Kstmostofa\LaravelWhatsApp\Jobs\StoreMessageMedia;
 use Kstmostofa\LaravelWhatsApp\Media\MediaStore;
+use Kstmostofa\LaravelWhatsApp\Models\WaContact;
 use Kstmostofa\LaravelWhatsApp\Models\WaMessage;
 
 /**
@@ -73,7 +74,8 @@ class PersistIncomingMessage
             'direction' => $isOutbound ? 'outbound' : 'inbound',
             // For outbound: from=me, to=chat. For inbound: from=chat, to=me.
             'chat_id' => $event->chatId(),
-            'from_id' => $m['from'] ?? null,
+            // In groups `from` is the group; `author` is the member who sent it.
+            'from_id' => $m['author'] ?? $m['from'] ?? null,
             'to_id' => $m['to'] ?? null,
             'type' => $m['type'] ?? 'unknown',
             'body' => $m['body'] ?? null,
@@ -89,6 +91,10 @@ class PersistIncomingMessage
         }
 
         $this->store('web', $event->messageId(), $attributes);
+
+        if (! $isOutbound) {
+            $this->rememberName($event->sessionId, $m['author'] ?? $m['from'] ?? null, $m['notifyName'] ?? null);
+        }
     }
 
     protected function persistCloud(CloudMessageReceived|CloudMediaReceived|CloudInteractiveReplied $event, ?string $body): void
@@ -109,6 +115,36 @@ class PersistIncomingMessage
                 ? now()->setTimestamp((int) $event->payload['timestamp'])
                 : null,
         ]);
+
+        // Meta sends the sender's profile name alongside each message.
+        foreach ($event->metadata['contacts'] ?? [] as $contact) {
+            if (is_array($contact)) {
+                $this->rememberName($event->phoneNumberId, $contact['wa_id'] ?? null, $contact['profile']['name'] ?? null);
+            }
+        }
+    }
+
+    /**
+     * Keep the sender's own display name (their WhatsApp "push name") in
+     * wa_contacts, so the UI can show names instead of numbers. Never
+     * overwrites a name with nothing.
+     */
+    protected function rememberName(string $sessionId, mixed $waId, mixed $pushname): void
+    {
+        if (! is_string($waId) || $waId === '' || ! is_string($pushname) || trim($pushname) === '') {
+            return;
+        }
+
+        $digits = preg_replace('/\D+/', '', explode('@', $waId)[0]) ?: null;
+
+        WaContact::updateOrCreate(
+            ['session_id' => $sessionId, 'wa_id' => $waId],
+            array_filter([
+                'pushname' => trim($pushname),
+                'number' => str_ends_with($waId, '@lid') ? null : $digits,
+                'last_seen_at' => now(),
+            ], fn ($v) => $v !== null),
+        );
     }
 
     /**

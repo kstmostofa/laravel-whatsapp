@@ -41,6 +41,30 @@ class InteractiveReplied
             ?? null;
     }
 
+    /**
+     * A completed WhatsApp Flow's submitted data, decoded from
+     * `interactive.nfm_reply.response_json` — null for other replies.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function flowResponse(): ?array
+    {
+        $json = $this->payload['interactive']['nfm_reply']['response_json'] ?? null;
+
+        if (! is_string($json)) {
+            return null;
+        }
+
+        $decoded = json_decode($json, true);
+
+        return is_array($decoded) ? $decoded : null;
+    }
+
+    public function isFlowResponse(): bool
+    {
+        return ($this->payload['interactive']['type'] ?? null) === 'nfm_reply';
+    }
+
     /** Alias of replyId(). */
     public function buttonId(): ?string
     {
