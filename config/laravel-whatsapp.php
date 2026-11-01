@@ -148,6 +148,15 @@ return [
         'default_session' => env('WHATSAPP_UI_DEFAULT_SESSION', 'main'),
         'poll_interval' => env('WHATSAPP_UI_POLL_INTERVAL', '5s'),
 
+        // With broadcasting on, pages update from Echo events and only poll
+        // as a slow safety net (missed events, reconnects).
+        'poll_interval_broadcasting' => env('WHATSAPP_UI_POLL_INTERVAL_BROADCASTING', '60s'),
+
+        // Extra <script src> URLs for the UI layout — e.g. a bundle that sets
+        // up window.Echo when you use css_mode=standalone and so don't load
+        // your app's Vite JS.
+        'scripts' => array_filter(explode(',', (string) env('WHATSAPP_UI_SCRIPTS', ''))),
+
         // How the UI's CSS is delivered to the browser:
         //   'vite'       — (default) call @vite(['resources/css/app.css', 'resources/js/app.js']).
         //                  Requires the host app to have Tailwind v4 + Vite set up, with
@@ -179,6 +188,10 @@ return [
         // per tick. 0 disables caching.
         'chats_cache_seconds' => (int) env('WHATSAPP_UI_CHATS_CACHE_SECONDS', 3),
         'contacts_cache_seconds' => (int) env('WHATSAPP_UI_CONTACTS_CACHE_SECONDS', 30),
+
+        // Approved Cloud templates shown in Compose. Dropped automatically when
+        // a template status webhook arrives.
+        'templates_cache_seconds' => (int) env('WHATSAPP_UI_TEMPLATES_CACHE_SECONDS', 600),
     ],
 
     /*
@@ -196,6 +209,12 @@ return [
         'enabled' => env('WHATSAPP_BROADCAST', false),
         'channel_prefix' => env('WHATSAPP_BROADCAST_PREFIX', 'whatsapp'),
         'channel_type' => env('WHATSAPP_BROADCAST_CHANNEL', 'public'),
+
+        // Private channels only: the package registers the channel's
+        // authorization for you, allowing users who pass this Gate ability
+        // (called with the session ID). Define the gate in your app; an
+        // undefined gate denies everyone. Set to null to register your own.
+        'ability' => env('WHATSAPP_BROADCAST_ABILITY', 'manage-whatsapp'),
     ],
 
     /*

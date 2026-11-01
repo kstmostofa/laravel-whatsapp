@@ -14,16 +14,13 @@ trait BroadcastsToSession
 {
     public function broadcastOn(): Channel|PrivateChannel
     {
-        $prefix = config('laravel-whatsapp.broadcasting.channel_prefix', 'whatsapp');
-        $name = "{$prefix}.session.{$this->sessionId}";
+        $name = SessionChannel::name($this->sessionId);
 
-        return config('laravel-whatsapp.broadcasting.channel_type', 'public') === 'private'
-            ? new PrivateChannel($name)
-            : new Channel($name);
+        return SessionChannel::isPrivate() ? new PrivateChannel($name) : new Channel($name);
     }
 
     public function broadcastWhen(): bool
     {
-        return (bool) config('laravel-whatsapp.broadcasting.enabled', false);
+        return SessionChannel::enabled();
     }
 }

@@ -172,7 +172,7 @@ Broadcast name: `message.revoked`.
 
 ### `Events\Web\SessionReady`
 
-Fired once the session is connected and ready. Not broadcast.
+Fired once the session is connected and ready. Broadcast name: `session.ready`.
 
 ```php
 $event->wid();        // 9665XXX@c.us — the paired account
@@ -182,11 +182,23 @@ $event->pushname();   // display name on the phone
 
 ### `Events\Web\Disconnected`
 
-Fired when WhatsApp Web disconnects — could be a network blip or the user revoking the linked-device authorization. Not broadcast.
+Fired when WhatsApp Web disconnects — could be a network blip or the user revoking the linked-device authorization. Broadcast name: `session.disconnected`.
 
 ## Broadcasting
 
-When `WHATSAPP_BROADCAST=true`, the three live-event classes (`Web\MessageReceived`, `Web\QrGenerated`, `Web\MessageAck`) implement `ShouldBroadcast` and push to channel `{prefix}.session.{sessionId}`:
+When `WHATSAPP_BROADCAST=true`, the Web events push to channel `{prefix}.session.{sessionId}` under these names:
+
+| Event | Broadcast name |
+|---|---|
+| `Web\MessageReceived` | `message.received` |
+| `Web\MessageCreated` | `message.created` |
+| `Web\MessageAck` | `message.ack` |
+| `Web\MessageRevoked` | `message.revoked` |
+| `Web\QrGenerated` | `qr.generated` |
+| `Web\SessionReady` | `session.ready` |
+| `Web\Disconnected` | `session.disconnected` |
+
+The bundled UI already listens to these. Use `Kstmostofa\LaravelWhatsApp\Broadcasting\SessionChannel::name($sessionId)` to get the channel name in your own code.
 
 ```bash
 WHATSAPP_BROADCAST=true

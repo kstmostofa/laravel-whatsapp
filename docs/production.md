@@ -109,22 +109,35 @@ Or use Laravel Horizon for richer control and a dashboard.
 
 ## Live updates: polling vs broadcasting
 
-By default, the UI uses `wire:poll` (5s tick). For sub-second updates, enable broadcasting:
+By default, the UI uses `wire:poll` (5s tick). For instant updates, enable broadcasting:
 
 ```bash
 # .env
 WHATSAPP_BROADCAST=true
-WHATSAPP_BROADCAST_CHANNEL=private  # or public
+WHATSAPP_BROADCAST_CHANNEL=private  # recommended; `public` lets anyone with your app key listen
 ```
 
-Then configure your broadcaster (Reverb, Pusher, Ably) per Laravel's broadcasting docs. The package's Web events (`MessageReceived`, `QrGenerated`, `MessageAck`) implement `ShouldBroadcast` and push to channels prefixed `whatsapp.session.{id}`.
+You need three things in place:
 
-If you go private, add a channel auth in `routes/channels.php`:
+1. **A broadcaster.** Reverb, Pusher or Ably, set up per Laravel's broadcasting docs (`php artisan install:broadcasting`).
+2. **A queue worker.** Broadcast events are queued, so updates arrive only while a worker runs.
+3. **Echo in the browser.** With `WHATSAPP_UI_CSS_MODE=vite`, the UI loads your app's `resources/js/app.js`, which is where `install:broadcasting` sets up `window.Echo`. With `standalone`, point `WHATSAPP_UI_SCRIPTS` at a built script that sets up Echo.
+
+Once that works, the conversations, sessions and dashboard pages update from Echo events. New messages, ticks, deletions, fresh QR codes, and sessions connecting or dropping all show up at once. Polling drops to a 60-second safety net (`WHATSAPP_UI_POLL_INTERVAL_BROADCASTING`).
+
+### Private channel authorization
+
+With private channels, the package registers the channel authorization for you. A user may listen to `whatsapp.session.{session}` when they pass the `manage-whatsapp` Gate ability, which receives the session ID:
 
 ```php
-Broadcast::channel('whatsapp.session.{session}', function ($user, $session) {
-    return $user->can('view-whatsapp-session', $session);
-});
+// AppServiceProvider::boot()
+Gate::define('manage-whatsapp', fn ($user, ?string $session = null) => $user->is_admin);
+```
+
+If the gate isn't defined, everyone is denied. To use a different ability set `WHATSAPP_BROADCAST_ABILITY`. To write the authorization yourself, set `WHATSAPP_BROADCAST_ABILITY=` (empty) and register it in `routes/channels.php`:
+
+```php
+Broadcast::channel('whatsapp.session.{session}', fn ($user, $session) => $user->team->owns($session));
 ```
 
 ## Reverse proxy + sidecar

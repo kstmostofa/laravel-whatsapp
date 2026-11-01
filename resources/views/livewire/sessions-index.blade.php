@@ -1,4 +1,4 @@
-<div class="space-y-8" wire:poll.5s>
+<div class="space-y-8" wire:poll.{{ $pollInterval }}>
     <div>
         <flux:heading size="xl">Sessions</flux:heading>
         <flux:subheading>Each session pairs one WhatsApp number with the Web sidecar.</flux:subheading>
