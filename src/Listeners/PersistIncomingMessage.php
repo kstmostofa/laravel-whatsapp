@@ -11,6 +11,8 @@ use Kstmostofa\LaravelWhatsApp\Events\Web\MessageAck as WebMessageAck;
 use Kstmostofa\LaravelWhatsApp\Events\Web\MessageCreated as WebMessageCreated;
 use Kstmostofa\LaravelWhatsApp\Events\Web\MessageReceived as WebMessageReceived;
 use Kstmostofa\LaravelWhatsApp\Events\Web\MessageRevoked as WebMessageRevoked;
+use Kstmostofa\LaravelWhatsApp\Jobs\StoreMessageMedia;
+use Kstmostofa\LaravelWhatsApp\Media\MediaStore;
 use Kstmostofa\LaravelWhatsApp\Models\WaMessage;
 
 /**
@@ -116,18 +118,30 @@ class PersistIncomingMessage
      *
      * @param  array<string, mixed>  $attributes
      */
-    protected function store(string $backend, ?string $messageId, array $attributes): void
+    protected function store(string $backend, ?string $messageId, array $attributes): WaMessage
     {
-        if ($messageId === null || $messageId === '') {
-            WaMessage::create($attributes + ['backend' => $backend, 'wa_message_id' => null]);
+        $message = ($messageId === null || $messageId === '')
+            ? WaMessage::create($attributes + ['backend' => $backend, 'wa_message_id' => null])
+            : WaMessage::updateOrCreate(['wa_message_id' => $messageId, 'backend' => $backend], $attributes);
 
+        $this->queueMediaCopy($message);
+
+        return $message;
+    }
+
+    /**
+     * With `media.store` on, copy the media off WhatsApp before it expires.
+     * Queued so a slow download never holds up the webhook or SSE bridge.
+     */
+    protected function queueMediaCopy(WaMessage $message): void
+    {
+        if (! MediaStore::enabled() || $message->media_path) {
             return;
         }
 
-        WaMessage::updateOrCreate(
-            ['wa_message_id' => $messageId, 'backend' => $backend],
-            $attributes,
-        );
+        if (app(MediaStore::class)->supports($message)) {
+            StoreMessageMedia::dispatch($message->id);
+        }
     }
 
     /**

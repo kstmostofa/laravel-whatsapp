@@ -20,6 +20,9 @@ use Kstmostofa\LaravelWhatsApp\Models\Concerns\UsesWhatsAppConnection;
  * @property ?string $status
  * @property ?int $ack    whatsapp-web.js ack level: -1 error, 0 pending, 1 server, 2 device, 3 read, 4 played
  * @property ?\Illuminate\Support\Carbon $wa_timestamp
+ * @property ?string $media_path  set once StoreMessageMedia copied the media to the configured disk
+ * @property ?string $media_mime
+ * @property ?int $media_size
  */
 class WaMessage extends Model
 {
@@ -35,11 +38,17 @@ class WaMessage extends Model
         'wa_timestamp' => 'datetime',
         'deleted_at' => 'datetime',
         'deleted_for_everyone' => 'boolean',
+        'media_size' => 'integer',
     ];
 
     public function session()
     {
         return $this->belongsTo(WaSession::class, 'session_id');
+    }
+
+    public function hasStoredMedia(): bool
+    {
+        return $this->media_path !== null && $this->media_path !== '';
     }
 
     public function scopeInbound($query)

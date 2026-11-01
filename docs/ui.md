@@ -12,7 +12,7 @@ A drop-in admin under `/whatsapp` built on [Flux UI](https://fluxui.dev) (Livewi
 | `/whatsapp/chats` | **Full chat UI** — chat list with search, conversation pane with chat bubbles, file attachments, edit, delete, sound notification, double-check acks |
 | `/whatsapp/groups` | List + create groups, manage participants |
 | `/whatsapp/contacts` | Searchable contact list with avatars, "is on WhatsApp" checker |
-| `/whatsapp/webhooks` | Paginated `wa_messages` log filtered by direction + backend |
+| `/whatsapp/webhooks` | **Messages**: paginated `wa_messages` log filtered by direction + backend. **Raw events**: logged Meta deliveries with status, payload viewer, and replay (needs `WHATSAPP_WEBHOOK_LOG=true`) |
 | `/whatsapp/status` | Detailed health page — sidecar + Cloud probes, latency, recent logs |
 
 ## Install paths

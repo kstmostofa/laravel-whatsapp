@@ -7,12 +7,14 @@ use Illuminate\Support\ServiceProvider;
 use Kstmostofa\LaravelWhatsApp\Client\CloudClient;
 use Kstmostofa\LaravelWhatsApp\Console\Commands\ContactsSyncCommand;
 use Kstmostofa\LaravelWhatsApp\Console\Commands\HealthCheckCommand;
+use Kstmostofa\LaravelWhatsApp\Console\Commands\MediaPruneCommand;
 use Kstmostofa\LaravelWhatsApp\Console\Commands\SidecarInstallCommand;
 use Kstmostofa\LaravelWhatsApp\Console\Commands\SidecarStartCommand;
 use Kstmostofa\LaravelWhatsApp\Console\Commands\SidecarStatusCommand;
 use Kstmostofa\LaravelWhatsApp\Console\Commands\SidecarStopCommand;
 use Kstmostofa\LaravelWhatsApp\Console\Commands\WebListenCommand;
 use Kstmostofa\LaravelWhatsApp\Console\Commands\WebSyncCommand;
+use Kstmostofa\LaravelWhatsApp\Console\Commands\WebhooksReplayCommand;
 use Kstmostofa\LaravelWhatsApp\Health\HealthSnapshot;
 use Kstmostofa\LaravelWhatsApp\Web\SidecarManager;
 use Kstmostofa\LaravelWhatsApp\Web\WebClient;
@@ -100,6 +102,8 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
                 HealthCheckCommand::class,
                 ContactsSyncCommand::class,
                 WebSyncCommand::class,
+                WebhooksReplayCommand::class,
+                MediaPruneCommand::class,
             ]);
         }
 

@@ -19,4 +19,11 @@ class FakeWebClient extends WebClient
     {
         return $this->recorder->recordRequest('web', $method, $path, $options);
     }
+
+    public function download(string $path): array
+    {
+        $this->recorder->recordRequest('web', 'GET', $path, []);
+
+        return ['body' => 'fake-media', 'mime' => 'application/octet-stream', 'filename' => null];
+    }
 }

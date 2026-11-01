@@ -58,6 +58,16 @@ $session->isReady();   // status === 'ready'
 | `deleted_at` | datetime | soft-delete (when message was deleted) |
 | `deleted_for_everyone` | bool | `true` if remote delete, `false` for local-only |
 
+### Stored media
+
+With media persistence on, `media_path`, `media_mime` and `media_size` describe the copy on `WHATSAPP_MEDIA_DISK`:
+
+```php
+if ($message->hasStoredMedia()) {
+    $bytes = app(\Kstmostofa\LaravelWhatsApp\Media\MediaStore::class)->disk()->get($message->media_path);
+}
+```
+
 ### Scopes
 
 ```php
@@ -84,6 +94,28 @@ $message->session;   // belongsTo WaSession
 | `2` | `ACK_DEVICE` | delivered to recipient device | double check (gray) |
 | `3` | `ACK_READ` | read by recipient | double check (blue) |
 | `4` | `ACK_PLAYED` | voice note played | double check (blue) + headphones icon |
+
+## WaWebhookEvent
+
+`Kstmostofa\LaravelWhatsApp\Models\WaWebhookEvent` — one raw delivery from Meta, written when `WHATSAPP_WEBHOOK_LOG=true`.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | bigint PK | |
+| `backend` | string | `'cloud'` |
+| `payload` | json | the request body as Meta sent it |
+| `status` | string | `pending`, `processed` or `failed` |
+| `event_count` | int | Laravel events the last attempt dispatched |
+| `error` | text | exception class and message from the last failed attempt |
+| `attempts` | int | first delivery plus replays |
+| `processed_at` | timestamp | last successful attempt |
+
+```php
+WaWebhookEvent::failed()->get();
+app(\Kstmostofa\LaravelWhatsApp\Webhooks\WebhookDispatcher::class)->process($event);   // replay one
+```
+
+Uses `MassPrunable`: rows older than `WHATSAPP_WEBHOOK_LOG_RETENTION_DAYS` go when `model:prune` runs.
 
 ## WaContact
 

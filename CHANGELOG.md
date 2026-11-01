@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Upgrading
+- Requires Laravel 12 or 13 (see Removed).
+- Two new migrations. If you published the package migrations, publish them
+  again — existing files are left alone — and migrate:
+  `php artisan vendor:publish --tag=laravel-whatsapp-migrations && php artisan migrate`.
+
 ### Removed
 - **Laravel 11 support.** Laravel 11 stopped receiving security fixes in
   March 2026, and several framework advisories since then (including an API
@@ -15,6 +21,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Laravel 12 or 13 to use this version; 1.0.x keeps working on Laravel 11.
 
 ### Added
+- **Media persistence.** With `WHATSAPP_MEDIA_STORE=true`, every media
+  message queues a `StoreMessageMedia` job that copies the file to
+  `WHATSAPP_MEDIA_DISK` (Web from the sidecar, inbound Cloud from Meta) and
+  records `media_path`, `media_mime` and `media_size`. The UI's media proxy
+  serves the stored copy first. `whatsapp:media:prune` deletes old copies.
+  New migration adds the three columns to `wa_messages`.
+- **Webhook log and replay.** With `WHATSAPP_WEBHOOK_LOG=true`, every
+  verified delivery is stored in the new `wa_webhook_events` table and marked
+  `processed` or `failed`. Listener failures return 200 instead of 500 while
+  logging is on, since the delivery can be replayed with
+  `whatsapp:webhooks:replay` or from the new **Raw events** view on the
+  Webhooks page, which also shows each payload. Rows are pruned by
+  `model:prune` after `WHATSAPP_WEBHOOK_LOG_RETENTION_DAYS`.
+- `WebSession::downloadMedia()` and `WebClient::download()` for binary
+  sidecar endpoints.
 - **Live UI updates.** With `WHATSAPP_BROADCAST=true`, the conversations,
   sessions and dashboard pages subscribe to the session channel through
   Livewire's Echo support and update as events arrive. Polling drops to a

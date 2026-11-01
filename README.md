@@ -22,6 +22,7 @@
 | **Background bridge** | `whatsapp:web:listen` daemon turns sidecar SSE events into Laravel events. |
 | **Notifications** | `'whatsapp'` notification channel with a `WhatsAppMessage` builder — text, templates, media, either backend. |
 | **Bulk sending** | `WhatsApp::bulk($numbers, $message)` — queued, rate limited per sender, opt-out list, job batches. |
+| **Media + webhook log** | Optional copies of media on your own disk before WhatsApp expires it, and a replayable log of raw webhook deliveries. |
 | **Testing** | `WhatsApp::fake()` records every send from both backends, with `assertSentTo()` and friends. |
 | **Health monitoring** | `WhatsApp::status` page + `php artisan whatsapp:health [--json]` for CI/monitoring. |
 
@@ -129,6 +130,8 @@ Full setup details + dark mode + screenshots → [docs site](https://kstmostofa.
 | `whatsapp:health [--json]` [`--exit-code`] | Health probe — pipe into cron / monitoring |
 | `whatsapp:contacts:sync [session] [--all]` | Copy Web contacts into `wa_contacts` — safe to schedule |
 | `whatsapp:web:sync [session] [--chats=20] [--limit=50] [--chat=…]` | Import recent chat history into `wa_messages` |
+| `whatsapp:webhooks:replay [id…] [--failed]` | Re-dispatch logged webhook deliveries |
+| `whatsapp:media:prune [--days=]` | Delete stored media older than the retention window |
 
 ## Production checklist
 
@@ -158,7 +161,7 @@ Detailed deployment guide → [docs/production](https://kstmostofa.github.io/lar
 
 ## Status
 
-- **98 tests passing**, 277 assertions (testbench + mocked Guzzle + Livewire smoke tests), plus 20 sidecar tests (`npm test` in `sidecar/`)
+- **111 tests passing**, 324 assertions (testbench + mocked Guzzle + Livewire smoke tests), plus 20 sidecar tests (`npm test` in `sidecar/`)
 - **Compatible with Laravel 12 / 13** — tests run green against L13.11 + PHPUnit 12 on PHP 8.5
 - PHP minimum: **8.2** on Laravel 12, **8.4** on Laravel 13 (Symfony 8 transitive)
 - Laravel 11 support was dropped: it is past end of life and has unpatched security advisories

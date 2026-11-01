@@ -77,6 +77,40 @@ class WebClient
     }
 
     /**
+     * Fetch a binary endpoint (media, avatars) instead of JSON.
+     *
+     * @return array{body: string, mime: string, filename: ?string}
+     */
+    public function download(string $path): array
+    {
+        try {
+            $response = $this->http->request('GET', ltrim($path, '/'), ['headers' => ['Accept' => '*/*']]);
+        } catch (GuzzleException $e) {
+            throw new SidecarException("Sidecar transport error: {$e->getMessage()}", 0, $e);
+        }
+
+        $status = $response->getStatusCode();
+        $body = (string) $response->getBody();
+
+        if ($status >= 400) {
+            $decoded = json_decode($body, true);
+
+            throw new SidecarException(is_array($decoded) && isset($decoded['error']) ? $decoded['error'] : "Sidecar HTTP {$status}", $status);
+        }
+
+        $filename = null;
+        if (preg_match('/filename="([^"]+)"/', $response->getHeaderLine('Content-Disposition'), $m)) {
+            $filename = $m[1];
+        }
+
+        return [
+            'body' => $body,
+            'mime' => $response->getHeaderLine('Content-Type') ?: 'application/octet-stream',
+            'filename' => $filename,
+        ];
+    }
+
+    /**
      * @param  array<string, mixed>  $options
      * @return array<string, mixed>
      */
