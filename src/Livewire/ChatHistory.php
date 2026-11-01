@@ -4,6 +4,7 @@ namespace Kstmostofa\LaravelWhatsApp\Livewire;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
+use Kstmostofa\LaravelWhatsApp\Events\Web\MessageReaction;
 use Kstmostofa\LaravelWhatsApp\Exceptions\SidecarException;
 use Kstmostofa\LaravelWhatsApp\Livewire\Concerns\ListensForBroadcasts;
 use Kstmostofa\LaravelWhatsApp\Models\WaMessage;
@@ -44,6 +45,20 @@ class ChatHistory extends Component
 
     public ?string $deletingMessageId = null;
 
+    /** Message being replied to (quoted) by the next send. */
+    public ?string $replyingTo = null;
+
+    public bool $showForward = false;
+
+    public ?string $forwardingId = null;
+
+    public string $forwardSearch = '';
+
+    public ?string $notice = null;
+
+    /** Quick reactions offered in the message menu, like WhatsApp's row. */
+    public const QUICK_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+
     /** How many recent messages to load. Grows by `messages_page_size` on each "Load older" click. */
     public int $messagesLimit = 50;
 
@@ -64,6 +79,7 @@ class ChatHistory extends Component
             'message.created' => 'refreshFromBroadcast',
             'message.ack' => 'refreshFromBroadcast',
             'message.revoked' => 'refreshFromBroadcast',
+            'message.reaction' => 'refreshFromBroadcast',
         ]);
     }
 
@@ -197,6 +213,89 @@ class ChatHistory extends Component
         $this->cancelDelete();
     }
 
+    public function startReply(string $wamId): void
+    {
+        $this->replyingTo = $wamId;
+        $this->dispatch('focus-composer');
+    }
+
+    public function cancelReply(): void
+    {
+        $this->replyingTo = null;
+    }
+
+    /**
+     * React to a message. Picking the emoji you already reacted with removes
+     * your reaction, as in WhatsApp.
+     */
+    public function react(string $wamId, string $emoji): void
+    {
+        if ($emoji !== '' && ! in_array($emoji, self::QUICK_REACTIONS, true)) {
+            return;
+        }
+
+        $this->error = null;
+
+        $row = $this->findMessage($wamId);
+        $current = $row?->payload['reactions'][MessageReaction::ME] ?? null;
+        $emoji = $current === $emoji ? '' : $emoji;
+
+        try {
+            app(WebClient::class)->session($this->session)->messages()->react($wamId, $emoji);
+
+            if ($row) {
+                $payload = $row->payload ?? [];
+                $payload['reactions'] = MessageReaction::apply($payload['reactions'] ?? [], MessageReaction::ME, $emoji);
+                $row->forceFill(['payload' => $payload])->save();
+            }
+        } catch (SidecarException $e) {
+            $this->error = $e->getMessage();
+        }
+    }
+
+    public function startForward(string $wamId): void
+    {
+        $this->forwardingId = $wamId;
+        $this->forwardSearch = '';
+        $this->showForward = true;
+    }
+
+    public function cancelForward(): void
+    {
+        $this->showForward = false;
+        $this->forwardingId = null;
+    }
+
+    public function forwardTo(string $chatId): void
+    {
+        if (! $this->forwardingId) {
+            return;
+        }
+
+        $this->error = null;
+
+        try {
+            app(WebClient::class)->session($this->session)->messages()->forward($this->forwardingId, $chatId);
+            $this->notice = 'Message forwarded.';
+        } catch (SidecarException $e) {
+            $this->error = $e->getMessage();
+        }
+
+        $this->cancelForward();
+    }
+
+    protected function findMessage(string $wamId): ?WaMessage
+    {
+        try {
+            return WaMessage::where('backend', 'web')
+                ->where('session_id', $this->session)
+                ->where('wa_message_id', $wamId)
+                ->first();
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     /**
      * Begin editing a message — populates the inline edit form with the
      * current body. Only outbound messages are editable on WhatsApp's side.
@@ -262,6 +361,7 @@ class ChatHistory extends Component
 
             $this->reply = '';
             $this->removeAttachment();
+            $this->replyingTo = null;
         } catch (SidecarException $e) {
             $this->error = $e->getMessage();
         }
@@ -273,7 +373,7 @@ class ChatHistory extends Component
     protected function dispatchText(): array
     {
         return app(WebClient::class)->session($this->session)->messages()
-            ->sendText($this->selectedChat, $this->reply);
+            ->sendText($this->selectedChat, $this->reply, $this->replyingTo);
     }
 
     /**
@@ -296,6 +396,7 @@ class ChatHistory extends Component
             'mimeType' => $mime,
             'filename' => $name,
             'caption' => $caption,
+            'quotedMessageId' => $this->replyingTo,
         ], fn ($v) => $v !== null);
 
         return match (true) {
@@ -332,8 +433,12 @@ class ChatHistory extends Component
                 'to_id' => $this->selectedChat,
                 'type' => $type,
                 'body' => $type === 'text' ? $this->reply : (trim($this->reply) !== '' ? $this->reply : null),
-                // Keep the filename so document bubbles can show it.
-                'payload' => $result + array_filter(['filename' => $filename]),
+                // Keep the filename and the quote so the bubble can show them
+                // before the sidecar's own copy of the message arrives.
+                'payload' => $result + array_filter([
+                    'filename' => $filename,
+                    'quoted' => $this->quotePreview(),
+                ]),
                 'status' => 'sent',
                 'ack' => 0,
                 'wa_timestamp' => now(),
@@ -349,6 +454,31 @@ class ChatHistory extends Component
         } catch (\Throwable) {
             // wa_messages table missing — skip silently, message still went out.
         }
+    }
+
+    /**
+     * The message being replied to, in the same shape as the sidecar's
+     * `quoted` field.
+     *
+     * @return array{stanzaId: string, body: ?string, type: ?string, from: ?string}|null
+     */
+    protected function quotePreview(): ?array
+    {
+        if (! $this->replyingTo) {
+            return null;
+        }
+
+        $quoted = $this->findMessage($this->replyingTo);
+
+        // The stanza ID is the last part of the serialized message ID.
+        $parts = explode('_', $this->replyingTo);
+
+        return [
+            'stanzaId' => $parts[2] ?? $this->replyingTo,
+            'body' => $quoted?->body,
+            'type' => $quoted?->type,
+            'from' => $quoted?->direction === 'outbound' ? null : $quoted?->from_id,
+        ];
     }
 
     public function render()
@@ -422,7 +552,19 @@ class ChatHistory extends Component
             }
         }
 
+        $forwardTargets = [];
+        if ($this->showForward) {
+            $needle = mb_strtolower($this->forwardSearch);
+            $forwardTargets = array_values(array_filter(
+                $chats,
+                fn ($c) => $needle === '' || str_contains(mb_strtolower(($c['name'] ?? '').' '.($c['id'] ?? '')), $needle),
+            ));
+        }
+
         return view('laravel-whatsapp::livewire.chat-history', [
+            'forwardTargets' => array_slice($forwardTargets, 0, 30),
+            'replyTarget' => $this->replyingTo ? $this->findMessage($this->replyingTo) : null,
+            'quickReactions' => self::QUICK_REACTIONS,
             'chats' => $chats,
             'messages' => $messages,
             'hasOlder' => $hasOlder,

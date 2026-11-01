@@ -161,7 +161,7 @@ Detailed deployment guide → [docs/production](https://kstmostofa.github.io/lar
 
 ## Status
 
-- **111 tests passing**, 324 assertions (testbench + mocked Guzzle + Livewire smoke tests), plus 20 sidecar tests (`npm test` in `sidecar/`)
+- **123 tests passing**, 370 assertions (testbench + mocked Guzzle + Livewire smoke tests), plus 20 sidecar tests (`npm test` in `sidecar/`)
 - **Compatible with Laravel 12 / 13** — tests run green against L13.11 + PHPUnit 12 on PHP 8.5
 - PHP minimum: **8.2** on Laravel 12, **8.4** on Laravel 13 (Symfony 8 transitive)
 - Laravel 11 support was dropped: it is past end of life and has unpatched security advisories

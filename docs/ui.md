@@ -10,7 +10,7 @@ A drop-in admin under `/whatsapp` built on [Flux UI](https://fluxui.dev) (Livewi
 | `/whatsapp/sessions` | List active sessions, start new, QR pairing modal, stop / destroy |
 | `/whatsapp/compose` | Send a one-off message — pick backend (auto/cloud/web), type (text/image/document/template). Templates come from a picker of your approved templates, with a field per placeholder and a live preview |
 | `/whatsapp/chats` | **Full chat UI** — chat list with search, conversation pane with chat bubbles, file attachments, edit, delete, sound notification, double-check acks |
-| `/whatsapp/groups` | List + create groups, manage participants |
+| `/whatsapp/groups` | List + create groups. **Manage** opens the member list with roles, promote / demote / remove, add by phone number, edit name and description, and the invite link |
 | `/whatsapp/contacts` | Searchable contact list with avatars, "is on WhatsApp" checker |
 | `/whatsapp/webhooks` | **Messages**: paginated `wa_messages` log filtered by direction + backend. **Raw events**: logged Meta deliveries with status, payload viewer, and replay (needs `WHATSAPP_WEBHOOK_LOG=true`) |
 | `/whatsapp/status` | Detailed health page — sidecar + Cloud probes, latency, recent logs |
@@ -123,6 +123,9 @@ The `/whatsapp/chats` page is the most feature-rich:
 | **Read receipts** | Opening a chat marks it read on WhatsApp and clears its unread badge |
 | **Phone-sent messages** | Messages you send from the paired phone show up as outbound bubbles (needs `WHATSAPP_PERSIST_INCOMING=true`) |
 | **Edit message** | Dropdown menu → inline edit form. Calls `msg.edit()` on whatsapp-web.js side. WhatsApp's 15-min edit window applies |
+| **Reply** | Message menu → Reply. A bar above the composer shows what you're replying to; the sent bubble shows the quote. Works for text and attachments |
+| **Reactions** | WhatsApp's quick row (👍 ❤️ 😂 😮 😢 🙏) in the message menu. Picking your current reaction removes it. Everyone's reactions show as a chip under the bubble, live with broadcasting |
+| **Forward** | Message menu → Forward, then pick a chat |
 | **Delete message** | Flux modal with "Delete for me" / "Delete for everyone". Marks `deleted_at` + shows "You deleted this message" placeholder (matches WhatsApp UX) |
 | **Load older messages** | Page-by-page expansion. Uses indexed range scan on `(session_id, chat_id)` — fast even with millions of messages per chat |
 

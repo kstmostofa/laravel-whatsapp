@@ -102,7 +102,21 @@ function serializeMessage(m) {
     mimetype: data.mimetype ?? null,
     filename: data.filename ?? null,
     hasQuotedMsg: !!m.hasQuotedMsg,
+    quoted: serializeQuote(m, data),
     ack: typeof m.ack === 'number' ? m.ack : null,
+  };
+}
+
+// Enough of the quoted message to draw the reply preview without a lookup.
+// whatsapp-web.js keeps it under `_data.quotedMsg` + `_data.quotedStanzaID`.
+function serializeQuote(m, data) {
+  if (!m.hasQuotedMsg || !data.quotedMsg) return null;
+  const q = data.quotedMsg;
+  return {
+    stanzaId: data.quotedStanzaID ?? null,
+    body: q.body ?? q.caption ?? null,
+    type: q.type ?? null,
+    from: serializeWid(data.quotedParticipant),
   };
 }
 
@@ -212,6 +226,13 @@ async function bootSession(sessionId) {
   client.on('message_revoke_everyone', (after, before) => broadcast(sessionId, 'message_revoke', {
     after: serializeMessage(after),
     before: serializeMessage(before),
+  }));
+  client.on('message_reaction', (r) => broadcast(sessionId, 'message_reaction', {
+    messageId: serializeMessageId(r.msgId),
+    emoji: r.reaction ?? '',
+    senderId: serializeWid(r.senderId),
+    fromMe: !!(r.id && r.id.fromMe),
+    timestamp: r.timestamp ?? null,
   }));
   client.on('group_join', (n) => broadcast(sessionId, 'group_join', n));
   client.on('group_leave', (n) => broadcast(sessionId, 'group_leave', n));
@@ -363,6 +384,7 @@ app.post('/sessions/:id/messages', async (req, res, next) => {
           sendMediaAsDocument: b.type === 'document',
           sendAudioAsVoice: b.sendAudioAsVoice === true && b.type === 'audio',
         };
+        if (b.quotedMessageId) options.quotedMessageId = b.quotedMessageId;
         result = await s.client.sendMessage(to, media, options);
         break;
       }
@@ -406,6 +428,19 @@ app.get('/sessions/:id/messages/:messageId/media', async (req, res, next) => {
       res.set('Content-Disposition', `inline; filename="${media.filename.replace(/"/g, '')}"`);
     }
     res.send(Buffer.from(media.data, 'base64'));
+  } catch (e) { next(e); }
+});
+
+app.post('/sessions/:id/messages/:messageId/forward', async (req, res, next) => {
+  try {
+    const s = getSession(req.params.id);
+    requireReady(s);
+    const to = normalizeWaId(req.body?.to);
+    if (!to) return res.status(400).json({ error: 'forward requires `to`' });
+    const msg = await s.client.getMessageById(req.params.messageId);
+    if (!msg) return res.status(404).json({ error: 'message not found' });
+    await msg.forward(to);
+    res.json({ ok: true });
   } catch (e) { next(e); }
 });
 
@@ -497,6 +532,51 @@ app.post('/sessions/:id/groups/:groupId/participants/remove', async (req, res, n
     const chat = await s.client.getChatById(req.params.groupId);
     const result = await chat.removeParticipants(req.body.participants || []);
     res.json(result);
+  } catch (e) { next(e); }
+});
+
+for (const action of ['promote', 'demote']) {
+  app.post(`/sessions/:id/groups/:groupId/participants/${action}`, async (req, res, next) => {
+    try {
+      const s = getSession(req.params.id);
+      requireReady(s);
+      const chat = await s.client.getChatById(req.params.groupId);
+      const participants = req.body?.participants || [];
+      const result = action === 'promote'
+        ? await chat.promoteParticipants(participants)
+        : await chat.demoteParticipants(participants);
+      res.json(result ?? { ok: true });
+    } catch (e) { next(e); }
+  });
+}
+
+app.get('/sessions/:id/groups/:groupId/invite', async (req, res, next) => {
+  try {
+    const s = getSession(req.params.id);
+    requireReady(s);
+    const chat = await s.client.getChatById(req.params.groupId);
+    const code = await chat.getInviteCode();
+    res.json({ code, link: code ? `https://chat.whatsapp.com/${code}` : null });
+  } catch (e) { next(e); }
+});
+
+app.post('/sessions/:id/groups/:groupId/invite/revoke', async (req, res, next) => {
+  try {
+    const s = getSession(req.params.id);
+    requireReady(s);
+    const chat = await s.client.getChatById(req.params.groupId);
+    const code = await chat.revokeInvite();
+    res.json({ code, link: code ? `https://chat.whatsapp.com/${code}` : null });
+  } catch (e) { next(e); }
+});
+
+app.put('/sessions/:id/groups/:groupId/description', async (req, res, next) => {
+  try {
+    const s = getSession(req.params.id);
+    requireReady(s);
+    const chat = await s.client.getChatById(req.params.groupId);
+    await chat.setDescription(req.body?.description || '');
+    res.json({ ok: true });
   } catch (e) { next(e); }
 });
 
