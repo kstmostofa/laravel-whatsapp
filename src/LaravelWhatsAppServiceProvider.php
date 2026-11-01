@@ -34,6 +34,7 @@ use Kstmostofa\LaravelWhatsApp\Events\TemplateStatusUpdate;
 use Kstmostofa\LaravelWhatsApp\Events\Web\Disconnected;
 use Kstmostofa\LaravelWhatsApp\Events\Web\MessageAck;
 use Kstmostofa\LaravelWhatsApp\Events\Web\MessageCreated;
+use Kstmostofa\LaravelWhatsApp\Events\Web\MessageEdited;
 use Kstmostofa\LaravelWhatsApp\Events\Web\MessageReaction;
 use Kstmostofa\LaravelWhatsApp\Events\Web\MessageRevoked;
 use Kstmostofa\LaravelWhatsApp\Events\Web\QrGenerated;
@@ -290,6 +291,7 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
             $events->listen(MessageAck::class, $listener);
             $events->listen(MessageRevoked::class, $listener);
             $events->listen(MessageReaction::class, $listener);
+            $events->listen(MessageEdited::class, $listener);
             $events->listen(MessageReceived::class, $listener);
             $events->listen(MediaReceived::class, $listener);
             $events->listen(InteractiveReplied::class, $listener);

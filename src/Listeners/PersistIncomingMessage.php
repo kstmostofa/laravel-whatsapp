@@ -9,6 +9,7 @@ use Kstmostofa\LaravelWhatsApp\Events\MessageSent as CloudMessageSent;
 use Kstmostofa\LaravelWhatsApp\Events\MessageStatusUpdate as CloudMessageStatusUpdate;
 use Kstmostofa\LaravelWhatsApp\Events\Web\MessageAck as WebMessageAck;
 use Kstmostofa\LaravelWhatsApp\Events\Web\MessageCreated as WebMessageCreated;
+use Kstmostofa\LaravelWhatsApp\Events\Web\MessageEdited as WebMessageEdited;
 use Kstmostofa\LaravelWhatsApp\Events\Web\MessageReaction as WebMessageReaction;
 use Kstmostofa\LaravelWhatsApp\Events\Web\MessageReceived as WebMessageReceived;
 use Kstmostofa\LaravelWhatsApp\Events\Web\MessageRevoked as WebMessageRevoked;
@@ -37,6 +38,8 @@ class PersistIncomingMessage
                 $this->persistRevoke($event);
             } elseif ($event instanceof WebMessageReaction) {
                 $this->persistReaction($event);
+            } elseif ($event instanceof WebMessageEdited) {
+                $this->persistEdit($event);
             } elseif ($event instanceof WebMessageCreated) {
                 // Inbound messages also arrive as `message` — only outbound
                 // ones are new information here.
@@ -293,6 +296,50 @@ class PersistIncomingMessage
                 'deleted_at' => now(),
                 'deleted_for_everyone' => true,
             ]);
+    }
+
+    /**
+     * Apply an edit made anywhere (phone, other device, this package): new
+     * text in `body`, and `payload.edited` so the UI can label it.
+     */
+    protected function persistEdit(WebMessageEdited $event): void
+    {
+        $messageId = $event->messageId();
+        $body = $event->body();
+
+        if ($messageId === null || $body === null) {
+            return;
+        }
+
+        $message = $this->findWebMessage($messageId);
+
+        if (! $message) {
+            return;
+        }
+
+        $payload = $message->payload ?? [];
+        $payload['edited'] = true;
+
+        $message->forceFill(['body' => $body, 'payload' => $payload])->save();
+    }
+
+    /**
+     * A Web message by ID. Rows stored before current WhatsApp Web added the
+     * `_out` / `_in` suffix to message IDs are matched without it.
+     */
+    protected function findWebMessage(string $messageId): ?WaMessage
+    {
+        $ids = [$messageId];
+
+        if (preg_match('/^(.*)_(out|in)$/', $messageId, $m)) {
+            $ids[] = $m[1];
+        }
+
+        return WaMessage::query()
+            ->where('backend', 'web')
+            ->whereIn('wa_message_id', $ids)
+            ->orderByRaw('wa_message_id = ? desc', [$messageId])
+            ->first();
     }
 
     /**

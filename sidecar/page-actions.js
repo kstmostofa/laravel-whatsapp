@@ -152,6 +152,9 @@ async function pageMessageAction(action, msgId, args) {
         mediaKey: msg.mediaKey,
         mediaKeyTimestamp: msg.mediaKeyTimestamp,
         type: msg.type,
+        // Current builds validate this; without it they default to
+        // application/octet-stream and reject image/video/audio downloads.
+        mimetype: msg.mimetype,
         signal: new AbortController().signal,
         downloadQpl: qpl,
       });

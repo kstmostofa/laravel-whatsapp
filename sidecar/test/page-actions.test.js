@@ -22,7 +22,12 @@ function fakePage({ messages = {}, chats = {}, capability = {}, lazyForward = fa
       sendRevokeMsgs: async (chat, { list }) => calls.push(['revoke', list[0].id.id]),
       sendDeleteMsgs: async (chat, { list }) => calls.push(['delete', list[0].id.id]),
     } },
-    WAWebDownloadManager: { downloadManager: { downloadAndMaybeDecrypt: async () => new TextEncoder().encode('JPEG').buffer } },
+    WAWebDownloadManager: { downloadManager: { downloadAndMaybeDecrypt: async (params) => {
+      // Mirrors current WhatsApp Web, which rejects downloads without a matching mimetype.
+      if (!params.mimetype) throw new Error(`Unexpected mimetype application/octet-stream for media type ${params.type}`);
+      calls.push(['decrypt', params.type, params.mimetype]);
+      return new TextEncoder().encode('JPEG').buffer;
+    } } },
   };
 
   const page = {

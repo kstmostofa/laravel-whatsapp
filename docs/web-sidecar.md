@@ -125,7 +125,7 @@ WhatsApp::web('main')->messages()->reply('+9665...', 'Following up', $msg['id'])
 // React
 WhatsApp::web('main')->messages()->react($msg['id'], '👍');
 
-// Delete — "for everyone" only works within ~1h
+// Delete — "for everyone" only works within ~1h, and never in "Message yourself" (409 otherwise)
 WhatsApp::web('main')->messages()->delete($msg['id'], forEveryone: true);
 
 // Edit — only within ~15 minutes
@@ -251,6 +251,7 @@ php artisan whatsapp:web:listen main
 | `message_create` | `Events\Web\MessageCreated` (includes messages sent from the phone) |
 | `message_revoke` | `Events\Web\MessageRevoked` (deleted for everyone) |
 | `message_reaction` | `Events\Web\MessageReaction` (added, changed, or removed) |
+| `message_edit` | `Events\Web\MessageEdited` (edited on any device) |
 
 Listen for them:
 ```php

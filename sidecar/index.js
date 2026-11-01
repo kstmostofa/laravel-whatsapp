@@ -21,6 +21,8 @@ const { checkStuckSession, defaultCreateInfo } = require('./ready-watchdog');
 const { dedupeContacts } = require('./contacts');
 const { sendAndCapture, bodyMatcher } = require('./send-capture');
 const { runMessageAction } = require('./page-actions');
+const { ensureMediaPatch } = require('./media-patch');
+const { ensureEditHook, editDeduper } = require('./edit-hook');
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '127.0.0.1';
@@ -239,6 +241,9 @@ async function bootSession(sessionId) {
 
   client.on('ready', () => {
     session.status = 'ready';
+    ensureEditHook(client.pupPage).catch((e) => {
+      console.warn(`[laravel-wa-sidecar] ${sessionId}: could not install the edit hook (${e.message})`);
+    });
     const info = client.info || {};
     broadcast(sessionId, 'ready', {
       info: {
@@ -261,6 +266,14 @@ async function bootSession(sessionId) {
     after: serializeMessage(after),
     before: serializeMessage(before),
   }));
+  // Edits from any device — the phone, another linked device, or us.
+  // edit-hook.js makes whatsapp-web.js actually emit these on current builds.
+  const isNewEdit = editDeduper();
+  client.on('message_edit', (m, newBody, prevBody) => {
+    const message = serializeMessage(m);
+    if (!isNewEdit(message && message.id, newBody)) return;
+    broadcast(sessionId, 'message_edit', { message, body: newBody ?? null, previousBody: prevBody ?? null });
+  });
   client.on('message_reaction', (r) => broadcast(sessionId, 'message_reaction', {
     messageId: serializeMessageId(r.msgId),
     emoji: r.reaction ?? '',
@@ -454,6 +467,7 @@ app.post('/sessions/:id/messages', async (req, res, next) => {
       case 'document':
       case 'sticker': {
         const media = await buildOutgoingMedia(b);
+        await ensureMediaPatch(s.client.pupPage);
         const options = {
           caption: b.caption,
           sendMediaAsSticker: b.type === 'sticker',

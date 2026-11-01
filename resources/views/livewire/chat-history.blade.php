@@ -302,6 +302,9 @@
                                     @endif
                                 @endif
                                 <div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1 flex items-center justify-end gap-1.5">
+                                    @if (! $m->deleted_at && ! empty($m->payload['edited']))
+                                        <span class="italic">edited</span>
+                                    @endif
                                     <span>{{ ($m->wa_timestamp ?? $m->created_at)?->format('H:i') }}</span>
                                     @if ($isOut && ! $m->deleted_at)
                                         {!! $renderAck($m->ack) !!}
