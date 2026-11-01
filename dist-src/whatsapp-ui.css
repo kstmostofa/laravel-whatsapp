@@ -10,7 +10,10 @@
  * Re-build with: cd dist-src && npm run build  (see build.sh)
  */
 
-@import 'tailwindcss';
+/* source(none): compile only the @source paths below. Without it Tailwind 4
+   also scans whichever app hosts the build, leaking its classes into the
+   file we ship. */
+@import 'tailwindcss' source(none);
 @import '../vendor/livewire/flux/dist/flux.css';
 
 @source '../vendor/livewire/flux/stubs/**/*.blade.php';

@@ -119,7 +119,7 @@ The admin UI under `/whatsapp` works on whatever your app already uses:
 | Your app uses… | Set in `.env` | What you get |
 |---|---|---|
 | Tailwind v4 + Vite | `WHATSAPP_UI_CSS_MODE=vite` (default) | Smallest tree-shaken bundle. Add 3 `@source` lines to your `app.css`. |
-| Anything else (Tailwind v3 / Bootstrap / plain CSS / nothing) | `WHATSAPP_UI_CSS_MODE=standalone` | Pre-compiled CSS shipped with the package, served from `/whatsapp/_assets/laravel-whatsapp.css` (~32 KB gz). No npm/Tailwind needed. Loads only on `/whatsapp/*` pages — your main app stays untouched. |
+| Anything else (Tailwind v3 / Bootstrap / plain CSS / nothing) | `WHATSAPP_UI_CSS_MODE=standalone` | Pre-compiled CSS shipped with the package, served from `/whatsapp/_assets/laravel-whatsapp.css` (~40 KB gz). No npm/Tailwind needed. Loads only on `/whatsapp/*` pages — your main app stays untouched. |
 | No UI at all | skip `composer require livewire/flux` | Headless. Full access to `WhatsApp::` facade, Events, Jobs, webhook receiver, all CLI commands. |
 
 Full setup details + dark mode + screenshots → [docs site](https://kstmostofa.github.io/laravel-whatsapp/ui).
@@ -187,3 +187,9 @@ cd sidecar && npm test    # sidecar unit tests (no npm install needed)
 ```
 
 CI runs the same checks, plus the test suite across PHP 8.2–8.4 and Laravel 12 / 13.
+
+If you change a Blade view, or `StandaloneCssCoverageTest` fails after a Flux update, rebuild the standalone stylesheet and commit `dist/laravel-whatsapp.css`:
+
+```bash
+LARAVEL_WHATSAPP_BUILD_APP=/path/to/laravel-app-with-flux ./dist-src/build.sh
+```

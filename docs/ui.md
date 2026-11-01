@@ -62,7 +62,7 @@ Your app uses Bootstrap, plain CSS, Tailwind v3, or nothing? Set in `.env`:
 WHATSAPP_UI_CSS_MODE=standalone
 ```
 
-That's it. The package ships a pre-compiled CSS file (~32 KB gzipped) and serves it at `/whatsapp/_assets/laravel-whatsapp.css`, linked **only on `/whatsapp/*` pages**. Your main app's CSS is untouched — no risk of preflight collisions or utility class hijacking.
+That's it. The package ships a pre-compiled CSS file (~40 KB gzipped) and serves it at `/whatsapp/_assets/laravel-whatsapp.css`, linked **only on `/whatsapp/*` pages**. Your main app's CSS is untouched — no risk of preflight collisions or utility class hijacking.
 
 ::: tip Why is this safe?
 The standalone CSS uses Tailwind's preflight reset, but it ONLY loads on routes under `/whatsapp/*`. When your users navigate back to your main app pages, those pages load their own `<link>` tags and the cascade resets. Zero pollution.
@@ -72,7 +72,7 @@ Tradeoffs:
 - ✅ No build setup. No npm. No Tailwind in your app.
 - ✅ Works with Bootstrap, Bulma, Materialize, plain CSS, anything
 - ⚠️ Brand colors are baked in. Can't customize via `@theme` (rebuild the package's dist/ for that)
-- ⚠️ Slightly larger than a tree-shaken build (32 KB gz vs ~15–25 KB for a minimal scan)
+- ⚠️ Slightly larger than a tree-shaken build (40 KB gz vs ~15–25 KB for a minimal scan)
 
 ### Path 3 — Headless (no UI)
 
