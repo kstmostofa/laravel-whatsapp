@@ -108,6 +108,7 @@ Dispatched by `whatsapp:web:listen` as the sidecar's SSE stream emits.
 | `Events\Web\MessageCreated` | `message_create` |
 | `Events\Web\MessageRevoked` | `message_revoke` |
 | `Events\Web\MessageReaction` | `message_reaction` |
+| `Events\Web\MessageEdited` | `message_edit` |
 
 All Web events carry `$sessionId` so listeners can disambiguate when multiple sessions are paired.
 
@@ -164,6 +165,18 @@ Broadcast name: `qr.generated`.
 
 Fired for every message created on the account, including ones you send from the paired phone. Same accessors as `MessageReceived`, which it extends. Inbound messages also fire `MessageReceived`, so filter on `fromMe()` if you only want outbound ones. Listeners for `MessageReceived` do not receive this event. Broadcast name: `message.created`.
 
+### `Events\Web\MessageEdited`
+
+A message's text or caption was edited — on the phone, another linked device, or through this package.
+
+```php
+$event->messageId();
+$event->body();          // the new text
+$event->previousBody();
+```
+
+With persistence on, the stored `body` is updated and `payload.edited` is set, so the chat bubble shows an "edited" label. Broadcast name: `message.edited`.
+
 ### `Events\Web\MessageReaction`
 
 Someone reacted to a message, changed their reaction, or removed it. Fires for your own reactions too.
@@ -214,6 +227,7 @@ When `WHATSAPP_BROADCAST=true`, the Web events push to channel `{prefix}.session
 | `Web\MessageAck` | `message.ack` |
 | `Web\MessageRevoked` | `message.revoked` |
 | `Web\MessageReaction` | `message.reaction` |
+| `Web\MessageEdited` | `message.edited` |
 | `Web\QrGenerated` | `qr.generated` |
 | `Web\SessionReady` | `session.ready` |
 | `Web\Disconnected` | `session.disconnected` |

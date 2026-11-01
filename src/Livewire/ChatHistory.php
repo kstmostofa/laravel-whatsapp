@@ -82,6 +82,7 @@ class ChatHistory extends Component
             'message.ack' => 'refreshFromBroadcast',
             'message.revoked' => 'refreshFromBroadcast',
             'message.reaction' => 'refreshFromBroadcast',
+            'message.edited' => 'refreshFromBroadcast',
         ]);
     }
 
@@ -328,9 +329,12 @@ class ChatHistory extends Component
 
             // Update local row so the bubble shows the new text immediately.
             try {
-                WaMessage::where('backend', 'web')
-                    ->where('wa_message_id', $this->editingMessageId)
-                    ->update(['body' => $this->editBody]);
+                $row = $this->findMessage($this->editingMessageId);
+                if ($row) {
+                    $payload = $row->payload ?? [];
+                    $payload['edited'] = true;
+                    $row->forceFill(['body' => $this->editBody, 'payload' => $payload])->save();
+                }
             } catch (\Throwable) {
             }
 

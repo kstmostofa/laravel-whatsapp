@@ -8,6 +8,7 @@ use Kstmostofa\LaravelWhatsApp\Events\TemplateStatusUpdate;
 use Kstmostofa\LaravelWhatsApp\Events\Web\Disconnected;
 use Kstmostofa\LaravelWhatsApp\Events\Web\MessageAck;
 use Kstmostofa\LaravelWhatsApp\Events\Web\MessageCreated;
+use Kstmostofa\LaravelWhatsApp\Events\Web\MessageEdited;
 use Kstmostofa\LaravelWhatsApp\Events\Web\MessageReaction;
 use Kstmostofa\LaravelWhatsApp\Events\Web\MessageRevoked;
 use Kstmostofa\LaravelWhatsApp\Events\Web\QrGenerated;
@@ -162,6 +163,7 @@ return [
             'message_create' => MessageCreated::class,
             'message_revoke' => MessageRevoked::class,
             'message_reaction' => MessageReaction::class,
+            'message_edit' => MessageEdited::class,
         ],
     ],
 

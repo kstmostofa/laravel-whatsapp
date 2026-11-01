@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-11-01
+
+Fixes the four Web sidecar features listed as known issues in 1.2.1. Each
+was verified on a paired account against WhatsApp Web 2.3000.105x with
+whatsapp-web.js 1.34.7.
+
+### Upgrading
+- Run `composer update`, then restart **both** the sidecar and
+  `whatsapp:web:listen` (or their Supervisor programs). The listener needs
+  the restart to pick up the new `message_edit` event mapping.
+- If you run a published copy of the sidecar, re-publish it with `--force`.
+- No migrations, no config changes, no new npm dependencies.
+
+### Fixed
+- **Editing messages** failed inside whatsapp-web.js. React, edit, forward,
+  delete and media download now run directly against WhatsApp Web's own
+  modules, skipping whatsapp-web.js's message serializer, which throws on
+  current builds. Message IDs stored before 1.2.1's `_out` / `_in` suffix
+  still resolve.
+- **Forwarding** failed because whatsapp-web.js calls a module WhatsApp Web
+  now only loads with the forward dialog. The sidecar loads it on demand.
+- **Sending images, video, audio and documents** failed with "Data passed to
+  getter must include an id property". whatsapp-web.js spreads WhatsApp's
+  live media model into the outgoing message; the sidecar now hands it the
+  plain `toJSON()` data. Status and Channel media are unchanged.
+- **Media downloads** (the admin UI's media proxy) failed for images: current
+  builds reject decryption without the message's mimetype.
+- **Reaction events** now arrive: the reaction send itself was failing
+  before, so there was nothing to report.
+- **Edits made on the phone or another device** were never reported:
+  whatsapp-web.js registers `'change:body change:caption'` as one
+  space-separated event name, which WhatsApp Web's emitter doesn't split.
+  The sidecar registers them separately (and drops duplicates).
+
+### Changed
+- Delete-for-everyone now returns `409` when WhatsApp no longer allows it
+  (too old, or in "Message yourself", where WhatsApp never offers it).
+  whatsapp-web.js silently deleted the message for you only instead.
+- Editing a message outside WhatsApp's edit window returns `409` with a clear
+  message.
+
+### Added
+- `Events\Web\MessageEdited` (`message_edit`, broadcast as
+  `message.edited`). With persistence on, the stored body is updated and the
+  bubble shows an "edited" label.
+
 ## [1.2.1] - 2026-11-01
 
 ### Upgrading
@@ -383,7 +429,8 @@ Initial public release.
   - Laravel 11 / 12 → PHP 8.2+
   - Laravel 13 → PHP 8.4+ (Symfony 8 is pulled in transitively and requires 8.4)
 
-[Unreleased]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.2.2...HEAD
+[1.2.2]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.0.3...v1.1.0

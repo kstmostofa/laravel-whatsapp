@@ -20,6 +20,9 @@ const { readChatsFromStore, readMessagesFromStore } = require('./chat-store');
 const { checkStuckSession, defaultCreateInfo } = require('./ready-watchdog');
 const { dedupeContacts } = require('./contacts');
 const { sendAndCapture, bodyMatcher } = require('./send-capture');
+const { runMessageAction } = require('./page-actions');
+const { ensureMediaPatch } = require('./media-patch');
+const { ensureEditHook, editDeduper } = require('./edit-hook');
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '127.0.0.1';
@@ -238,6 +241,9 @@ async function bootSession(sessionId) {
 
   client.on('ready', () => {
     session.status = 'ready';
+    ensureEditHook(client.pupPage).catch((e) => {
+      console.warn(`[laravel-wa-sidecar] ${sessionId}: could not install the edit hook (${e.message})`);
+    });
     const info = client.info || {};
     broadcast(sessionId, 'ready', {
       info: {
@@ -260,6 +266,14 @@ async function bootSession(sessionId) {
     after: serializeMessage(after),
     before: serializeMessage(before),
   }));
+  // Edits from any device — the phone, another linked device, or us.
+  // edit-hook.js makes whatsapp-web.js actually emit these on current builds.
+  const isNewEdit = editDeduper();
+  client.on('message_edit', (m, newBody, prevBody) => {
+    const message = serializeMessage(m);
+    if (!isNewEdit(message && message.id, newBody)) return;
+    broadcast(sessionId, 'message_edit', { message, body: newBody ?? null, previousBody: prevBody ?? null });
+  });
   client.on('message_reaction', (r) => broadcast(sessionId, 'message_reaction', {
     messageId: serializeMessageId(r.msgId),
     emoji: r.reaction ?? '',
@@ -453,6 +467,7 @@ app.post('/sessions/:id/messages', async (req, res, next) => {
       case 'document':
       case 'sticker': {
         const media = await buildOutgoingMedia(b);
+        await ensureMediaPatch(s.client.pupPage);
         const options = {
           caption: b.caption,
           sendMediaAsSticker: b.type === 'sticker',
@@ -469,8 +484,9 @@ app.post('/sessions/:id/messages', async (req, res, next) => {
         break;
 
       case 'reaction': {
-        const msg = await s.client.getMessageById(b.messageId);
-        await msg.react(b.emoji ?? '');
+        // Not through getMessageById(): its serializer breaks on current
+        // WhatsApp Web. See page-actions.js.
+        await runMessageAction(s.client.pupPage, 'react', b.messageId, { emoji: b.emoji ?? '' });
         result = { ok: true };
         break;
       }
@@ -489,14 +505,7 @@ app.get('/sessions/:id/messages/:messageId/media', async (req, res, next) => {
   try {
     const s = getSession(req.params.id);
     requireReady(s);
-    const msg = await s.client.getMessageById(req.params.messageId);
-    if (!msg || !msg.hasMedia) {
-      return res.status(404).json({ error: 'no media for this message' });
-    }
-    const media = await msg.downloadMedia();
-    if (!media || !media.data) {
-      return res.status(404).json({ error: 'media download failed (may have expired on WhatsApp servers)' });
-    }
+    const media = await runMessageAction(s.client.pupPage, 'download', req.params.messageId);
     res.set('Content-Type', media.mimetype || 'application/octet-stream');
     res.set('Cache-Control', 'private, max-age=3600');
     if (media.filename) {
@@ -512,9 +521,7 @@ app.post('/sessions/:id/messages/:messageId/forward', async (req, res, next) => 
     requireReady(s);
     const to = normalizeWaId(req.body?.to);
     if (!to) return res.status(400).json({ error: 'forward requires `to`' });
-    const msg = await s.client.getMessageById(req.params.messageId);
-    if (!msg) return res.status(404).json({ error: 'message not found' });
-    await msg.forward(to);
+    await runMessageAction(s.client.pupPage, 'forward', req.params.messageId, { to });
     res.json({ ok: true });
   } catch (e) { next(e); }
 });
@@ -523,8 +530,7 @@ app.post('/sessions/:id/messages/:messageId/delete', async (req, res, next) => {
   try {
     const s = getSession(req.params.id);
     requireReady(s);
-    const msg = await s.client.getMessageById(req.params.messageId);
-    await msg.delete(req.body?.forEveryone === true);
+    await runMessageAction(s.client.pupPage, 'delete', req.params.messageId, { everyone: req.body?.forEveryone === true });
     res.json({ ok: true });
   } catch (e) { next(e); }
 });
@@ -760,11 +766,8 @@ app.post('/sessions/:id/messages/:messageId/edit', async (req, res, next) => {
   try {
     const s = getSession(req.params.id);
     requireReady(s);
-    const msg = await s.client.getMessageById(req.params.messageId);
-    if (!msg) return res.status(404).json({ error: 'message not found' });
-    const body = req.body?.body ?? '';
-    const result = await msg.edit(body);
-    res.json(serializeMessage(result) || { ok: true });
+    await runMessageAction(s.client.pupPage, 'edit', req.params.messageId, { body: req.body?.body ?? '' });
+    res.json({ ok: true, id: req.params.messageId });
   } catch (e) { next(e); }
 });
 
