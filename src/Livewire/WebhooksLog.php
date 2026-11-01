@@ -6,6 +6,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Kstmostofa\LaravelWhatsApp\Models\WaMessage;
 use Kstmostofa\LaravelWhatsApp\Models\WaWebhookEvent;
+use Kstmostofa\LaravelWhatsApp\Support\ContactNames;
 use Kstmostofa\LaravelWhatsApp\Webhooks\WebhookDispatcher;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -121,7 +122,11 @@ class WebhooksLog extends Component
                 : 'wa_messages table not found. Run `php artisan migrate` after publishing migrations.';
         }
 
+        $contacts = app(ContactNames::class);
+
         return view('laravel-whatsapp::livewire.webhooks-log', [
+            'contacts' => $contacts,
+            'names' => $contacts->lookup(collect($messages->items())->pluck('chat_id')),
             'messages' => $messages,
             'events' => $events,
             'failedCount' => $failedCount,

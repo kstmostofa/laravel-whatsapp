@@ -234,10 +234,13 @@
                             @endif
 
                             <div class="max-w-[70%] {{ $m->deleted_at ? 'bg-zinc-100 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700' : ($isOut ? 'bg-wa-bubble-light dark:bg-wa-bubble-dark border-wa-200 dark:border-wa-700' : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700') }} border rounded-2xl px-3.5 py-2 shadow-sm">
+                                @if ($isGroupChat && ! $isOut && $m->from_id && $m->from_id !== $m->chat_id)
+                                    <div class="text-xs font-semibold text-wa-700 dark:text-wa-300 mb-0.5" title="{{ $m->from_id }}">{{ $contacts->label($m->from_id, $names) }}</div>
+                                @endif
                                 @php($quoted = ! $m->deleted_at ? ($m->payload['quoted'] ?? null) : null)
                                 @if (is_array($quoted))
                                     <div class="mb-1.5 border-l-4 border-wa-500 bg-black/5 dark:bg-white/5 rounded-md px-2.5 py-1.5 text-xs">
-                                        <div class="font-medium text-wa-700 dark:text-wa-300">{{ empty($quoted['from']) ? 'You' : (str_ends_with($quoted['from'], '@c.us') ? '+'.explode('@', $quoted['from'])[0] : $quoted['from']) }}</div>
+                                        <div class="font-medium text-wa-700 dark:text-wa-300">{{ empty($quoted['from']) ? 'You' : $contacts->label($quoted['from'], $names) }}</div>
                                         <div class="text-zinc-600 dark:text-zinc-300 truncate">{{ \Illuminate\Support\Str::limit($quoted['body'] ?? ('('.($quoted['type'] ?? 'message').')'), 120) }}</div>
                                     </div>
                                 @endif

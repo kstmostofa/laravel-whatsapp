@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Names instead of numbers in the UI.** With persistence on, the
+  sender's own WhatsApp display name is saved to `wa_contacts` from every
+  incoming message (`notifyName` on Web, the webhook's contact profile on
+  Cloud). The dashboard, Webhooks log, group member list and quoted replies
+  show names, preferring the name saved on the paired phone. Group messages
+  in the chat now show who sent them. `Support\ContactNames` resolves names
+  for your own views.
+- **Interactive Cloud helpers:** `sendButtons()`, `sendList()`,
+  `sendCtaUrl()`, `sendLocationRequest()`, `sendProduct()`,
+  `sendProductList()` and `sendFlow()`, with WhatsApp's limits checked
+  before sending.
+- `InteractiveReplied::flowResponse()` / `isFlowResponse()`, and
+  `WhatsApp::router()->onFlow()` for completed WhatsApp Flows.
 - **Inbound router.** `WhatsApp::router()` routes incoming messages from
   both backends to handlers: `hears()` for exact text (with `|`
   alternatives) or regex (captures become arguments), `onButton()`,
@@ -28,6 +41,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for notifications and bulk sends, and `$event->account()` on Cloud events
   to reply from the number a webhook arrived on. `WhatsApp::fake()` records
   named-account sends with their own phone number ID.
+
+### Fixed
+- Incoming group messages stored the group as `from_id`. They now store the
+  member who sent the message; `chat_id` is still the group.
 
 ## [1.1.0] - 2026-11-01
 

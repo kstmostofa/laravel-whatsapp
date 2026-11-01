@@ -5,6 +5,7 @@ namespace Kstmostofa\LaravelWhatsApp\Inbound;
 use Closure;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Pipeline\Pipeline;
+use Kstmostofa\LaravelWhatsApp\Events\InteractiveReplied;
 use Throwable;
 
 /**
@@ -52,6 +53,17 @@ class InboundRouter
     public function onButton(string $id, callable|string $handler): static
     {
         $this->routes[] = ['kind' => 'button', 'match' => $id, 'handler' => $handler];
+
+        return $this;
+    }
+
+    /**
+     * A completed WhatsApp Flow (Cloud). The handler gets the submitted data
+     * as its second argument: `fn (IncomingMessage $m, array $data) => …`.
+     */
+    public function onFlow(callable|string $handler): static
+    {
+        $this->routes[] = ['kind' => 'flow', 'match' => '', 'handler' => $handler];
 
         return $this;
     }
@@ -161,11 +173,14 @@ class InboundRouter
 
     /**
      * @param  array{kind: string, match: string, handler: callable|string}  $route
-     * @return array<int, string>|null extra handler arguments, or null for no match
+     * @return array<int, mixed>|null extra handler arguments, or null for no match
      */
     protected function match(array $route, IncomingMessage $message): ?array
     {
         return match ($route['kind']) {
+            'flow' => $message->event instanceof InteractiveReplied && $message->event->isFlowResponse()
+                ? [$message->event->flowResponse() ?? []]
+                : null,
             'button' => $message->buttonId === $route['match'] ? [] : null,
             'type' => $message->type === $route['match'] || ($route['match'] === 'media' && $message->hasMedia()) ? [] : null,
             default => $this->matchText($route['match'], $message->text()),
@@ -199,7 +214,7 @@ class InboundRouter
     }
 
     /**
-     * @param  array<int, string>  $arguments
+     * @param  array<int, mixed>  $arguments
      */
     protected function call(callable|string $handler, IncomingMessage $message, array $arguments): void
     {

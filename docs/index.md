@@ -64,7 +64,7 @@ features:
       width: 48
       height: 48
     title: Production-ready
-    details: Separate DB connection, table prefix, indexed message queries, server-side caching, smart auto-scroll, supervised SSE listener. 144 tests, supports Laravel 12 / 13.
+    details: Separate DB connection, table prefix, indexed message queries, server-side caching, smart auto-scroll, supervised SSE listener. 155 tests, supports Laravel 12 / 13.
     link: /production
 
   - icon:

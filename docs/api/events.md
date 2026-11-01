@@ -54,9 +54,11 @@ $event->mimeType();     // image/jpeg etc.
 ### `InteractiveReplied`
 
 ```php
-$event->buttonId();     // your defined reply id
-$event->buttonText();   // display text the user saw
+$event->buttonId();       // your defined reply id
+$event->buttonText();     // display text the user saw
 $event->from();
+$event->isFlowResponse(); // a completed WhatsApp Flow
+$event->flowResponse();   // the Flow's submitted data, decoded; null otherwise
 ```
 
 ### `MessageStatusUpdate`

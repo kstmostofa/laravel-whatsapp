@@ -131,7 +131,12 @@
                             <div class="px-3 py-2 flex items-center gap-3">
                                 <div class="flex-1 min-w-0">
                                     <div class="text-sm font-mono text-zinc-900 dark:text-white truncate">
-                                        {{ str_ends_with($pid, '@c.us') ? '+'.explode('@', $pid)[0] : $pid }}
+                                        @if (isset($names[$pid]))
+                                            <span class="font-sans font-medium">{{ $names[$pid] }}</span>
+                                            <span class="text-xs text-zinc-500">{{ $contacts::format($pid) }}</span>
+                                        @else
+                                            {{ $contacts::format($pid) }}
+                                        @endif
                                         @if ($isMe) <span class="font-sans text-xs text-zinc-500">(you)</span> @endif
                                     </div>
                                 </div>

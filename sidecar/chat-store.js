@@ -87,6 +87,7 @@ function collectChats() {
       isStarred: !!m.star,
       fromMe: !!(m.id && m.id.fromMe),
       author: wid(m.author),
+      notifyName: m.notifyName ?? null,
       deviceType: null,
       mimetype: m.mimetype ?? null,
       filename: m.filename ?? null,
