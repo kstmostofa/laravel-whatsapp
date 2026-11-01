@@ -140,6 +140,58 @@ If the gate isn't defined, everyone is denied. To use a different ability set `W
 Broadcast::channel('whatsapp.session.{session}', fn ($user, $session) => $user->team->owns($session));
 ```
 
+## Media persistence
+
+WhatsApp keeps media for a limited time, so images and voice notes in old conversations eventually stop loading. Turn on persistence to keep a copy:
+
+```bash
+# .env
+WHATSAPP_PERSIST_INCOMING=true
+WHATSAPP_MEDIA_STORE=true
+WHATSAPP_MEDIA_DISK=local      # or a private S3 disk
+```
+
+Every media message then queues a `StoreMessageMedia` job, which downloads the file and records `media_path`, `media_mime` and `media_size` on the `wa_messages` row. Web media comes from the sidecar, and inbound Cloud media comes from Meta. Outbound Cloud media is skipped, because you sent it from a file or URL you already have. The conversations UI serves the stored copy first, so it keeps working after WhatsApp expires the original, and even while the sidecar is down.
+
+A queue worker must be running. Files over `WHATSAPP_MEDIA_MAX_MB` are skipped.
+
+::: warning Privacy
+Media can be personal. Use a private disk, never `public`, and include it in your data-retention policy.
+:::
+
+To delete old copies on a schedule, pass `--days` or set `WHATSAPP_MEDIA_RETENTION_DAYS`. The message rows stay; only the file is removed:
+
+```php
+// routes/console.php
+Schedule::command('whatsapp:media:prune --days=180')->daily();
+```
+
+## Webhook log and replay
+
+Turn on the raw webhook log to keep every verified delivery from Meta:
+
+```bash
+WHATSAPP_WEBHOOK_LOG=true
+```
+
+Each delivery is stored in `wa_webhook_events` before its events are dispatched, then marked `processed` or `failed` with the error. With the log on, a listener exception no longer returns 500 to Meta. The delivery is marked `failed` and returns 200, because a Meta retry would also re-run the listeners that succeeded. You fix the bug and replay instead:
+
+```bash
+php artisan whatsapp:webhooks:replay --failed   # every failed delivery
+php artisan whatsapp:webhooks:replay 41 42      # specific ones
+```
+
+The **Webhooks → Raw events** page in the UI shows the same list, with the full payload and replay buttons.
+
+Replays run your listeners again, so keep them idempotent. The built-in persistence listener is, because it upserts on the message ID.
+
+Logged deliveries older than `WHATSAPP_WEBHOOK_LOG_RETENTION_DAYS` (default 14) are removed by Laravel's model pruning:
+
+```php
+// routes/console.php
+Schedule::command('model:prune', ['--model' => [\Kstmostofa\LaravelWhatsApp\Models\WaWebhookEvent::class]])->daily();
+```
+
 ## Reverse proxy + sidecar
 
 The sidecar binds to `127.0.0.1:3000` by default — **don't expose it directly**. It holds your WhatsApp session and has no rate limiting.
@@ -193,6 +245,7 @@ What to back up:
 |---|---|
 | `storage/app/whatsapp-sidecar/sessions/` | WhatsApp Web auth state — lose this = re-scan QR for every session |
 | `wa_messages`, `wa_contacts`, `wa_sessions` tables | Chat history, contact metadata |
+| The `WHATSAPP_MEDIA_DISK` folder | Stored media, if media persistence is on — WhatsApp won't serve expired originals again |
 | `config/laravel-whatsapp.php` | Your customized config (if not in env) |
 
 Sessions are filesystem files (LevelDB) — back up while the sidecar is stopped, or accept that you may capture a slightly inconsistent snapshot (the auth state recovers fine — worst case you re-pair).

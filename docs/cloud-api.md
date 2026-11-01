@@ -122,6 +122,10 @@ Event::listen(MessageReceived::class, function ($event) {
 
 To **persist** these to `wa_messages` automatically, set `WHATSAPP_PERSIST_INCOMING=true`. With it on, your outbound sends are stored too, and delivery status webhooks update their `status` and `ack`, so read receipts work for Cloud messages as well.
 
+### Logging and replaying deliveries
+
+Set `WHATSAPP_WEBHOOK_LOG=true` to keep every delivery in `wa_webhook_events`, inspect it on the **Webhooks → Raw events** page, and replay failed ones with `php artisan whatsapp:webhooks:replay --failed`. See [Production → Webhook log and replay](/production#webhook-log-and-replay).
+
 ## Media
 
 ```php

@@ -38,6 +38,12 @@ return [
         'verify_token' => env('WHATSAPP_VERIFY_TOKEN'),
         'app_secret' => env('WHATSAPP_APP_SECRET'),
         'verify_signature' => env('WHATSAPP_VERIFY_SIGNATURE', true),
+
+        // Store every verified delivery in wa_webhook_events so it can be
+        // inspected on the Webhooks page and replayed after a listener bug.
+        // Rows older than log_retention_days are removed by `model:prune`.
+        'log' => env('WHATSAPP_WEBHOOK_LOG', false),
+        'log_retention_days' => (int) env('WHATSAPP_WEBHOOK_LOG_RETENTION_DAYS', 14),
     ],
 
     /*
@@ -229,6 +235,28 @@ return [
         // Track Web session lifecycle (qr / ready / disconnected) in wa_sessions.
         // Defaults to the same value as incoming_messages.
         'sessions' => env('WHATSAPP_PERSIST_SESSIONS', env('WHATSAPP_PERSIST_INCOMING', false)),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Media persistence
+    |--------------------------------------------------------------------------
+    |
+    | WhatsApp only keeps media for a while, so old images in the chat UI
+    | eventually break. With `store` on (and persistence enabled), every media
+    | message is copied to this disk by a queued StoreMessageMedia job, and
+    | the UI serves the copy. Keep the disk private — media can be personal.
+    |
+    */
+
+    'media' => [
+        'store' => env('WHATSAPP_MEDIA_STORE', false),
+        'disk' => env('WHATSAPP_MEDIA_DISK', 'local'),
+        'path' => env('WHATSAPP_MEDIA_PATH', 'whatsapp-media'),
+        // Skip files larger than this. 0 = no limit.
+        'max_mb' => (int) env('WHATSAPP_MEDIA_MAX_MB', 50),
+        // Used by `whatsapp:media:prune` when --days isn't passed. null = keep forever.
+        'retention_days' => env('WHATSAPP_MEDIA_RETENTION_DAYS'),
     ],
 
     /*

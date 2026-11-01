@@ -131,6 +131,16 @@ class WebSession
         return array_values(array_filter($response, 'is_array'));
     }
 
+    /**
+     * Download a message's media bytes from WhatsApp.
+     *
+     * @return array{body: string, mime: string, filename: ?string}
+     */
+    public function downloadMedia(string $messageId): array
+    {
+        return $this->client->download("sessions/{$this->sessionId}/messages/".rawurlencode($messageId).'/media');
+    }
+
     public function messages(): MessagesResource
     {
         return new MessagesResource($this->client, $this->sessionId);

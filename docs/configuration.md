@@ -28,6 +28,8 @@ php artisan vendor:publish --tag=laravel-whatsapp-config --force
 | `WHATSAPP_VERIFY_TOKEN` | _required_ | Random string — also enter in Meta's webhook config |
 | `WHATSAPP_APP_SECRET` | _required_ | From Meta App Settings → Basic. HMAC-verifies every POST |
 | `WHATSAPP_VERIFY_SIGNATURE` | **`true`** | Set false for local testing with ngrok |
+| `WHATSAPP_WEBHOOK_LOG` | **`false`** | Store every verified delivery in `wa_webhook_events` for inspection and replay |
+| `WHATSAPP_WEBHOOK_LOG_RETENTION_DAYS` | **`14`** | How long `model:prune` keeps logged deliveries |
 
 Middleware on the routes is `['api']` by default. Override in `config/laravel-whatsapp.php` → `webhook.middleware`.
 
@@ -132,6 +134,18 @@ Drivers can differ — your app on MySQL, WhatsApp on Postgres, no problem.
 | `WHATSAPP_PERSIST_SESSIONS` | same as `WHATSAPP_PERSIST_INCOMING` | Track Web session status, pairing time and disconnects in `wa_sessions` |
 
 When `true`, the package registers `PersistIncomingMessage` as a listener for both Cloud and Web backends. Idempotent — re-delivered messages don't duplicate.
+
+## Media persistence
+
+| Env var | Default | Purpose |
+|---|---|---|
+| `WHATSAPP_MEDIA_STORE` | **`false`** | Copy media off WhatsApp to a disk before it expires (needs `WHATSAPP_PERSIST_INCOMING=true`) |
+| `WHATSAPP_MEDIA_DISK` | **`local`** | Filesystem disk for the copies. Keep it private |
+| `WHATSAPP_MEDIA_PATH` | **`whatsapp-media`** | Folder on the disk |
+| `WHATSAPP_MEDIA_MAX_MB` | **`50`** | Skip larger files. `0` for no limit |
+| `WHATSAPP_MEDIA_RETENTION_DAYS` | _empty_ | Default for `whatsapp:media:prune`. Empty keeps media forever |
+
+See [Production → Media persistence](/production#media-persistence).
 
 ## Broadcasting
 

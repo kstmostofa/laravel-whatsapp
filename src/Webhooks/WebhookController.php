@@ -2,14 +2,14 @@
 
 namespace Kstmostofa\LaravelWhatsApp\Webhooks;
 
-use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
+use Kstmostofa\LaravelWhatsApp\Models\WaWebhookEvent;
 
 class WebhookController extends Controller
 {
-    public function __construct(protected Dispatcher $events)
+    public function __construct(protected WebhookDispatcher $dispatcher)
     {
     }
 
@@ -34,26 +34,44 @@ class WebhookController extends Controller
     }
 
     /**
-     * Live webhook delivery. Meta retries on non-2xx responses, so we ALWAYS
-     * return 200 once we've parsed the payload and dispatched events — the
-     * downstream listeners can fail or queue without re-triggering Meta.
+     * Live webhook delivery.
+     *
+     * Without the event log, a listener exception returns 500 and Meta
+     * retries the delivery later. With the log on, the delivery is stored
+     * first; a listener failure marks it `failed` and still returns 200,
+     * because you can replay it once the bug is fixed — and a Meta retry
+     * would re-run the listeners that did succeed.
      */
     public function receive(Request $request): Response
     {
         $payload = $request->all();
 
-        foreach (PayloadParser::events($payload) as $event) {
-            $eventClass = config("laravel-whatsapp.events.{$event['kind']}");
+        if (! $this->logging()) {
+            $this->dispatcher->dispatch($payload);
 
-            if ($eventClass && class_exists($eventClass)) {
-                $this->events->dispatch(new $eventClass(
-                    $event['phone_number_id'],
-                    $event['payload'],
-                    $event['metadata'] ?? [],
-                ));
-            }
+            return new Response('', 200);
         }
 
+        try {
+            $record = WaWebhookEvent::create([
+                'backend' => 'cloud',
+                'payload' => $payload,
+                'status' => WaWebhookEvent::STATUS_PENDING,
+            ]);
+        } catch (\Throwable) {
+            // Log table missing — fall back to plain dispatch rather than drop the delivery.
+            $this->dispatcher->dispatch($payload);
+
+            return new Response('', 200);
+        }
+
+        $this->dispatcher->process($record);
+
         return new Response('', 200);
+    }
+
+    protected function logging(): bool
+    {
+        return (bool) config('laravel-whatsapp.webhook.log', false);
     }
 }
