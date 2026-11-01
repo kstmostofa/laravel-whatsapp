@@ -27,6 +27,8 @@ jobs:
       matrix:
         php: ['8.2', '8.3', '8.4']
         laravel: ['12.*', '13.*']
+        # '' = whatever Composer resolves. A non-empty value pins Guzzle.
+        guzzle: ['']
         exclude:
           # Laravel 13 pulls in Symfony 8 which requires PHP 8.4+.
           - laravel: '13.*'
@@ -35,7 +37,8 @@ jobs:
             php: '8.3'
         include:
           # Laravel 13 resolves Guzzle 8 by default; keep Guzzle 7 covered too.
-          # (Laravel 12 only allows Guzzle 7.)
+          # (Laravel 12 only allows Guzzle 7.) The distinct `guzzle` value
+          # makes this an extra job rather than a change to the default one.
           - php: '8.4'
             laravel: '13.*'
             guzzle: '7.*'
@@ -60,7 +63,9 @@ jobs:
           composer update --prefer-dist --no-interaction --no-progress
 
       - name: Show resolved versions
-        run: composer show laravel/framework guzzlehttp/guzzle | grep -E '^(name|versions)'
+        run: |
+          composer show laravel/framework | grep -E '^(name|versions)'
+          composer show guzzlehttp/guzzle | grep -E '^(name|versions)'
 
       - name: Run tests
         run: vendor/bin/phpunit --testdox
