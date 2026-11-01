@@ -46,6 +46,14 @@ class WhatsAppFake extends CloudClient
         return $this->web;
     }
 
+    /**
+     * A named Cloud account that records into this fake.
+     */
+    public function forAccount(?string $phoneNumberId, ?string $businessAccountId = null): FakeCloudAccount
+    {
+        return new FakeCloudAccount($this, $phoneNumberId, $businessAccountId);
+    }
+
     public function request(string $method, string $path, array $options = []): array
     {
         return $this->recordRequest('cloud', $method, $path, $options);

@@ -4,6 +4,7 @@ namespace Kstmostofa\LaravelWhatsApp\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Kstmostofa\LaravelWhatsApp\Events\Concerns\ResolvesCloudAccount;
 
 /**
  * Inbound media message: image, video, audio, document, or sticker.
@@ -11,7 +12,7 @@ use Illuminate\Queue\SerializesModels;
  */
 class MediaReceived
 {
-    use Dispatchable, SerializesModels;
+    use Dispatchable, ResolvesCloudAccount, SerializesModels;
 
     /**
      * @param  array<string, mixed>  $payload  single `messages[]` entry (type is image/video/audio/document/sticker)

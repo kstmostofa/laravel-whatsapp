@@ -19,6 +19,10 @@ php artisan vendor:publish --tag=laravel-whatsapp-config --force
 | `WHATSAPP_ACCESS_TOKEN` | _required_ | Permanent System User token |
 | `WHATSAPP_TIMEOUT` | **`30`** | HTTP timeout to Meta in seconds |
 
+## Multiple Cloud accounts
+
+Additional phone numbers go in the `accounts` array of `config/laravel-whatsapp.php`, not in env-only settings. Each entry takes `phone_number_id`, and optionally `business_account_id` and `access_token`, which fall back to the default account's. See [Cloud API → Multiple phone numbers](/cloud-api#multiple-phone-numbers).
+
 ## Webhook receiver
 
 | Env var | Default | Purpose |

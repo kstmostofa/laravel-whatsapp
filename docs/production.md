@@ -13,7 +13,7 @@ Checklist + working configs for running the package on a real server.
 - [ ] Webhook URL in Meta App config is HTTPS and points at `https://yourapp.com/webhooks/whatsapp`
 - [ ] Database migrations have been run (`php artisan migrate`)
 - [ ] Queue worker is running if you dispatch the `SendMessage` job
-- [ ] `whatsapp:web:listen` is supervised (if Web backend is enabled)
+- [ ] `whatsapp:web:listen --all` is supervised (if Web backend is enabled)
 - [ ] `whatsapp:sidecar:start` runs on boot (if Web backend is enabled)
 - [ ] Backup strategy includes `storage/app/whatsapp-sidecar/sessions/` (loss = re-scan QR)
 - [ ] `php artisan whatsapp:health` returns `ok`
@@ -66,26 +66,26 @@ The default `whatsapp:sidecar:start` detaches and exits — that's right for man
 
 ## SSE listener under Supervisor
 
-One listener process per Web session:
+One listener process covers every Web session with `--all`, including sessions you start later:
 
 ```ini
-[program:whatsapp-web-listen-main]
-command=php /var/www/your-app/artisan whatsapp:web:listen main
+[program:whatsapp-web-listen]
+command=php /var/www/your-app/artisan whatsapp:web:listen --all
 autostart=true
 autorestart=true
 user=www-data
-stdout_logfile=/var/log/whatsapp-web-listen-main.log
+stdout_logfile=/var/log/whatsapp-web-listen.log
 redirect_stderr=true
 stopwaitsecs=10
 ```
 
-If you run multiple sessions (`sales`, `support`, …), add one `[program:…]` block per session. The command reconnects automatically on dropped streams with backoff, but if the process itself dies (OOM, segfault) Supervisor brings it back.
+To isolate a busy session, run `whatsapp:web:listen <session>` for it instead, as its own program. Don't run both for the same session, or every event is dispatched twice. The command reconnects automatically on dropped streams, and Supervisor brings it back if the process itself dies (OOM, segfault).
 
 Reload Supervisor:
 ```bash
 sudo supervisorctl reread
 sudo supervisorctl update
-sudo supervisorctl start whatsapp-sidecar whatsapp-web-listen-main
+sudo supervisorctl start whatsapp-sidecar whatsapp-web-listen
 ```
 
 ## Queue worker
@@ -310,6 +310,6 @@ php artisan migrate --force
 php artisan config:cache
 php artisan route:cache
 # DON'T restart whatsapp-sidecar unless package was upgraded
-sudo supervisorctl restart whatsapp-web-listen-main  # cheap — just resumes the SSE stream
+sudo supervisorctl restart whatsapp-web-listen       # cheap — just resumes the SSE stream
 sudo supervisorctl restart whatsapp-queue:*          # cheap — workers re-pick from queue
 ```

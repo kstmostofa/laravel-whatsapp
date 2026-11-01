@@ -79,6 +79,12 @@ WhatsAppMessage::create('Hi')->viaWeb('support');     // a specific Web session
 
 Forcing a template through `viaWeb()` throws an `InvalidArgumentException`.
 
+With [several Cloud numbers](/cloud-api#multiple-phone-numbers) configured, send from a named account:
+
+```php
+WhatsAppMessage::create('Your ticket was answered')->fromAccount('support');
+```
+
 ## Overriding the recipient
 
 `->to()` replaces the notifiable's route for one message:

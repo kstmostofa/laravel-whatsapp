@@ -3,6 +3,7 @@
 namespace Kstmostofa\LaravelWhatsApp\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Kstmostofa\LaravelWhatsApp\Events\Concerns\ResolvesCloudAccount;
 
 /**
  * Fired after Meta accepts an outbound Cloud API message.
@@ -13,7 +14,7 @@ use Illuminate\Foundation\Events\Dispatchable;
  */
 class MessageSent
 {
-    use Dispatchable;
+    use Dispatchable, ResolvesCloudAccount;
 
     /**
      * @param  array<string, mixed>  $payload

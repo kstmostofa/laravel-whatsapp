@@ -262,6 +262,10 @@ Post to Status / Stories:
 { "type": "image", "url": "https://…/promo.jpg", "caption": "New launch" }
 ```
 
+### `GET /events`
+
+Every session's events on one SSE stream, including sessions started after you connect. Same event names and payloads as the per-session stream below, and each payload includes its `sessionId`. The opening `hello` event lists the current sessions. Used by `php artisan whatsapp:web:listen --all`.
+
 ### `GET /sessions/:id/events`
 
 Server-Sent Events stream. Long-lived. Used by `php artisan whatsapp:web:listen`.

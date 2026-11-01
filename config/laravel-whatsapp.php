@@ -40,6 +40,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Additional Cloud API accounts
+    |--------------------------------------------------------------------------
+    |
+    | The keys above are the `default` account. Add more phone numbers here
+    | and use them with WhatsApp::cloud('sales'), WhatsAppMessage::fromAccount(),
+    | or $event->account() on incoming webhooks. Any key left out falls back
+    | to the default account's value (same Meta app → same token and WABA).
+    |
+    */
+
+    'accounts' => [
+        // 'sales' => [
+        //     'phone_number_id' => env('WHATSAPP_SALES_PHONE_NUMBER_ID'),
+        //     'business_account_id' => env('WHATSAPP_SALES_BUSINESS_ACCOUNT_ID'),
+        //     'access_token' => env('WHATSAPP_SALES_ACCESS_TOKEN'),
+        // ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Webhook receiver (Cloud API)
     |--------------------------------------------------------------------------
     */

@@ -32,6 +32,9 @@ class WhatsAppMessage
     /** Web session ID, or Cloud phone_number_id, depending on the backend. */
     public ?string $sender = null;
 
+    /** Named Cloud account from `laravel-whatsapp.accounts`. */
+    public ?string $account = null;
+
     /** @var array{name: string, language: string, components: array<int, array<string, mixed>>}|null */
     public ?array $template = null;
 
@@ -103,6 +106,20 @@ class WhatsAppMessage
     {
         $this->backend = 'cloud';
         $this->sender = $phoneNumberId;
+        $this->account = null;
+
+        return $this;
+    }
+
+    /**
+     * Send through the Cloud API from a named account in
+     * `laravel-whatsapp.accounts` (its own number, token and WABA).
+     */
+    public function fromAccount(string $account): static
+    {
+        $this->backend = 'cloud';
+        $this->account = $account;
+        $this->sender = null;
 
         return $this;
     }

@@ -71,13 +71,32 @@ function requireReady(session) {
   }
 }
 
+/** Subscribers to GET /events — every session's events on one stream. */
+const globalSubscribers = new Set();
+
 function broadcast(sessionId, event, data) {
-  const session = sessions.get(sessionId);
-  if (!session) return;
   const line = `event: ${event}\ndata: ${JSON.stringify({ sessionId, ...data })}\n\n`;
-  for (const res of session.subscribers) {
+  const session = sessions.get(sessionId);
+  const targets = session ? [...session.subscribers, ...globalSubscribers] : [...globalSubscribers];
+  for (const res of targets) {
     try { res.write(line); } catch (_) { /* subscriber gone */ }
   }
+}
+
+// Open an SSE response with a heartbeat; returns a cleanup function.
+function openEventStream(req, res, hello) {
+  res.set({
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+  res.flushHeaders();
+  res.write(`event: hello\ndata: ${JSON.stringify(hello)}\n\n`);
+  const heartbeat = setInterval(() => {
+    try { res.write(': ping\n\n'); } catch (_) { /* subscriber gone */ }
+  }, SSE_HEARTBEAT_MS);
+  return () => clearInterval(heartbeat);
 }
 
 function serializeMessage(m) {
@@ -727,26 +746,29 @@ app.post('/sessions/:id/status', async (req, res, next) => {
 app.get('/sessions/:id/events', (req, res, next) => {
   try {
     const s = getSession(req.params.id);
-    res.set({
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      Connection: 'keep-alive',
-      'X-Accel-Buffering': 'no',
-    });
-    res.flushHeaders();
-    res.write(`event: hello\ndata: ${JSON.stringify({ sessionId: req.params.id, status: s.status })}\n\n`);
+    const stop = openEventStream(req, res, { sessionId: req.params.id, status: s.status });
     s.subscribers.add(res);
-    const heartbeat = setInterval(() => {
-      try { res.write(': ping\n\n'); } catch (_) { /* subscriber gone */ }
-    }, SSE_HEARTBEAT_MS);
     req.on('close', () => {
-      clearInterval(heartbeat);
+      stop();
       // Read the live entry — the session object may have been replaced by a restart.
       const current = sessions.get(req.params.id);
       if (current) current.subscribers.delete(res);
       s.subscribers.delete(res);
     });
   } catch (e) { next(e); }
+});
+
+// Every session's events on one stream, including sessions started later.
+// Each event's data carries its `sessionId`. Used by `whatsapp:web:listen --all`.
+app.get('/events', (req, res) => {
+  const stop = openEventStream(req, res, {
+    sessions: [...sessions.entries()].map(([id, s]) => ({ id, status: s.status })),
+  });
+  globalSubscribers.add(res);
+  req.on('close', () => {
+    stop();
+    globalSubscribers.delete(res);
+  });
 });
 
 // Centralized error handler — turns thrown { http } errors into HTTP responses.

@@ -22,9 +22,10 @@ class WebListenCommand extends Command
 {
     protected $signature = 'whatsapp:web:listen
         {session? : Session ID to subscribe to (defaults to laravel-whatsapp.ui.default_session)}
+        {--all : Subscribe to every session on one stream, including sessions started later}
         {--reconnect-delay=2 : Seconds to wait before reconnecting on dropped stream}';
 
-    protected $description = 'Subscribe to a sidecar session\'s event stream and dispatch each event as a Laravel event.';
+    protected $description = 'Subscribe to sidecar event streams and dispatch each event as a Laravel event.';
 
     protected string $buffer = '';
 
@@ -38,8 +39,16 @@ class WebListenCommand extends Command
 
     public function handle(WebClient $client, Dispatcher $events): int
     {
-        $sessionId = $this->argument('session')
-            ?: (string) config('laravel-whatsapp.ui.default_session', 'main');
+        if ($this->option('all') && $this->argument('session')) {
+            $this->error('Pass a session or --all, not both.');
+
+            return self::FAILURE;
+        }
+
+        // With --all, events carry their own sessionId; this is only a fallback.
+        $sessionId = $this->option('all')
+            ? '*'
+            : ($this->argument('session') ?: (string) config('laravel-whatsapp.ui.default_session', 'main'));
 
         if ($sessionId === '') {
             $this->error('No session specified and no default_session configured.');
@@ -52,11 +61,9 @@ class WebListenCommand extends Command
         $eventMap = config('laravel-whatsapp.web.events', []);
         $delay = max(1, (int) $this->option('reconnect-delay'));
 
-        $url = sprintf('http://%s:%d/sessions/%s/events',
-            $client->host(),
-            $client->port(),
-            rawurlencode($sessionId),
-        );
+        $url = $this->option('all')
+            ? sprintf('http://%s:%d/events', $client->host(), $client->port())
+            : sprintf('http://%s:%d/sessions/%s/events', $client->host(), $client->port(), rawurlencode($sessionId));
 
         $this->info("Subscribing to {$url}");
 
@@ -200,7 +207,17 @@ class WebListenCommand extends Command
             $payload = ['raw' => $json];
         }
 
-        $events->dispatch(new $eventClass($sessionId, $payload));
+        // The sidecar stamps every event with its session — the only way to
+        // tell sessions apart on the --all stream.
+        $eventSession = is_string($payload['sessionId'] ?? null) && $payload['sessionId'] !== ''
+            ? $payload['sessionId']
+            : $sessionId;
+
+        if ($eventSession === '*') {
+            return;
+        }
+
+        $events->dispatch(new $eventClass($eventSession, $payload));
     }
 
     /**

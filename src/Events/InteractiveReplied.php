@@ -4,6 +4,7 @@ namespace Kstmostofa\LaravelWhatsApp\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Kstmostofa\LaravelWhatsApp\Events\Concerns\ResolvesCloudAccount;
 
 /**
  * User tapped a button or list reply on an interactive message you sent.
@@ -12,7 +13,7 @@ use Illuminate\Queue\SerializesModels;
  */
 class InteractiveReplied
 {
-    use Dispatchable, SerializesModels;
+    use Dispatchable, ResolvesCloudAccount, SerializesModels;
 
     /**
      * @param  array<string, mixed>  $payload  single `messages[]` entry (type=interactive or button)
