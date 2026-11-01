@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- The package couldn't be installed into a new Laravel 13 app: the Laravel
+  13 skeleton ships Guzzle 8, but the package required Guzzle `^7.5`, so
+  `composer require` failed to resolve. Guzzle 8 is now allowed alongside 7.
+  CI tests Laravel 13 with both majors.
+
 ## [1.2.0] - 2026-11-01
 
 ### Upgrading
