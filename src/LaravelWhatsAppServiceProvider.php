@@ -64,7 +64,12 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/laravel-whatsapp.php', 'laravel-whatsapp');
+        // Deep merge: an app that published the config before a release keeps
+        // its own values, but still gets nested keys added later (new
+        // `web.events` mappings, `broadcasting.ability`, …). mergeConfigFrom()
+        // only merges top-level keys, so a published `web` array would hide
+        // every event mapping added after it was published.
+        $this->replaceConfigRecursivelyFrom(__DIR__.'/../config/laravel-whatsapp.php', 'laravel-whatsapp');
 
         $this->app->singleton(CloudClient::class, function ($app) {
             $config = $app['config']->get('laravel-whatsapp');
