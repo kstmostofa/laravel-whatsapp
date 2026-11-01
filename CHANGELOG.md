@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-11-01
+
+### Upgrading
+- Run `composer update`, then **restart the sidecar**
+  (`php artisan whatsapp:sidecar:stop && php artisan whatsapp:sidecar:start`,
+  or restart its Supervisor program) so the Node fixes take effect.
+- If you published the sidecar (`--tag=laravel-whatsapp-sidecar`) and run
+  it from that copy, publish it again with `--force` first. No new npm
+  dependencies.
+- No migrations and no config changes.
+- Message IDs from current WhatsApp Web now carry a direction suffix
+  (`…_out` / `…_in`). Rows stored before upgrading keep their old IDs, so
+  acks or reactions for those older messages won't match them.
+
 ### Fixed
 - The package couldn't be installed into a new Laravel 13 app: the Laravel
   13 skeleton ships Guzzle 8, but the package required Guzzle `^7.5`, so
@@ -369,7 +383,8 @@ Initial public release.
   - Laravel 11 / 12 → PHP 8.2+
   - Laravel 13 → PHP 8.4+ (Symfony 8 is pulled in transitively and requires 8.4)
 
-[Unreleased]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.0.3...v1.1.0
 [1.0.3]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.0.2...v1.0.3
