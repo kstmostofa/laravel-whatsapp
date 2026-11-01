@@ -3,6 +3,7 @@
 namespace Kstmostofa\LaravelWhatsApp\Livewire;
 
 use Kstmostofa\LaravelWhatsApp\Exceptions\SidecarException;
+use Kstmostofa\LaravelWhatsApp\Livewire\Concerns\ListensForBroadcasts;
 use Kstmostofa\LaravelWhatsApp\Models\WaMessage;
 use Kstmostofa\LaravelWhatsApp\Models\WaSession;
 use Kstmostofa\LaravelWhatsApp\Web\SidecarManager;
@@ -15,6 +16,23 @@ use Livewire\Component;
 #[Layout('laravel-whatsapp::layouts.app')]
 class Dashboard extends Component
 {
+    use ListensForBroadcasts;
+
+    /**
+     * Live counters and recent activity for the default session.
+     *
+     * @return array<string, string>
+     */
+    protected function getListeners(): array
+    {
+        return $this->broadcastListeners([(string) config('laravel-whatsapp.ui.default_session', 'main')], [
+            'message.received' => '$refresh',
+            'message.created' => '$refresh',
+            'session.ready' => '$refresh',
+            'session.disconnected' => '$refresh',
+        ]);
+    }
+
     public function render()
     {
         $manager = app(SidecarManager::class);

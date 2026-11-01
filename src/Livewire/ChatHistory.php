@@ -5,6 +5,7 @@ namespace Kstmostofa\LaravelWhatsApp\Livewire;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Kstmostofa\LaravelWhatsApp\Exceptions\SidecarException;
+use Kstmostofa\LaravelWhatsApp\Livewire\Concerns\ListensForBroadcasts;
 use Kstmostofa\LaravelWhatsApp\Models\WaMessage;
 use Kstmostofa\LaravelWhatsApp\Web\HistoryImporter;
 use Kstmostofa\LaravelWhatsApp\Web\WebClient;
@@ -19,6 +20,7 @@ use Livewire\WithFileUploads;
 #[Layout('laravel-whatsapp::layouts.app')]
 class ChatHistory extends Component
 {
+    use ListensForBroadcasts;
     use WithFileUploads;
 
     public string $session;
@@ -50,6 +52,29 @@ class ChatHistory extends Component
     public function mount(?string $session = null): void
     {
         $this->session = $session ?? config('laravel-whatsapp.ui.default_session', 'main');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function getListeners(): array
+    {
+        return $this->broadcastListeners([$this->session], [
+            'message.received' => 'refreshFromBroadcast',
+            'message.created' => 'refreshFromBroadcast',
+            'message.ack' => 'refreshFromBroadcast',
+            'message.revoked' => 'refreshFromBroadcast',
+        ]);
+    }
+
+    /**
+     * A message event arrived over Echo. The persistence listener has already
+     * written it, so drop the cached chat list (new last message / unread
+     * count) and let Livewire re-render.
+     */
+    public function refreshFromBroadcast(): void
+    {
+        Cache::forget("laravel-whatsapp:chats:{$this->session}");
     }
 
     public function open(string $chatId): void
@@ -401,7 +426,7 @@ class ChatHistory extends Component
             'chats' => $chats,
             'messages' => $messages,
             'hasOlder' => $hasOlder,
-            'pollInterval' => config('laravel-whatsapp.ui.poll_interval', '5s'),
+            'pollInterval' => $this->pollInterval(),
         ]);
     }
 }

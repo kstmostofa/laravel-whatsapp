@@ -73,7 +73,8 @@ Default = `127.0.0.1` because the sidecar runs **on the same server** as Laravel
 | `WHATSAPP_UI_ENABLED` | **`true`** | Register the UI routes (also needs `livewire/flux` installed) |
 | `WHATSAPP_UI_PREFIX` | **`whatsapp`** | URL prefix — `/whatsapp/*` becomes `/<prefix>/*` |
 | `WHATSAPP_UI_DEFAULT_SESSION` | **`main`** | Default session ID used when `?session=` isn't in the URL |
-| `WHATSAPP_UI_POLL_INTERVAL` | **`5s`** | `wire:poll` interval on the conversations page |
+| `WHATSAPP_UI_POLL_INTERVAL` | **`5s`** | `wire:poll` interval on the conversations and sessions pages |
+| `WHATSAPP_UI_TEMPLATES_CACHE_SECONDS` | **`600`** | Cache the approved-template list in Compose. Cleared by template status webhooks |
 | `WHATSAPP_UI_CSS_MODE` | **`vite`** | `vite` \| `standalone` \| `none`. See [UI install paths](/ui#install-paths) |
 | `WHATSAPP_UI_CHAT_LIST_LIMIT` | **`50`** | Max chats rendered in the conversations sidebar (`0` = unlimited) |
 | `WHATSAPP_UI_MESSAGES_INITIAL` | **`50`** | Messages loaded per chat on first open |
@@ -139,8 +140,11 @@ When `true`, the package registers `PersistIncomingMessage` as a listener for bo
 | `WHATSAPP_BROADCAST` | **`false`** | Make Web events implement `ShouldBroadcast` |
 | `WHATSAPP_BROADCAST_PREFIX` | **`whatsapp`** | Channel prefix, e.g. `whatsapp.session.main` |
 | `WHATSAPP_BROADCAST_CHANNEL` | **`public`** | `public` or `private` |
+| `WHATSAPP_BROADCAST_ABILITY` | **`manage-whatsapp`** | Gate ability that authorizes private channels. Empty to register your own |
+| `WHATSAPP_UI_POLL_INTERVAL_BROADCASTING` | **`60s`** | Safety-net poll interval while broadcasting is on |
+| `WHATSAPP_UI_SCRIPTS` | _empty_ | Comma-separated script URLs for the UI layout, e.g. an Echo bundle in standalone CSS mode |
 
-When broadcasting is on, `Events\Web\MessageReceived`, `QrGenerated`, `MessageAck` are pushed over your configured broadcaster (Reverb / Pusher / Ably). The UI uses `wire:poll` by default — flip this if you want sub-second updates instead.
+When broadcasting is on, the Web events are pushed over your configured broadcaster (Reverb / Pusher / Ably) and the bundled UI updates from them instead of polling. See [Production → Live updates](/production#live-updates-polling-vs-broadcasting).
 
 ## Queue
 

@@ -14,6 +14,9 @@
     @elseif ($cssMode === 'standalone')
         <link rel="stylesheet" href="{{ route('whatsapp.ui.assets.css') }}">
     @endif
+    @foreach ((array) config('laravel-whatsapp.ui.scripts', []) as $script)
+        <script src="{{ $script }}" defer></script>
+    @endforeach
     @fluxAppearance
     @livewireStyles
     <style>[x-cloak]{display:none!important}</style>

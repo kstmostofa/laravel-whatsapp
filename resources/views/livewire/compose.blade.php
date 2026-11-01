@@ -57,13 +57,74 @@
                 <flux:input type="url" wire:model="mediaUrl" label="Media URL" placeholder="https://…" />
                 <flux:input wire:model="caption" label="Caption (optional)" />
             @elseif ($type === 'template')
-                <div class="grid grid-cols-2 gap-5">
-                    <flux:input wire:model="templateName" label="Template name" placeholder="hello_world" class="font-mono" />
-                    <flux:input wire:model="templateLanguage" label="Language" class="font-mono" />
-                </div>
-                <flux:callout variant="warning" icon="information-circle">
-                    <flux:callout.text>Template parameters aren't supported from this UI. For parameterized templates, call <code class="font-mono">WhatsApp::messages()->sendTemplate()</code> directly.</flux:callout.text>
-                </flux:callout>
+                @if ($backend === 'web')
+                    <flux:callout variant="warning" icon="information-circle">
+                        <flux:callout.text>Templates are a Cloud API feature. Switch the backend to Cloud API or Auto.</flux:callout.text>
+                    </flux:callout>
+                @else
+                    @if ($templatesError)
+                        <flux:callout variant="warning" icon="exclamation-triangle">
+                            <flux:callout.text>Couldn't load templates from Meta: {{ $templatesError }}. You can still type a template name below.</flux:callout.text>
+                        </flux:callout>
+                    @endif
+
+                    @if (count($templates) > 0)
+                        <flux:select wire:model.live="templateKey" label="Approved template" placeholder="Choose a template…">
+                            @foreach ($templates as $t)
+                                <flux:select.option value="{{ $t->key() }}">{{ $t->name }} · {{ $t->language }}{{ $t->category ? ' · '.strtolower($t->category) : '' }}</flux:select.option>
+                            @endforeach
+                            <flux:select.option value="">Other — type the name</flux:select.option>
+                        </flux:select>
+                    @endif
+
+                    @if ($template)
+                        @php($fields = $template->fields())
+                        @if (count($fields) > 0)
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                @foreach ($fields as $field)
+                                    <flux:input
+                                        wire:model.live.debounce.300ms="templateParams.{{ $field['id'] }}"
+                                        :label="$field['label']"
+                                        :type="$field['kind'] === 'media' ? 'url' : 'text'"
+                                        :placeholder="$field['kind'] === 'media' ? 'https://…' : ''"
+                                    />
+                                @endforeach
+                            </div>
+                        @else
+                            <flux:text size="sm" class="!text-zinc-500">This template has no parameters.</flux:text>
+                        @endif
+
+                        <div>
+                            <flux:label>Preview</flux:label>
+                            <div class="mt-2 max-w-md rounded-2xl border border-wa-200 dark:border-wa-700 bg-wa-bubble-light dark:bg-wa-bubble-dark px-4 py-3 shadow-sm space-y-1.5">
+                                @if ($preview['header'])
+                                    <div class="font-semibold text-sm text-zinc-900 dark:text-white">{{ $preview['header'] }}</div>
+                                @endif
+                                @if ($preview['body'])
+                                    <div class="text-sm whitespace-pre-wrap text-zinc-900 dark:text-zinc-100">{{ $preview['body'] }}</div>
+                                @endif
+                                @if ($preview['footer'])
+                                    <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ $preview['footer'] }}</div>
+                                @endif
+                                @if (count($preview['buttons']) > 0)
+                                    <div class="pt-2 border-t border-wa-200 dark:border-wa-700 flex flex-wrap gap-2">
+                                        @foreach ($preview['buttons'] as $label)
+                                            <span class="text-xs font-medium text-sky-600 dark:text-sky-400">{{ $label }}</span>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    @else
+                        <div class="grid grid-cols-2 gap-5">
+                            <flux:input wire:model="templateName" label="Template name" placeholder="hello_world" class="font-mono" />
+                            <flux:input wire:model="templateLanguage" label="Language" class="font-mono" />
+                        </div>
+                        @if (count($templates) > 0 || $templatesError)
+                            <flux:text size="xs" class="!text-zinc-500">Typed templates are sent without parameters.</flux:text>
+                        @endif
+                    @endif
+                @endif
             @endif
 
             <flux:separator />

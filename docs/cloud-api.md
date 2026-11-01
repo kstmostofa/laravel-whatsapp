@@ -169,9 +169,27 @@ WhatsApp::templates()->create(
 WhatsApp::templates()->delete('order_ready');
 ```
 
-::: tip Template parameters
-Template parameters aren't yet supported via the bundled Compose UI — use the facade directly for parameterized templates. See [Roadmap](https://github.com/kstmostofa/laravel-whatsapp#roadmap).
+::: tip Sending templates from the UI
+The Compose page lists your approved templates, shows one input per placeholder (header, body, URL buttons, copy-code buttons, media headers), previews the result, and sends it with the right `components`. The list is cached for 10 minutes and refreshed when a template status webhook arrives.
 :::
+
+### Building components in code
+
+`TemplateDefinition` does the same work outside the UI:
+
+```php
+use Kstmostofa\LaravelWhatsApp\Templates\TemplateCatalog;
+
+$template = app(TemplateCatalog::class)->find('order_shipped|en_US');
+
+$template->fields();                       // [['id' => 'body__1', 'label' => 'Body {{1}}', …], …]
+$components = $template->components([
+    'body__1' => 'Ali',
+    'body__2' => '#42',
+]);
+
+WhatsApp::messages()->sendTemplate('+9665…', $template->name, $template->language, $components);
+```
 
 ## Queued sends
 

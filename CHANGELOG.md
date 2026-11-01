@@ -15,6 +15,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Laravel 12 or 13 to use this version; 1.0.x keeps working on Laravel 11.
 
 ### Added
+- **Live UI updates.** With `WHATSAPP_BROADCAST=true`, the conversations,
+  sessions and dashboard pages subscribe to the session channel through
+  Livewire's Echo support and update as events arrive. Polling drops to a
+  60-second safety net (`WHATSAPP_UI_POLL_INTERVAL_BROADCASTING`). A fresh QR
+  replaces the one in an open pairing modal.
+- `SessionReady` and `Disconnected` now broadcast (`session.ready`,
+  `session.disconnected`).
+- Private session channels are authorized automatically through the
+  `manage-whatsapp` Gate ability (`WHATSAPP_BROADCAST_ABILITY`).
+- `WHATSAPP_UI_SCRIPTS` adds script tags to the UI layout, for loading Echo
+  in standalone CSS mode.
+- `Broadcasting\SessionChannel` names the per-session channel in one place.
+- **Template builder in Compose.** Pick an approved template, fill one input
+  per placeholder (text and media headers, body, URL buttons, copy-code
+  buttons, positional and named parameters), see a live preview, and send.
+  Empty fields block the send. Backed by `Templates\TemplateCatalog`, cached
+  for `WHATSAPP_UI_TEMPLATES_CACHE_SECONDS` and cleared by template status
+  webhooks, and `Templates\TemplateDefinition`, which builds the
+  `components` payload in code too.
 - **Bulk sending.** `WhatsApp::bulk($recipients, $message)` queues one
   `SendBulkMessage` job per recipient, rate limited per sender through the
   `whatsapp-bulk` limiter (configurable per backend). Recipients are

@@ -105,10 +105,33 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
 
         $this->registerNotificationChannel();
         $this->registerBulkRateLimiter();
+        $this->registerBroadcastChannel();
         $this->registerWebhookRoutes();
         $this->registerViews();
         $this->registerUi();
         $this->registerPersistenceListeners();
+    }
+
+    /**
+     * Authorize the private session channel through a Gate ability, so apps
+     * that switch to private channels don't have to write it themselves.
+     */
+    protected function registerBroadcastChannel(): void
+    {
+        $ability = config('laravel-whatsapp.broadcasting.ability');
+
+        if (! \Kstmostofa\LaravelWhatsApp\Broadcasting\SessionChannel::enabled()
+            || ! \Kstmostofa\LaravelWhatsApp\Broadcasting\SessionChannel::isPrivate()
+            || ! is_string($ability) || $ability === '') {
+            return;
+        }
+
+        $this->callAfterResolving(\Illuminate\Contracts\Broadcasting\Factory::class, function ($broadcast) use ($ability) {
+            $broadcast->channel(
+                \Kstmostofa\LaravelWhatsApp\Broadcasting\SessionChannel::pattern(),
+                fn ($user, string $session) => \Illuminate\Support\Facades\Gate::forUser($user)->allows($ability, $session),
+            );
+        });
     }
 
     /**
@@ -192,6 +215,13 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
     protected function registerPersistenceListeners(): void
     {
         $events = $this->app['events'];
+
+        // A template was approved / rejected / paused — the Compose picker's
+        // cached list is stale.
+        $events->listen(
+            \Kstmostofa\LaravelWhatsApp\Events\TemplateStatusUpdate::class,
+            fn () => $this->app->make(\Kstmostofa\LaravelWhatsApp\Templates\TemplateCatalog::class)->flush(),
+        );
 
         if (config('laravel-whatsapp.persist.incoming_messages', false)) {
             $listener = \Kstmostofa\LaravelWhatsApp\Listeners\PersistIncomingMessage::class;

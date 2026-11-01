@@ -8,7 +8,7 @@ A drop-in admin under `/whatsapp` built on [Flux UI](https://fluxui.dev) (Livewi
 |---|---|
 | `/whatsapp` | Dashboard — sidecar status, live sessions, recent activity, message counts |
 | `/whatsapp/sessions` | List active sessions, start new, QR pairing modal, stop / destroy |
-| `/whatsapp/compose` | Send a one-off message — pick backend (auto/cloud/web), type (text/image/document/template) |
+| `/whatsapp/compose` | Send a one-off message — pick backend (auto/cloud/web), type (text/image/document/template). Templates come from a picker of your approved templates, with a field per placeholder and a live preview |
 | `/whatsapp/chats` | **Full chat UI** — chat list with search, conversation pane with chat bubbles, file attachments, edit, delete, sound notification, double-check acks |
 | `/whatsapp/groups` | List + create groups, manage participants |
 | `/whatsapp/contacts` | Searchable contact list with avatars, "is on WhatsApp" checker |
@@ -166,7 +166,7 @@ Override `layouts/app.blade.php` after publishing views, edit the `<flux:navbar>
 
 - **Chat list**: 50 chats by default, avatars lazy + cached 30 min, list itself cached 3 s
 - **Conversation pane**: 50 messages initial, indexed range scan, expanded 50 at a time via "Load older"
-- **Polling**: `wire:poll.5s` per page, with Laravel cache absorbing sidecar HTTP roundtrips
+- **Polling**: `wire:poll.5s` per page, with Laravel cache absorbing sidecar HTTP roundtrips. With broadcasting on, pages update from Echo and poll only every 60s
 - **No `wire:loading.attr` on hot paths** — visible UI never grays out during background refresh
 
 Configurable in `config/laravel-whatsapp.php`:

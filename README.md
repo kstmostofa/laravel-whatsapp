@@ -153,12 +153,12 @@ Detailed deployment guide → [docs/production](https://kstmostofa.github.io/lar
 - [x] Bulk send job with rate limiting
 - [x] Laravel notification channel + `WhatsApp::fake()`
 - [x] Chat history import
-- [ ] Native broadcasting integration with `Echo` channel listeners
-- [ ] Template builder UI (currently API-only)
+- [x] Native broadcasting integration with `Echo` channel listeners
+- [x] Template builder in Compose
 
 ## Status
 
-- **83 tests passing**, 232 assertions (testbench + mocked Guzzle + Livewire smoke tests), plus 20 sidecar tests (`npm test` in `sidecar/`)
+- **98 tests passing**, 277 assertions (testbench + mocked Guzzle + Livewire smoke tests), plus 20 sidecar tests (`npm test` in `sidecar/`)
 - **Compatible with Laravel 12 / 13** — tests run green against L13.11 + PHPUnit 12 on PHP 8.5
 - PHP minimum: **8.2** on Laravel 12, **8.4** on Laravel 13 (Symfony 8 transitive)
 - Laravel 11 support was dropped: it is past end of life and has unpatched security advisories

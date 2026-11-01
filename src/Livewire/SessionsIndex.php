@@ -3,8 +3,10 @@
 namespace Kstmostofa\LaravelWhatsApp\Livewire;
 
 use Kstmostofa\LaravelWhatsApp\Exceptions\SidecarException;
+use Kstmostofa\LaravelWhatsApp\Livewire\Concerns\ListensForBroadcasts;
 use Kstmostofa\LaravelWhatsApp\Web\WebClient;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
@@ -13,6 +15,8 @@ use Livewire\Component;
 #[Layout('laravel-whatsapp::layouts.app')]
 class SessionsIndex extends Component
 {
+    use ListensForBroadcasts;
+
     // Restrict to safe characters — session IDs are used to derive filesystem
     // paths (auth dirs under storage/), so disallow path traversal characters.
     #[Validate('nullable|string|max:64|regex:/^[A-Za-z0-9_\-]*$/')]
@@ -28,9 +32,44 @@ class SessionsIndex extends Component
 
     public ?string $error = null;
 
+    /** Session IDs from the last render — what we subscribe to over Echo. Server-set only. */
+    #[Locked]
+    public array $knownSessions = [];
+
     public bool $showDestroyConfirm = false;
 
     public ?string $destroyTarget = null;
+
+    /**
+     * @return array<string, string>
+     */
+    protected function getListeners(): array
+    {
+        return $this->broadcastListeners(
+            [...$this->knownSessions, $this->qrFor, (string) config('laravel-whatsapp.ui.default_session', 'main')],
+            [
+                'qr.generated' => 'onQrGenerated',
+                'session.ready' => '$refresh',
+                'session.disconnected' => '$refresh',
+            ],
+        );
+    }
+
+    /**
+     * A fresh QR arrived over Echo — swap it into the open modal so the user
+     * never scans an expired one.
+     *
+     * @param  array<string, mixed>  $event  the broadcast QrGenerated event's public properties
+     */
+    public function onQrGenerated(array $event): void
+    {
+        $dataUri = $event['payload']['dataUri'] ?? null;
+
+        if ($this->showQr && ($event['sessionId'] ?? null) === $this->qrFor && is_string($dataUri)) {
+            $this->qrDataUri = $dataUri;
+            $this->qrStatus = 'qr';
+        }
+    }
 
     public function start(string $id): void
     {
@@ -145,6 +184,14 @@ class SessionsIndex extends Component
             }
         }
 
-        return view('laravel-whatsapp::livewire.sessions-index', compact('sessions'));
+        $this->knownSessions = array_values(array_filter(array_map(
+            fn ($s) => is_array($s) && is_string($s['id'] ?? null) ? $s['id'] : null,
+            $sessions,
+        )));
+
+        return view('laravel-whatsapp::livewire.sessions-index', [
+            'sessions' => $sessions,
+            'pollInterval' => $this->pollInterval(),
+        ]);
     }
 }

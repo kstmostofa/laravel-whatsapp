@@ -6,6 +6,8 @@ use Kstmostofa\LaravelWhatsApp\Client\CloudClient;
 use Kstmostofa\LaravelWhatsApp\Exceptions\CloudApiException;
 use Kstmostofa\LaravelWhatsApp\Exceptions\SidecarException;
 use Kstmostofa\LaravelWhatsApp\MessageRouter;
+use Kstmostofa\LaravelWhatsApp\Templates\TemplateCatalog;
+use Kstmostofa\LaravelWhatsApp\Templates\TemplateDefinition;
 use Kstmostofa\LaravelWhatsApp\Web\WebClient;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -43,6 +45,14 @@ class Compose extends Component
     #[Validate('nullable|string|max:16')]
     public string $templateLanguage = 'en_US';
 
+    /** Picked approved template, as `name|language`. Empty = type the name by hand. */
+    #[Validate('nullable|string|max:160')]
+    public string $templateKey = '';
+
+    /** Placeholder values keyed by TemplateDefinition field id (`body__1`, `header__media`, …). */
+    #[Validate(['templateParams' => 'array', 'templateParams.*' => 'nullable|string|max:1024'])]
+    public array $templateParams = [];
+
     public ?string $result = null;
 
     public ?string $error = null;
@@ -50,6 +60,19 @@ class Compose extends Component
     public function mount(): void
     {
         $this->sessionId = config('laravel-whatsapp.ui.default_session', 'main');
+    }
+
+    /**
+     * Picking a template fills in its name and language and clears values
+     * typed for the previous one.
+     */
+    public function updatedTemplateKey(string $key): void
+    {
+        $this->templateParams = [];
+
+        if ($key !== '' && str_contains($key, '|')) {
+            [$this->templateName, $this->templateLanguage] = explode('|', $key, 2);
+        }
     }
 
     public function send(): void
@@ -61,6 +84,7 @@ class Compose extends Component
             $response = $this->dispatchSend();
             $this->result = json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
             $this->body = $this->mediaUrl = $this->caption = '';
+            $this->templateParams = [];
         } catch (CloudApiException|SidecarException $e) {
             $this->error = $e->getMessage();
         }
@@ -100,13 +124,76 @@ class Compose extends Component
         return match ($this->type) {
             'image' => $messages->sendImage($this->to, ['link' => $this->mediaUrl, 'caption' => $this->caption ?: null]),
             'document' => $messages->sendDocument($this->to, ['link' => $this->mediaUrl, 'caption' => $this->caption ?: null]),
-            'template' => $messages->sendTemplate($this->to, $this->templateName, $this->templateLanguage),
+            'template' => $this->sendTemplate($messages),
             default => $messages->sendText($this->to, $this->body),
         };
     }
 
+    /**
+     * @param  \Kstmostofa\LaravelWhatsApp\Client\Resources\MessagesResource  $messages
+     */
+    protected function sendTemplate($messages): array
+    {
+        $template = $this->selectedTemplate();
+
+        if ($template === null) {
+            // Typed by hand — send without parameters.
+            return $messages->sendTemplate($this->to, $this->templateName, $this->templateLanguage);
+        }
+
+        if ($missing = $template->missing($this->templateParams)) {
+            $labels = array_column(array_filter($template->fields(), fn ($f) => in_array($f['id'], $missing, true)), 'label');
+
+            throw new CloudApiException('Fill in every template field: '.implode(', ', $labels).'.');
+        }
+
+        return $messages->sendTemplate(
+            $this->to,
+            $template->name,
+            $template->language,
+            $template->components($this->templateParams),
+        );
+    }
+
+    protected function selectedTemplate(): ?TemplateDefinition
+    {
+        if ($this->templateKey === '') {
+            return null;
+        }
+
+        try {
+            return app(TemplateCatalog::class)->find($this->templateKey);
+        } catch (CloudApiException) {
+            return null;
+        }
+    }
+
     public function render()
     {
-        return view('laravel-whatsapp::livewire.compose');
+        $templates = [];
+        $templatesError = null;
+
+        // Only call Meta when the template picker is actually on screen.
+        if ($this->type === 'template' && $this->backend !== 'web') {
+            try {
+                $templates = app(TemplateCatalog::class)->approved();
+            } catch (CloudApiException $e) {
+                $templatesError = $e->getMessage();
+            }
+        }
+
+        $selected = null;
+        foreach ($templates as $template) {
+            if ($template->key() === $this->templateKey) {
+                $selected = $template;
+            }
+        }
+
+        return view('laravel-whatsapp::livewire.compose', [
+            'templates' => $templates,
+            'templatesError' => $templatesError,
+            'template' => $selected,
+            'preview' => $selected?->preview($this->templateParams),
+        ]);
     }
 }
