@@ -39,6 +39,7 @@ use Kstmostofa\LaravelWhatsApp\Events\Web\MessageRevoked;
 use Kstmostofa\LaravelWhatsApp\Events\Web\QrGenerated;
 use Kstmostofa\LaravelWhatsApp\Events\Web\SessionReady;
 use Kstmostofa\LaravelWhatsApp\Health\HealthSnapshot;
+use Kstmostofa\LaravelWhatsApp\Inbound\InboundRouter;
 use Kstmostofa\LaravelWhatsApp\Jobs\SendBulkMessage;
 use Kstmostofa\LaravelWhatsApp\Listeners\PersistIncomingMessage;
 use Kstmostofa\LaravelWhatsApp\Listeners\PersistSessionState;
@@ -81,6 +82,8 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
         $this->app->alias(CloudClient::class, 'whatsapp');
 
         $this->app->singleton(CloudAccounts::class);
+
+        $this->app->singleton(InboundRouter::class);
 
         $this->app->singleton(SidecarManager::class, function ($app) {
             return new SidecarManager($app['config']->get('laravel-whatsapp.web'));
@@ -260,6 +263,12 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
     protected function registerPersistenceListeners(): void
     {
         $events = $this->app['events'];
+
+        // Inbound router: a no-op until routes are declared with WhatsApp::router().
+        $events->listen(
+            [MessageReceived::class, MediaReceived::class, InteractiveReplied::class, Events\Web\MessageReceived::class],
+            fn (object $event) => $this->app->make(InboundRouter::class)->handleEvent($event),
+        );
 
         // A template was approved / rejected / paused — the Compose picker's
         // cached list is stale.

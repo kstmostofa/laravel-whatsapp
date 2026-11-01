@@ -62,6 +62,9 @@ WhatsAppMessage::create('Your invoice')->document('https://example.com/inv.pdf',
 WhatsAppMessage::create()->image('https://example.com/photo.jpg', 'Caption');
 WhatsAppMessage::create()->video('https://example.com/clip.mp4');
 
+// Quote an earlier message (text and media; not templates)
+WhatsAppMessage::create('Following up on this')->replyTo($messageId);
+
 // Link previews for URLs in a Cloud text message
 WhatsAppMessage::create('Track it: https://example.com/t/42')->previewUrl();
 ```

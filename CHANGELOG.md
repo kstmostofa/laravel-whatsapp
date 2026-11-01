@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Inbound router.** `WhatsApp::router()` routes incoming messages from
+  both backends to handlers: `hears()` for exact text (with `|`
+  alternatives) or regex (captures become arguments), `onButton()`,
+  `onType()`, `fallback()`, and middleware. Handlers get an
+  `IncomingMessage` with `reply()` (same chat, same number or session,
+  quoting the original), `react()` and `markRead()`. Your own messages,
+  status updates and, unless `allowGroups()`, group chats are ignored.
+  Handler exceptions are reported instead of breaking the webhook or
+  listener.
+- `WhatsAppMessage::replyTo($messageId)` quotes a message, for text and
+  media on both backends.
 - `whatsapp:web:listen --all` subscribes to every Web session on one stream,
   including sessions started later, so one supervised process replaces one
   per session. Backed by a new sidecar `GET /events` stream.
