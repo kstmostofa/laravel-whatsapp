@@ -23,8 +23,7 @@ class MessageSent
         public string $phoneNumberId,
         public array $payload,
         public array $response = [],
-    ) {
-    }
+    ) {}
 
     public function messageId(): ?string
     {

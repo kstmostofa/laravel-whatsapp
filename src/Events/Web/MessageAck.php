@@ -19,10 +19,15 @@ class MessageAck implements ShouldBroadcast
     use BroadcastsToSession, Dispatchable, SerializesModels;
 
     public const ACK_ERROR = -1;
+
     public const ACK_PENDING = 0;
+
     public const ACK_SERVER = 1;
+
     public const ACK_DEVICE = 2;
+
     public const ACK_READ = 3;
+
     public const ACK_PLAYED = 4;
 
     /**
@@ -31,8 +36,7 @@ class MessageAck implements ShouldBroadcast
     public function __construct(
         public string $sessionId,
         public array $payload,
-    ) {
-    }
+    ) {}
 
     public function messageId(): ?string
     {

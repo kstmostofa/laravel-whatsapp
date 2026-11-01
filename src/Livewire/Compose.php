@@ -2,7 +2,9 @@
 
 namespace Kstmostofa\LaravelWhatsApp\Livewire;
 
+use Illuminate\Contracts\View\View;
 use Kstmostofa\LaravelWhatsApp\Client\CloudClient;
+use Kstmostofa\LaravelWhatsApp\Client\Resources\MessagesResource;
 use Kstmostofa\LaravelWhatsApp\Exceptions\CloudApiException;
 use Kstmostofa\LaravelWhatsApp\Exceptions\SidecarException;
 use Kstmostofa\LaravelWhatsApp\MessageRouter;
@@ -143,7 +145,7 @@ class Compose extends Component
     }
 
     /**
-     * @param  \Kstmostofa\LaravelWhatsApp\Client\Resources\MessagesResource  $messages
+     * @param  MessagesResource  $messages
      * @return array<string, mixed>
      */
     protected function sendTemplate($messages): array
@@ -183,7 +185,7 @@ class Compose extends Component
     }
 
     /**
-     * @return \Illuminate\Contracts\View\View
+     * @return View
      */
     public function render()
     {

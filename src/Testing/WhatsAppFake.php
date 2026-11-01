@@ -188,7 +188,7 @@ class WhatsAppFake extends CloudClient
     {
         PHPUnit::assertNotEmpty(
             $this->sent(fn (SentMessage $m) => $m->isTo($to) && ($filter === null || $filter($m))),
-            "No WhatsApp message".($filter ? ' matching the given callback' : '')." was sent to [{$to}].",
+            'No WhatsApp message'.($filter ? ' matching the given callback' : '')." was sent to [{$to}].",
         );
     }
 

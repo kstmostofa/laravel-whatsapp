@@ -21,8 +21,7 @@ class HistoryImporter
     public function __construct(
         protected WebClient $client,
         protected PersistIncomingMessage $persister,
-    ) {
-    }
+    ) {}
 
     /**
      * @return int number of messages written

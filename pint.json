@@ -1,0 +1,4 @@
+{
+    "preset": "laravel",
+    "exclude": ["build", "dist", "dist-src", "sidecar"]
+}

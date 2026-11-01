@@ -2,6 +2,7 @@
 
 namespace Kstmostofa\LaravelWhatsApp\Livewire;
 
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Cache;
 use Kstmostofa\LaravelWhatsApp\Exceptions\SidecarException;
 use Kstmostofa\LaravelWhatsApp\Web\WebClient;
@@ -66,7 +67,7 @@ class GroupsIndex extends Component
 
         try {
             $result = app(WebClient::class)->session($this->session)->groups()->create($this->newGroupName, $participants);
-            $this->message = "Group created: ".($result['gid']['_serialized'] ?? 'OK');
+            $this->message = 'Group created: '.($result['gid']['_serialized'] ?? 'OK');
             $this->newGroupName = $this->newGroupParticipants = '';
             Cache::forget($this->groupsCacheKey());
         } catch (SidecarException $e) {
@@ -289,7 +290,7 @@ class GroupsIndex extends Component
     }
 
     /**
-     * @return \Illuminate\Contracts\View\View
+     * @return View
      */
     public function render()
     {

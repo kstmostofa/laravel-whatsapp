@@ -23,8 +23,11 @@ use Kstmostofa\LaravelWhatsApp\Web\WebClient;
 class HealthSnapshot
 {
     public const STATUS_OK = 'ok';
+
     public const STATUS_DEGRADED = 'degraded';
+
     public const STATUS_DOWN = 'down';
+
     public const STATUS_NOT_CONFIGURED = 'not_configured';
 
     protected const CACHE_TTL = 60; // seconds
@@ -34,8 +37,7 @@ class HealthSnapshot
         protected WebClient $web,
         protected CloudClient $cloud,
         protected CacheRepository $cache,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array{sidecar: array<string, mixed>, cloud: array<string, mixed>, overall: string}

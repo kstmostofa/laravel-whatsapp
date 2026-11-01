@@ -21,8 +21,7 @@ class SessionReady implements ShouldBroadcast
     public function __construct(
         public string $sessionId,
         public array $payload = [],
-    ) {
-    }
+    ) {}
 
     /** The paired account's own ID, e.g. `9665XXXXXXXX@c.us`. */
     public function wid(): ?string

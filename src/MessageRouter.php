@@ -27,8 +27,7 @@ class MessageRouter
         protected CloudClient $cloud,
         protected WebClient $web,
         protected array $config,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string, mixed>

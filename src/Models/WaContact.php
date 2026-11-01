@@ -3,6 +3,8 @@
 namespace Kstmostofa\LaravelWhatsApp\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use Kstmostofa\LaravelWhatsApp\Models\Concerns\UsesWhatsAppConnection;
 
 /**
@@ -15,7 +17,7 @@ use Kstmostofa\LaravelWhatsApp\Models\Concerns\UsesWhatsAppConnection;
  * @property bool $is_business
  * @property bool $is_my_contact
  * @property bool $is_blocked
- * @property ?\Illuminate\Support\Carbon $last_seen_at
+ * @property ?Carbon $last_seen_at
  * @property ?array<string, mixed> $meta
  */
 class WaContact extends Model
@@ -35,7 +37,7 @@ class WaContact extends Model
     ];
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo<WaSession, $this>
+     * @return BelongsTo<WaSession, $this>
      */
     public function session()
     {

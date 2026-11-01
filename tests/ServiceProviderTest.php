@@ -2,6 +2,7 @@
 
 namespace Kstmostofa\LaravelWhatsApp\Tests;
 
+use Illuminate\Contracts\Console\Kernel;
 use Kstmostofa\LaravelWhatsApp\Client\CloudClient;
 use Kstmostofa\LaravelWhatsApp\Facades\WhatsApp;
 use Kstmostofa\LaravelWhatsApp\MessageRouter;
@@ -32,7 +33,7 @@ class ServiceProviderTest extends TestCase
 
     public function test_artisan_commands_are_registered(): void
     {
-        $registered = array_keys($this->app[\Illuminate\Contracts\Console\Kernel::class]->all());
+        $registered = array_keys($this->app[Kernel::class]->all());
 
         $this->assertContains('whatsapp:sidecar:install', $registered);
         $this->assertContains('whatsapp:sidecar:start', $registered);

@@ -18,9 +18,7 @@ class SidecarManager
     /**
      * @param  array<string, mixed>  $config  the `laravel-whatsapp.web` config array
      */
-    public function __construct(protected array $config)
-    {
-    }
+    public function __construct(protected array $config) {}
 
     public function path(): string
     {
@@ -288,7 +286,7 @@ class SidecarManager
      * Run `npm ci` (or `npm install`) in the sidecar dir.
      *
      * @param  array<string, string>  $env  Extra env vars forwarded to the npm process
-     *                                       (e.g. ['PUPPETEER_SKIP_DOWNLOAD' => 'true'])
+     *                                      (e.g. ['PUPPETEER_SKIP_DOWNLOAD' => 'true'])
      */
     public function install(?callable $onOutput = null, array $env = []): void
     {

@@ -2,6 +2,7 @@
 
 namespace Kstmostofa\LaravelWhatsApp\Livewire;
 
+use Illuminate\Contracts\View\View;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Kstmostofa\LaravelWhatsApp\Models\WaMessage;
 use Kstmostofa\LaravelWhatsApp\Models\WaWebhookEvent;
@@ -84,7 +85,7 @@ class WebhooksLog extends Component
     }
 
     /**
-     * @return \Illuminate\Contracts\View\View
+     * @return View
      */
     public function render()
     {

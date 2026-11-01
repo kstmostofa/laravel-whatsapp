@@ -89,7 +89,7 @@ class WebListenCommand extends Command
 
     /**
      * @param  array<string, class-string>  $eventMap
-     * @return string|null  cURL error message if any, null on clean exit
+     * @return string|null cURL error message if any, null on clean exit
      */
     protected function consume(string $url, ?string $token, string $sessionId, array $eventMap, Dispatcher $events): ?string
     {
@@ -157,7 +157,7 @@ class WebListenCommand extends Command
     }
 
     /**
-     * @return array{0: string|null, 1: string}  [eventName, dataJsonString]
+     * @return array{0: string|null, 1: string} [eventName, dataJsonString]
      */
     protected function parseSseEvent(string $raw): array
     {

@@ -100,9 +100,7 @@ class TestUser
 {
     use Notifiable;
 
-    public function __construct(public ?string $phone)
-    {
-    }
+    public function __construct(public ?string $phone) {}
 
     public function routeNotificationForWhatsapp(): ?string
     {
@@ -117,9 +115,7 @@ class TestUser
 
 class TestNotification extends Notification
 {
-    public function __construct(protected \Closure $build)
-    {
-    }
+    public function __construct(protected \Closure $build) {}
 
     public function via(object $notifiable): array
     {

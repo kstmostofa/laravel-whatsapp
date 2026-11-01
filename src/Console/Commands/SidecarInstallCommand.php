@@ -185,7 +185,7 @@ class SidecarInstallCommand extends Command
         // `node` matches node.exe / npm.cmd). An absolute path in config is
         // accepted as-is. This replaces a hard-coded `which`, which does not
         // exist on Windows and made the check always fail there.
-        if (is_file($binary) || (new ExecutableFinder())->find($binary) !== null) {
+        if (is_file($binary) || (new ExecutableFinder)->find($binary) !== null) {
             return;
         }
 

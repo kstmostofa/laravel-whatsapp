@@ -15,15 +15,14 @@ class InteractiveReplied
     use Dispatchable, SerializesModels;
 
     /**
-     * @param  array<string, mixed>  $payload   single `messages[]` entry (type=interactive or button)
+     * @param  array<string, mixed>  $payload  single `messages[]` entry (type=interactive or button)
      * @param  array<string, mixed>  $metadata
      */
     public function __construct(
         public string $phoneNumberId,
         public array $payload,
         public array $metadata = [],
-    ) {
-    }
+    ) {}
 
     public function replyId(): ?string
     {

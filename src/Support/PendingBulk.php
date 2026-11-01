@@ -38,8 +38,7 @@ class PendingBulk
     public function __construct(
         protected iterable $recipients,
         protected WhatsAppMessage|string|Closure $message,
-    ) {
-    }
+    ) {}
 
     /**
      * Map each recipient item to the number or WhatsApp ID to send to.

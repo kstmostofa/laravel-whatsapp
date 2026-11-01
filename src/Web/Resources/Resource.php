@@ -9,8 +9,7 @@ abstract class Resource
     public function __construct(
         protected WebClient $client,
         protected string $sessionId,
-    ) {
-    }
+    ) {}
 
     /**
      * @param  array<string, mixed>  $options

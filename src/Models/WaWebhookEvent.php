@@ -5,6 +5,7 @@ namespace Kstmostofa\LaravelWhatsApp\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Kstmostofa\LaravelWhatsApp\Models\Concerns\UsesWhatsAppConnection;
 
 /**
@@ -17,11 +18,11 @@ use Kstmostofa\LaravelWhatsApp\Models\Concerns\UsesWhatsAppConnection;
  * @property int $id
  * @property string $backend
  * @property array<string, mixed> $payload
- * @property string $status  pending | processed | failed
+ * @property string $status pending | processed | failed
  * @property int $event_count
  * @property ?string $error
  * @property int $attempts
- * @property ?\Illuminate\Support\Carbon $processed_at
+ * @property ?Carbon $processed_at
  */
 class WaWebhookEvent extends Model
 {
@@ -29,7 +30,9 @@ class WaWebhookEvent extends Model
     use UsesWhatsAppConnection;
 
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_PROCESSED = 'processed';
+
     public const STATUS_FAILED = 'failed';
 
     protected $table = 'wa_webhook_events';

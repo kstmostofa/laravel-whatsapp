@@ -14,15 +14,14 @@ class TemplateStatusUpdate
     use Dispatchable, SerializesModels;
 
     /**
-     * @param  array<string, mixed>  $payload   the `value` object from the change
+     * @param  array<string, mixed>  $payload  the `value` object from the change
      * @param  array<string, mixed>  $metadata
      */
     public function __construct(
         public string $phoneNumberId,
         public array $payload,
         public array $metadata = [],
-    ) {
-    }
+    ) {}
 
     public function event(): ?string
     {

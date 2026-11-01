@@ -6,9 +6,7 @@ use Kstmostofa\LaravelWhatsApp\Client\CloudClient;
 
 abstract class Resource
 {
-    public function __construct(protected CloudClient $client)
-    {
-    }
+    public function __construct(protected CloudClient $client) {}
 
     /**
      * @param  array<string, mixed>  $options

@@ -29,8 +29,7 @@ class TemplateDefinition
         public readonly ?string $category = null,
         public readonly ?string $status = null,
         public readonly array $components = [],
-    ) {
-    }
+    ) {}
 
     /**
      * @param  array<string, mixed>  $template  one entry of Meta's `data` array
@@ -201,7 +200,7 @@ class TemplateDefinition
     }
 
     /**
-     * @return array<int, string>  placeholder keys in order of first appearance
+     * @return array<int, string> placeholder keys in order of first appearance
      */
     protected function placeholders(string $text): array
     {

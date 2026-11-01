@@ -34,9 +34,7 @@ class MediaStore
         'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'pptx',
     ];
 
-    public function __construct(protected Container $container)
-    {
-    }
+    public function __construct(protected Container $container) {}
 
     public static function enabled(): bool
     {
@@ -109,7 +107,7 @@ class MediaStore
     }
 
     /**
-     * @return array{0: string, 1: string}  [bytes, mime]
+     * @return array{0: string, 1: string} [bytes, mime]
      */
     protected function fetchFromSidecar(WaMessage $message): array
     {

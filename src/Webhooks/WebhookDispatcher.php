@@ -12,9 +12,7 @@ use Throwable;
  */
 class WebhookDispatcher
 {
-    public function __construct(protected Dispatcher $events)
-    {
-    }
+    public function __construct(protected Dispatcher $events) {}
 
     /**
      * @param  array<string, mixed>  $payload

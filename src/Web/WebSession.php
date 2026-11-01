@@ -24,8 +24,7 @@ class WebSession
     public function __construct(
         protected WebClient $client,
         protected string $sessionId,
-    ) {
-    }
+    ) {}
 
     public function id(): string
     {
@@ -66,7 +65,7 @@ class WebSession
     }
 
     /**
-     * @return array{status: string, qr: ?string}  qr is a data: URI when present
+     * @return array{status: string, qr: ?string} qr is a data: URI when present
      */
     public function qr(): array
     {

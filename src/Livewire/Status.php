@@ -2,6 +2,7 @@
 
 namespace Kstmostofa\LaravelWhatsApp\Livewire;
 
+use Illuminate\Contracts\View\View;
 use Kstmostofa\LaravelWhatsApp\Health\HealthSnapshot;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -39,7 +40,7 @@ class Status extends Component
     }
 
     /**
-     * @return \Illuminate\Contracts\View\View
+     * @return View
      */
     public function render()
     {

@@ -2,6 +2,7 @@
 
 namespace Kstmostofa\LaravelWhatsApp\Livewire;
 
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Kstmostofa\LaravelWhatsApp\Events\Web\MessageReaction;
@@ -329,7 +330,8 @@ class ChatHistory extends Component
                 WaMessage::where('backend', 'web')
                     ->where('wa_message_id', $this->editingMessageId)
                     ->update(['body' => $this->editBody]);
-            } catch (\Throwable) {}
+            } catch (\Throwable) {
+            }
 
             $this->cancelEdit();
         } catch (SidecarException $e) {
@@ -403,7 +405,7 @@ class ChatHistory extends Component
             str_starts_with($mime, 'image/') => $messages->sendImage($this->selectedChat, $payload),
             str_starts_with($mime, 'video/') => $messages->sendVideo($this->selectedChat, $payload),
             str_starts_with($mime, 'audio/') => $messages->sendAudio($this->selectedChat, $payload),
-            default                          => $messages->sendDocument($this->selectedChat, $payload),
+            default => $messages->sendDocument($this->selectedChat, $payload),
         };
     }
 
@@ -418,11 +420,11 @@ class ChatHistory extends Component
         try {
             $mime = $this->attachment instanceof UploadedFile ? $this->attachment->getMimeType() : null;
             $type = match (true) {
-                $this->attachment === null                           => 'text',
+                $this->attachment === null => 'text',
                 $mime && str_starts_with($mime, 'image/') => 'image',
                 $mime && str_starts_with($mime, 'video/') => 'video',
                 $mime && str_starts_with($mime, 'audio/') => 'audio',
-                default                                              => 'document',
+                default => 'document',
             };
 
             $filename = $this->attachment instanceof UploadedFile ? $this->attachment->getClientOriginalName() : null;
@@ -482,7 +484,7 @@ class ChatHistory extends Component
     }
 
     /**
-     * @return \Illuminate\Contracts\View\View
+     * @return View
      */
     public function render()
     {

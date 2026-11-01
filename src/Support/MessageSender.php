@@ -17,12 +17,10 @@ use Kstmostofa\LaravelWhatsApp\Web\WebClient;
  */
 class MessageSender
 {
-    public function __construct(protected Container $container)
-    {
-    }
+    public function __construct(protected Container $container) {}
 
     /**
-     * @return array<string, mixed>  the backend's response
+     * @return array<string, mixed> the backend's response
      */
     public function send(WhatsAppMessage $message, string $to): array
     {

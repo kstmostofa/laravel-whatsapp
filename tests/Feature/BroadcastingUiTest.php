@@ -3,9 +3,13 @@
 namespace Kstmostofa\LaravelWhatsApp\Tests\Feature;
 
 use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Contracts\Broadcasting\Factory;
+use Illuminate\Foundation\Auth\User;
+use Illuminate\Support\Facades\Gate;
 use Kstmostofa\LaravelWhatsApp\Broadcasting\SessionChannel;
 use Kstmostofa\LaravelWhatsApp\Events\Web\Disconnected;
 use Kstmostofa\LaravelWhatsApp\Events\Web\SessionReady;
+use Kstmostofa\LaravelWhatsApp\LaravelWhatsAppServiceProvider;
 use Kstmostofa\LaravelWhatsApp\Livewire\ChatHistory;
 use Kstmostofa\LaravelWhatsApp\Livewire\SessionsIndex;
 use Kstmostofa\LaravelWhatsApp\Tests\TestCase;
@@ -57,14 +61,14 @@ class BroadcastingUiTest extends TestCase
         );
 
         // Re-run the provider's boot hook with the private config in place.
-        $provider = $this->app->getProvider(\Kstmostofa\LaravelWhatsApp\LaravelWhatsAppServiceProvider::class);
+        $provider = $this->app->getProvider(LaravelWhatsAppServiceProvider::class);
         (new ReflectionMethod($provider, 'registerBroadcastChannel'))->invoke($provider);
 
-        $channels = $this->app->make(\Illuminate\Contracts\Broadcasting\Factory::class)->driver()->getChannels();
+        $channels = $this->app->make(Factory::class)->driver()->getChannels();
         $this->assertTrue($channels->has('whatsapp.session.{session}'));
 
-        $user = new \Illuminate\Foundation\Auth\User;
-        \Illuminate\Support\Facades\Gate::define('manage-whatsapp', fn ($u, $session) => $session === 'main');
+        $user = new User;
+        Gate::define('manage-whatsapp', fn ($u, $session) => $session === 'main');
         $callback = $channels->get('whatsapp.session.{session}');
         $this->assertTrue($callback($user, 'main'));
         $this->assertFalse($callback($user, 'other'));

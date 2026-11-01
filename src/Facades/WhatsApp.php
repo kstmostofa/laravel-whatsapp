@@ -115,7 +115,7 @@ class WhatsApp extends Facade
      */
     public static function send(string $to, string $body, ?string $backend = null, ?string $sessionId = null): array
     {
-        return static::$app->make(\Kstmostofa\LaravelWhatsApp\MessageRouter::class)
+        return static::$app->make(MessageRouter::class)
             ->sendText($to, $body, $backend, $sessionId);
     }
 }
