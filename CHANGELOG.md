@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Upgrading
+- Run `composer update`, then re-run `php artisan whatsapp:sidecar:install`
+  and restart the sidecar. If you run a published copy of the sidecar,
+  re-publish it with `--force`.
+
+### Added
+- **Mute chats** on the Web backend: `WhatsApp::web('main')->muteChat($chatId, $until)`
+  (forever when `$until` is null) and `unmuteChat($chatId)`.
+- **Block contacts** on the Web backend: `contacts()->block($contactId)` and
+  `contacts()->unblock($contactId)`.
+- **Set the profile About text** on the Web backend:
+  `WhatsApp::web('main')->setAbout($text)`. Named `setAbout` because
+  `status()` already posts to Status / Stories.
+- **Group settings** on the Web backend: `groups()->restrictMessagesToAdmins()`,
+  `openMessagesToAll()`, `restrictInfoToAdmins()` and `openInfoToAll()`.
+- **Join a group by invite** on the Web backend: `groups()->join($invite)` takes
+  the invite code or the full `https://chat.whatsapp.com/…` link.
+- **`WhatsApp::assertRequested()`** on the fake checks calls that change
+  state without sending a message, by HTTP method, sidecar path and
+  optionally the JSON body.
+
+### Changed
+- The sidecar now pins whatsapp-web.js to exactly `1.34.8` (was `^1.23.0`,
+  locked at 1.34.7). Its fixes for current WhatsApp Web include the
+  `id._serialized` to `id.$1` rename, duplicate `ready` events on page
+  re-injection, large media downloads and block / unblock. An exact pin keeps
+  `npm install` (without the lockfile) from picking up an untested release.
+
+### Removed
+- The sidecar's media send patch (`media-patch.js`). whatsapp-web.js 1.34.8
+  fixes the same "Data passed to getter must include an id property" error
+  itself by dropping `__x_id` from the outgoing message.
+
 ## [1.2.2] - 2026-11-01
 
 Fixes the four Web sidecar features listed as known issues in 1.2.1. Each
