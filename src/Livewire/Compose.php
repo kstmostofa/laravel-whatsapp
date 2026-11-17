@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Livewire;
 
 use Illuminate\Contracts\View\View;
+use Kstmostofa\LaravelWhatsApp\Backend;
 use Kstmostofa\LaravelWhatsApp\Client\CloudClient;
 use Kstmostofa\LaravelWhatsApp\Client\Resources\MessagesResource;
 use Kstmostofa\LaravelWhatsApp\Exceptions\CloudApiException;
@@ -88,7 +91,7 @@ class Compose extends Component
 
         try {
             $response = $this->dispatchSend();
-            $this->result = json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+            $this->result = json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR);
             $this->body = $this->mediaUrl = $this->caption = '';
             $this->templateParams = [];
         } catch (CloudApiException|SidecarException $e) {
@@ -105,7 +108,7 @@ class Compose extends Component
             ? app(MessageRouter::class)->resolveBackend($this->to)
             : $this->backend;
 
-        return $backend === 'web'
+        return $backend === Backend::Web->value
             ? $this->sendViaWeb()
             : $this->sendViaCloud();
     }
@@ -122,9 +125,15 @@ class Compose extends Component
         $session = $this->sessionId ?: (string) config('laravel-whatsapp.ui.default_session', 'main');
         $messages = app(WebClient::class)->session($session)->messages();
 
+        // Omit an empty caption rather than sending "caption": null.
+        $media = ['url' => $this->mediaUrl];
+        if ($this->caption !== '') {
+            $media['caption'] = $this->caption;
+        }
+
         return match ($this->type) {
-            'image' => $messages->sendImage($this->to, ['url' => $this->mediaUrl, 'caption' => $this->caption ?: null]),
-            'document' => $messages->sendDocument($this->to, ['url' => $this->mediaUrl, 'caption' => $this->caption ?: null]),
+            'image' => $messages->sendImage($this->to, $media),
+            'document' => $messages->sendDocument($this->to, $media),
             default => $messages->sendText($this->to, $this->body),
         };
     }
@@ -136,9 +145,15 @@ class Compose extends Component
     {
         $messages = app(CloudClient::class)->messages();
 
+        // Omit an empty caption rather than sending "caption": null.
+        $media = ['link' => $this->mediaUrl];
+        if ($this->caption !== '') {
+            $media['caption'] = $this->caption;
+        }
+
         return match ($this->type) {
-            'image' => $messages->sendImage($this->to, ['link' => $this->mediaUrl, 'caption' => $this->caption ?: null]),
-            'document' => $messages->sendDocument($this->to, ['link' => $this->mediaUrl, 'caption' => $this->caption ?: null]),
+            'image' => $messages->sendImage($this->to, $media),
+            'document' => $messages->sendDocument($this->to, $media),
             'template' => $this->sendTemplate($messages),
             default => $messages->sendText($this->to, $this->body),
         };
@@ -193,7 +208,7 @@ class Compose extends Component
         $templatesError = null;
 
         // Only call Meta when the template picker is actually on screen.
-        if ($this->type === 'template' && $this->backend !== 'web') {
+        if ($this->type === 'template' && $this->backend !== Backend::Web->value) {
             try {
                 $templates = app(TemplateCatalog::class)->approved();
             } catch (CloudApiException $e) {

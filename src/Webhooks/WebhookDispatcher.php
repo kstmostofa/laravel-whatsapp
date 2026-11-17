@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Webhooks;
 
 use Illuminate\Contracts\Events\Dispatcher;
 use Kstmostofa\LaravelWhatsApp\Models\WaWebhookEvent;
+use Kstmostofa\LaravelWhatsApp\WebhookStatus;
 use Throwable;
 
 /**
@@ -48,14 +51,14 @@ class WebhookDispatcher
 
         try {
             $record->event_count = $this->dispatch($record->payload ?? []);
-            $record->status = WaWebhookEvent::STATUS_PROCESSED;
+            $record->status = WebhookStatus::Processed->value;
             $record->error = null;
             $record->processed_at = now();
             $record->save();
 
             return true;
         } catch (Throwable $e) {
-            $record->status = WaWebhookEvent::STATUS_FAILED;
+            $record->status = WebhookStatus::Failed->value;
             $record->error = $e::class.': '.$e->getMessage();
             $record->save();
 

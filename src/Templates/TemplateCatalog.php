@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Templates;
 
 use Illuminate\Contracts\Cache\Repository as Cache;

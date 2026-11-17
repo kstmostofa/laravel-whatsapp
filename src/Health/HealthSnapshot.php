@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Health;
 
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Kstmostofa\LaravelWhatsApp\Client\CloudClient;
+use Kstmostofa\LaravelWhatsApp\Direction;
 use Kstmostofa\LaravelWhatsApp\Exceptions\CloudApiException;
 use Kstmostofa\LaravelWhatsApp\Exceptions\SidecarException;
 use Kstmostofa\LaravelWhatsApp\Models\WaMessage;
@@ -204,7 +207,7 @@ class HealthSnapshot
         try {
             $last = WaMessage::query()
                 ->where('backend', 'cloud')
-                ->where('direction', 'inbound')
+                ->where('direction', Direction::Inbound->value)
                 ->latest()
                 ->first();
             $lastWebhookAt = $last?->created_at;

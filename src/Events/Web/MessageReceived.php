@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Events\Web;
 
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Kstmostofa\LaravelWhatsApp\Broadcasting\BroadcastsToSession;
+use Kstmostofa\LaravelWhatsApp\Events\Concerns\ReadsPayload;
 
 /**
  * Fired by `whatsapp:web:listen` when whatsapp-web.js emits a `message` event.
@@ -18,7 +21,7 @@ use Kstmostofa\LaravelWhatsApp\Broadcasting\BroadcastsToSession;
  */
 class MessageReceived implements ShouldBroadcast
 {
-    use BroadcastsToSession, Dispatchable, SerializesModels;
+    use BroadcastsToSession, Dispatchable, ReadsPayload, SerializesModels;
 
     /**
      * @param  array<string, mixed>  $payload
@@ -38,17 +41,17 @@ class MessageReceived implements ShouldBroadcast
 
     public function from(): ?string
     {
-        return $this->message()['from'] ?? null;
+        return self::stringOrNull($this->message()['from'] ?? null);
     }
 
     public function body(): ?string
     {
-        return $this->message()['body'] ?? null;
+        return self::stringOrNull($this->message()['body'] ?? null);
     }
 
     public function type(): ?string
     {
-        return $this->message()['type'] ?? null;
+        return self::stringOrNull($this->message()['type'] ?? null);
     }
 
     public function fromMe(): bool
@@ -58,7 +61,7 @@ class MessageReceived implements ShouldBroadcast
 
     public function to(): ?string
     {
-        return $this->message()['to'] ?? null;
+        return self::stringOrNull($this->message()['to'] ?? null);
     }
 
     public function messageId(): ?string

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Console\Commands;
 
 use Illuminate\Console\Command;
@@ -25,7 +27,7 @@ class HealthCheckCommand extends Command
         $snapshot = $snapshots->gather(fresh: true);
 
         if ($this->option('json')) {
-            $this->line(json_encode($snapshot, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            $this->line(json_encode($snapshot, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR));
         } else {
             $this->renderTable($snapshot);
         }

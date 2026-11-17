@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Client\Resources;
 
 use Illuminate\Container\Container;
@@ -281,17 +283,25 @@ class MessagesResource extends Resource
 
     /**
      * @param  array<string, mixed>  $action
-     * @return array<string, mixed>
+     * @return array{type: string, body?: array<string, mixed>, header?: array<string, mixed>, footer?: array<string, mixed>, action: array<string, mixed>}
      */
     protected function interactive(string $type, string $body, array $action, ?string $header = null, ?string $footer = null): array
     {
-        return array_filter([
-            'type' => $type,
-            'header' => $header !== null ? ['type' => 'text', 'text' => $header] : null,
-            'body' => ['text' => $body],
-            'footer' => $footer !== null ? ['text' => $footer] : null,
-            'action' => $action,
-        ]);
+        $interactive = ['type' => $type];
+
+        if ($header !== null) {
+            $interactive['header'] = ['type' => 'text', 'text' => $header];
+        }
+
+        $interactive['body'] = ['text' => $body];
+
+        if ($footer !== null) {
+            $interactive['footer'] = ['text' => $footer];
+        }
+
+        $interactive['action'] = $action;
+
+        return $interactive;
     }
 
     protected function assertCount(int $count, int $min, int $max, string $what): void

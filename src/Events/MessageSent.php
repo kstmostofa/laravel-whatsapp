@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
+use Kstmostofa\LaravelWhatsApp\Events\Concerns\ReadsPayload;
 use Kstmostofa\LaravelWhatsApp\Events\Concerns\ResolvesCloudAccount;
 
 /**
@@ -14,7 +17,7 @@ use Kstmostofa\LaravelWhatsApp\Events\Concerns\ResolvesCloudAccount;
  */
 class MessageSent
 {
-    use Dispatchable, ResolvesCloudAccount;
+    use Dispatchable, ReadsPayload, ResolvesCloudAccount;
 
     /**
      * @param  array<string, mixed>  $payload
@@ -28,17 +31,17 @@ class MessageSent
 
     public function messageId(): ?string
     {
-        return $this->response['messages'][0]['id'] ?? null;
+        return self::stringOrNull($this->response['messages'][0]['id'] ?? null);
     }
 
     public function to(): ?string
     {
-        return $this->payload['to'] ?? null;
+        return self::stringOrNull($this->payload['to'] ?? null);
     }
 
     public function type(): ?string
     {
-        return $this->payload['type'] ?? null;
+        return self::stringOrNull($this->payload['type'] ?? null);
     }
 
     /**
@@ -49,12 +52,12 @@ class MessageSent
     {
         $type = $this->type();
 
-        return match ($type) {
+        return self::stringOrNull(match ($type) {
             'text' => $this->payload['text']['body'] ?? null,
             'template' => $this->payload['template']['name'] ?? null,
             'interactive' => $this->payload['interactive']['body']['text'] ?? null,
             null => null,
             default => $this->payload[$type]['caption'] ?? null,
-        };
+        });
     }
 }

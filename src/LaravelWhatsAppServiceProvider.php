@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp;
 
 use Flux\FluxServiceProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Broadcasting\Factory;
 use Illuminate\Contracts\Cache\Repository;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Notifications\ChannelManager;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
@@ -268,7 +271,7 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
 
     protected function registerPersistenceListeners(): void
     {
-        $events = $this->app['events'];
+        $events = $this->app->make(Dispatcher::class);
 
         // Inbound router: a no-op until routes are declared with WhatsApp::router().
         $events->listen(

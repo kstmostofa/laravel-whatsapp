@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Events\Concerns;
 
 use Kstmostofa\LaravelWhatsApp\Client\CloudAccounts;

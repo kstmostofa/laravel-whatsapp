@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Models;
 
 use Illuminate\Database\Eloquent\Builder;
@@ -7,6 +9,7 @@ use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Kstmostofa\LaravelWhatsApp\Models\Concerns\UsesWhatsAppConnection;
+use Kstmostofa\LaravelWhatsApp\WebhookStatus;
 
 /**
  * One raw webhook delivery from Meta, kept so it can be inspected and
@@ -29,11 +32,12 @@ class WaWebhookEvent extends Model
     use MassPrunable;
     use UsesWhatsAppConnection;
 
-    public const STATUS_PENDING = 'pending';
+    /** Aliases of the WebhookStatus enum values, kept for existing callers. */
+    public const STATUS_PENDING = WebhookStatus::Pending->value;
 
-    public const STATUS_PROCESSED = 'processed';
+    public const STATUS_PROCESSED = WebhookStatus::Processed->value;
 
-    public const STATUS_FAILED = 'failed';
+    public const STATUS_FAILED = WebhookStatus::Failed->value;
 
     protected $table = 'wa_webhook_events';
 
@@ -62,7 +66,7 @@ class WaWebhookEvent extends Model
      */
     public function scopeFailed(Builder $query): Builder
     {
-        return $query->where('status', self::STATUS_FAILED);
+        return $query->where('status', WebhookStatus::Failed->value);
     }
 
     /** Short description of what the delivery contained, for lists. */

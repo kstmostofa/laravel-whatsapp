@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Support\Facades\Route;
 use Kstmostofa\LaravelWhatsApp\Http\Controllers\AvatarProxyController;
 use Kstmostofa\LaravelWhatsApp\Http\Controllers\MediaProxyController;

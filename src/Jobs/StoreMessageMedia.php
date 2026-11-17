@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Jobs;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
+use Kstmostofa\LaravelWhatsApp\Jobs\Concerns\UsesWhatsAppQueue;
 use Kstmostofa\LaravelWhatsApp\Media\MediaStore;
 use Kstmostofa\LaravelWhatsApp\Models\WaMessage;
 
@@ -15,7 +18,7 @@ use Kstmostofa\LaravelWhatsApp\Models\WaMessage;
  */
 class StoreMessageMedia implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable;
+    use Dispatchable, InteractsWithQueue, Queueable, UsesWhatsAppQueue;
 
     public int $tries = 3;
 
@@ -23,8 +26,7 @@ class StoreMessageMedia implements ShouldQueue
 
     public function __construct(public int $messageId)
     {
-        $this->onConnection(config('laravel-whatsapp.queue.connection'));
-        $this->onQueue(config('laravel-whatsapp.queue.queue', 'default'));
+        $this->useWhatsAppQueue();
     }
 
     public function handle(MediaStore $store): void
