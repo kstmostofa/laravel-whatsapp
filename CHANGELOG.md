@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `status()` already posts to Status / Stories.
 - **Group settings** on the Web backend: `groups()->restrictMessagesToAdmins()`,
   `openMessagesToAll()`, `restrictInfoToAdmins()` and `openInfoToAll()`.
+- **Join a group by invite** on the Web backend: `groups()->join($invite)` takes
+  the invite code or the full `https://chat.whatsapp.com/…` link.
 - **`WhatsApp::assertRequested()`** on the fake checks calls that change
   state without sending a message, by HTTP method, sidecar path and
   optionally the JSON body.

@@ -31,6 +31,19 @@ class GroupsResource extends Resource
     }
 
     /**
+     * Join a group through its invite. Accepts the code or the full
+     * https://chat.whatsapp.com/… link.
+     *
+     * @return array{ok: bool, id: string} id is the joined group's chat ID
+     */
+    public function join(string $invite): array
+    {
+        return $this->request('POST', "{$this->endpoint()}/join", [
+            'json' => compact('invite'),
+        ]);
+    }
+
+    /**
      * @param  array<int, string>  $participants
      * @return array<string, mixed>
      */

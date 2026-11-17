@@ -171,6 +171,14 @@ Create a group:
 
 `subject` is accepted as an alias for `name`. Returns the group's `gid._serialized`.
 
+### `POST /sessions/:id/groups/join`
+
+```json
+{ "invite": "https://chat.whatsapp.com/AbC…" }
+```
+
+`invite` is the invite code or a `chat.whatsapp.com` link. Anything else returns 400. Returns `{ ok: true, id: "<gid>@g.us" }`.
+
 ### `POST /sessions/:id/groups/:groupId/participants/add`
 ### `POST /sessions/:id/groups/:groupId/participants/remove`
 

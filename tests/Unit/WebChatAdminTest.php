@@ -101,4 +101,15 @@ class WebChatAdminTest extends TestCase
             $this->assertSame(['adminsOnly' => $adminsOnly], $this->lastBody(), $method);
         }
     }
+
+    public function test_join_passes_the_invite_through_for_the_sidecar_to_parse(): void
+    {
+        $result = $this->webSession('{"ok":true,"id":"120363000000000001@g.us"}')
+            ->groups()->join('https://chat.whatsapp.com/AbC123xyz');
+
+        $this->assertSame('POST', $this->lastRequest()?->getMethod());
+        $this->assertStringEndsWith('sessions/main/groups/join', $this->lastUri());
+        $this->assertSame(['invite' => 'https://chat.whatsapp.com/AbC123xyz'], $this->lastBody());
+        $this->assertSame(self::GROUP, $result['id']);
+    }
 }

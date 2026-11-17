@@ -181,6 +181,7 @@ WhatsApp::web('main')->groups()->addParticipants($group['gid']['_serialized'], [
 WhatsApp::web('main')->groups()->removeParticipants($group['gid']['_serialized'], ['9665ZZZZZZZZ@c.us']);
 WhatsApp::web('main')->groups()->setSubject($group['gid']['_serialized'], 'New name');
 WhatsApp::web('main')->groups()->leave($group['gid']['_serialized']);
+WhatsApp::web('main')->groups()->join('https://chat.whatsapp.com/AbC…');   // or the bare code; returns ['ok' => true, 'id' => '…@g.us']
 ```
 
 Admin actions — you must be a group admin:

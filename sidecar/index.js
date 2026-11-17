@@ -22,7 +22,7 @@ const { dedupeContacts } = require('./contacts');
 const { sendAndCapture, bodyMatcher } = require('./send-capture');
 const { runMessageAction } = require('./page-actions');
 const { ensureEditHook, editDeduper } = require('./edit-hook');
-const { unmuteDateFrom } = require('./chat-admin');
+const { unmuteDateFrom, parseInviteCode } = require('./chat-admin');
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '127.0.0.1';
@@ -621,6 +621,16 @@ app.post('/sessions/:id/groups', async (req, res, next) => {
     const name = req.body?.name ?? req.body?.subject;
     const group = await s.client.createGroup(name, participants || []);
     res.json(group);
+  } catch (e) { next(e); }
+});
+
+// Join a group through its invite. `invite` is the code or the full link.
+app.post('/sessions/:id/groups/join', async (req, res, next) => {
+  try {
+    const s = getSession(req.params.id);
+    requireReady(s);
+    const id = await s.client.acceptInvite(parseInviteCode(req.body?.invite));
+    res.json({ ok: true, id });
   } catch (e) { next(e); }
 });
 
