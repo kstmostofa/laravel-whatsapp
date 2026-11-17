@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kstmostofa\LaravelWhatsApp\Testing;
 
+use Kstmostofa\LaravelWhatsApp\Backend;
+
 /**
  * One message captured by WhatsApp::fake(), from either backend.
  */
@@ -25,12 +27,12 @@ class SentMessage
 
     public function isCloud(): bool
     {
-        return $this->backend === 'cloud';
+        return $this->backend === Backend::Cloud->value;
     }
 
     public function isWeb(): bool
     {
-        return $this->backend === 'web';
+        return $this->backend === Backend::Web->value;
     }
 
     /**

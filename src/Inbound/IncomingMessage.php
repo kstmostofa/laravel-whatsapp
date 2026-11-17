@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kstmostofa\LaravelWhatsApp\Inbound;
 
+use Kstmostofa\LaravelWhatsApp\Backend;
 use Kstmostofa\LaravelWhatsApp\Client\CloudAccounts;
 use Kstmostofa\LaravelWhatsApp\Events\InteractiveReplied;
 use Kstmostofa\LaravelWhatsApp\Events\MediaReceived;
@@ -54,7 +55,7 @@ class IncomingMessage
             $m = $event->message();
 
             return new self(
-                backend: 'web',
+                backend: Backend::Web->value,
                 sender: $event->sessionId,
                 chatId: $event->chatId(),
                 from: $m['author'] ?? $event->from(),
@@ -112,7 +113,7 @@ class IncomingMessage
      */
     public function account(): ?string
     {
-        return $this->backend === 'cloud' ? app(CloudAccounts::class)->nameFor($this->sender) : null;
+        return $this->backend === Backend::Cloud->value ? app(CloudAccounts::class)->nameFor($this->sender) : null;
     }
 
     /**
@@ -125,7 +126,7 @@ class IncomingMessage
     {
         $message = is_string($message) ? WhatsAppMessage::create($message) : clone $message;
 
-        if ($this->backend === 'web') {
+        if ($this->backend === Backend::Web->value) {
             $message->viaWeb($this->sender);
         } elseif ($account = $this->account()) {
             $message->fromAccount($account);
@@ -152,7 +153,7 @@ class IncomingMessage
             return [];
         }
 
-        if ($this->backend === 'web') {
+        if ($this->backend === Backend::Web->value) {
             return app(WebClient::class)->session($this->sender)->messages()->react($this->messageId, $emoji);
         }
 
@@ -169,7 +170,7 @@ class IncomingMessage
      */
     public function markRead(): array
     {
-        if ($this->backend === 'web') {
+        if ($this->backend === Backend::Web->value) {
             return app(WebClient::class)->session($this->sender)->markChatSeen((string) $this->chatId);
         }
 

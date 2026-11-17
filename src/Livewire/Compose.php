@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kstmostofa\LaravelWhatsApp\Livewire;
 
 use Illuminate\Contracts\View\View;
+use Kstmostofa\LaravelWhatsApp\Backend;
 use Kstmostofa\LaravelWhatsApp\Client\CloudClient;
 use Kstmostofa\LaravelWhatsApp\Client\Resources\MessagesResource;
 use Kstmostofa\LaravelWhatsApp\Exceptions\CloudApiException;
@@ -107,7 +108,7 @@ class Compose extends Component
             ? app(MessageRouter::class)->resolveBackend($this->to)
             : $this->backend;
 
-        return $backend === 'web'
+        return $backend === Backend::Web->value
             ? $this->sendViaWeb()
             : $this->sendViaCloud();
     }
@@ -207,7 +208,7 @@ class Compose extends Component
         $templatesError = null;
 
         // Only call Meta when the template picker is actually on screen.
-        if ($this->type === 'template' && $this->backend !== 'web') {
+        if ($this->type === 'template' && $this->backend !== Backend::Web->value) {
             try {
                 $templates = app(TemplateCatalog::class)->approved();
             } catch (CloudApiException $e) {

@@ -6,6 +6,7 @@ namespace Kstmostofa\LaravelWhatsApp\Support;
 
 use Illuminate\Contracts\Container\Container;
 use InvalidArgumentException;
+use Kstmostofa\LaravelWhatsApp\Backend;
 use Kstmostofa\LaravelWhatsApp\Client\CloudAccounts;
 use Kstmostofa\LaravelWhatsApp\Client\CloudClient;
 use Kstmostofa\LaravelWhatsApp\MessageRouter;
@@ -27,7 +28,7 @@ class MessageSender
      */
     public function send(WhatsAppMessage $message, string $to): array
     {
-        return $this->backendFor($message, $to) === 'web'
+        return $this->backendFor($message, $to) === Backend::Web->value
             ? $this->sendViaWeb($message, $to)
             : $this->sendViaCloud($message, $to);
     }
@@ -62,7 +63,7 @@ class MessageSender
             return (string) ($this->container->make(CloudAccounts::class)->config($message->account)['phone_number_id'] ?? $message->account);
         }
 
-        return $this->backendFor($message, $to) === 'web'
+        return $this->backendFor($message, $to) === Backend::Web->value
             ? (string) config('laravel-whatsapp.ui.default_session', 'main')
             : (string) config('laravel-whatsapp.phone_number_id', 'default');
     }

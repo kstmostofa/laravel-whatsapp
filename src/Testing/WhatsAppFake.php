@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kstmostofa\LaravelWhatsApp\Testing;
 
+use Kstmostofa\LaravelWhatsApp\Backend;
 use Kstmostofa\LaravelWhatsApp\Client\CloudClient;
 use PHPUnit\Framework\Assert as PHPUnit;
 
@@ -67,8 +68,9 @@ class WhatsAppFake extends CloudClient
      * @param  array<string, mixed>  $options
      * @return array<string, mixed>
      */
-    public function recordRequest(string $backend, string $method, string $path, array $options): array
+    public function recordRequest(Backend|string $backend, string $method, string $path, array $options): array
     {
+        $backend = Backend::of($backend)->value;
         $path = ltrim($path, '/');
         $this->requests[] = compact('backend', 'method', 'path', 'options');
 
@@ -82,7 +84,7 @@ class WhatsAppFake extends CloudClient
         $this->sent[] = $message;
         $n = count($this->sent);
 
-        return $backend === 'cloud'
+        return $backend === Backend::Cloud->value
             ? [
                 'messaging_product' => 'whatsapp',
                 'contacts' => [['input' => $message->to, 'wa_id' => $message->to]],
@@ -103,7 +105,7 @@ class WhatsAppFake extends CloudClient
      */
     protected function toSentMessage(string $backend, string $path, array $body): ?SentMessage
     {
-        if ($backend === 'cloud') {
+        if ($backend === Backend::Cloud->value) {
             // {phone_number_id}/messages — but not mark-as-read, which posts `status`.
             if (! preg_match('#^([^/]+)/messages$#', $path, $m) || isset($body['status'])) {
                 return null;
@@ -143,7 +145,7 @@ class WhatsAppFake extends CloudClient
      */
     protected function defaultResponse(string $backend, string $method, string $path): array
     {
-        if ($backend === 'web' && strtoupper($method) === 'GET') {
+        if ($backend === Backend::Web->value && strtoupper($method) === 'GET') {
             return match (true) {
                 $path === 'health' => ['ok' => true, 'sessions' => 0, 'uptime' => 0],
                 $path === 'sessions',

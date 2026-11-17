@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kstmostofa\LaravelWhatsApp\Facades;
 
 use Illuminate\Support\Facades\Facade;
+use Kstmostofa\LaravelWhatsApp\Backend;
 use Kstmostofa\LaravelWhatsApp\Client\CloudAccounts;
 use Kstmostofa\LaravelWhatsApp\Client\CloudClient;
 use Kstmostofa\LaravelWhatsApp\Client\Resources\BusinessProfileResource;
@@ -136,7 +137,7 @@ class WhatsApp extends Facade
      *
      * @return array<string, mixed>
      */
-    public static function send(string $to, string $body, ?string $backend = null, ?string $sessionId = null): array
+    public static function send(string $to, string $body, Backend|string|null $backend = null, ?string $sessionId = null): array
     {
         return app()->make(MessageRouter::class)
             ->sendText($to, $body, $backend, $sessionId);

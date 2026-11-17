@@ -7,6 +7,7 @@ namespace Kstmostofa\LaravelWhatsApp\Support;
 use Closure;
 use Illuminate\Bus\Batch;
 use Illuminate\Support\Facades\Bus;
+use Kstmostofa\LaravelWhatsApp\Backend;
 use Kstmostofa\LaravelWhatsApp\Jobs\SendBulkMessage;
 use Kstmostofa\LaravelWhatsApp\Notifications\WhatsAppMessage;
 
@@ -130,7 +131,7 @@ class PendingBulk
                 $job->onQueue($this->queue);
             }
 
-            if ($sender->backendFor($message, $to) === 'web') {
+            if ($sender->backendFor($message, $to) === Backend::Web->value) {
                 $job->delay(now()->addSeconds($webDelay));
                 $webDelay += $this->webGap();
             }

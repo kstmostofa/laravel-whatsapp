@@ -34,11 +34,9 @@ class MessageRouter
     /**
      * @return array<string, mixed>
      */
-    public function sendText(string $to, string $body, ?string $backend = null, ?string $sessionId = null): array
+    public function sendText(string $to, string $body, Backend|string|null $backend = null, ?string $sessionId = null): array
     {
-        $backend = $this->resolveBackend($to, $backend);
-
-        if ($backend === 'web') {
+        if ($this->resolveBackend($to, $backend) === Backend::Web->value) {
             $sessionId = $sessionId ?? $this->defaultWebSession();
 
             return $this->web->session($sessionId)->messages()->sendText($to, $body);
@@ -47,21 +45,20 @@ class MessageRouter
         return $this->cloud->messages()->sendText($to, $body);
     }
 
-    public function resolveBackend(string $to, ?string $explicit = null): string
+    /**
+     * @throws InvalidArgumentException for an unknown backend string
+     */
+    public function resolveBackend(string $to, Backend|string|null $explicit = null): string
     {
         if ($explicit) {
-            if (! in_array($explicit, ['cloud', 'web'], true)) {
-                throw new InvalidArgumentException("Unknown backend: {$explicit}");
-            }
-
-            return $explicit;
+            return Backend::of($explicit)->value;
         }
 
         if (str_ends_with($to, '@c.us') || str_ends_with($to, '@g.us') || str_ends_with($to, '@broadcast')) {
-            return 'web';
+            return Backend::Web->value;
         }
 
-        return 'cloud';
+        return Backend::Cloud->value;
     }
 
     protected function defaultWebSession(): string

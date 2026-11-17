@@ -7,6 +7,7 @@ namespace Kstmostofa\LaravelWhatsApp\Media;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Storage;
+use Kstmostofa\LaravelWhatsApp\Backend;
 use Kstmostofa\LaravelWhatsApp\Client\CloudClient;
 use Kstmostofa\LaravelWhatsApp\Models\WaMessage;
 use Kstmostofa\LaravelWhatsApp\Web\WebClient;
@@ -57,7 +58,7 @@ class MediaStore
 
         $payload = $message->payload ?? [];
 
-        if ($message->backend === 'web') {
+        if ($message->backend === Backend::Web->value) {
             return ! empty($payload['hasMedia']) || in_array($message->type, self::MEDIA_TYPES, true);
         }
 
@@ -76,7 +77,7 @@ class MediaStore
             return false;
         }
 
-        [$body, $mime] = $message->backend === 'web'
+        [$body, $mime] = $message->backend === Backend::Web->value
             ? $this->fetchFromSidecar($message)
             : $this->fetchFromCloud($message);
 

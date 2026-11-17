@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kstmostofa\LaravelWhatsApp\Notifications;
 
+use Kstmostofa\LaravelWhatsApp\Backend;
+
 /**
  * What a notification's `toWhatsApp()` returns.
  *
@@ -120,7 +122,7 @@ class WhatsAppMessage
     /** Force the Cloud API, optionally from a specific phone_number_id. */
     public function viaCloud(?string $phoneNumberId = null): static
     {
-        $this->backend = 'cloud';
+        $this->backend = Backend::Cloud->value;
         $this->sender = $phoneNumberId;
         $this->account = null;
 
@@ -133,7 +135,7 @@ class WhatsAppMessage
      */
     public function fromAccount(string $account): static
     {
-        $this->backend = 'cloud';
+        $this->backend = Backend::Cloud->value;
         $this->account = $account;
         $this->sender = null;
 
@@ -143,7 +145,7 @@ class WhatsAppMessage
     /** Force the Web sidecar, optionally from a specific session. */
     public function viaWeb(?string $sessionId = null): static
     {
-        $this->backend = 'web';
+        $this->backend = Backend::Web->value;
         $this->sender = $sessionId;
 
         return $this;
