@@ -746,6 +746,20 @@ app.get('/sessions/:id/contacts/:number/exists', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+for (const action of ['block', 'unblock']) {
+  app.post(`/sessions/:id/contacts/:contactId/${action}`, async (req, res, next) => {
+    try {
+      const s = getSession(req.params.id);
+      requireReady(s);
+      const contact = await s.client.getContactById(normalizeWaId(req.params.contactId));
+      // whatsapp-web.js silently returns false for groups; say why instead.
+      if (contact.isGroup) return res.status(400).json({ error: `groups cannot be ${action}ed; use leave instead` });
+      await contact[action]();
+      res.json({ ok: true, isBlocked: action === 'block' });
+    } catch (e) { next(e); }
+  });
+}
+
 // Helper: race a promise against a timeout — returns null if the inner promise
 // doesn't resolve within `ms`. Used to keep slow WhatsApp lookups from
 // blocking the request indefinitely.

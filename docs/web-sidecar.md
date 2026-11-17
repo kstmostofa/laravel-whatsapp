@@ -199,6 +199,8 @@ WhatsApp::web('main')->messages()->sendText($group['gid']['_serialized'], 'Welco
 $all = WhatsApp::web('main')->contacts()->all();       // [{ id, name, pushname, number, isUser, isWAContact, … }, …]
 $one = WhatsApp::web('main')->contacts()->get('9665XXXXXXXX@c.us');
 $exists = WhatsApp::web('main')->contacts()->exists('9665XXXXXXXX');  // { number, exists: bool }
+WhatsApp::web('main')->contacts()->block('9665XXXXXXXX@c.us');    // ['ok' => true, 'isBlocked' => true]
+WhatsApp::web('main')->contacts()->unblock('9665XXXXXXXX@c.us');
 ```
 
 ### Importing chat history

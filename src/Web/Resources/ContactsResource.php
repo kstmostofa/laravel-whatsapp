@@ -38,4 +38,23 @@ class ContactsResource extends Resource
 
         return $this->request('GET', "{$this->endpoint()}/".rawurlencode($normalized).'/exists');
     }
+
+    /**
+     * Block a contact: they can no longer message or call you. Accepts a WA ID
+     * or a plain phone number.
+     *
+     * @return array{ok: bool, isBlocked: bool}
+     */
+    public function block(string $contactId): array
+    {
+        return $this->request('POST', "{$this->endpoint()}/".rawurlencode($contactId).'/block');
+    }
+
+    /**
+     * @return array{ok: bool, isBlocked: bool}
+     */
+    public function unblock(string $contactId): array
+    {
+        return $this->request('POST', "{$this->endpoint()}/".rawurlencode($contactId).'/unblock');
+    }
 }

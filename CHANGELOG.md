@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Mute chats** on the Web backend: `WhatsApp::web('main')->muteChat($chatId, $until)`
   (forever when `$until` is null) and `unmuteChat($chatId)`.
+- **Block contacts** on the Web backend: `contacts()->block($contactId)` and
+  `contacts()->unblock($contactId)`.
 - **`WhatsApp::assertRequested()`** on the fake checks calls that change
   state without sending a message, by HTTP method, sidecar path and
   optionally the JSON body.

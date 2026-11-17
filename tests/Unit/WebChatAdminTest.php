@@ -61,4 +61,15 @@ class WebChatAdminTest extends TestCase
         $this->assertSame('POST', $this->lastRequest()?->getMethod());
         $this->assertStringEndsWith('sessions/main/chats/966512345678%40c.us/unmute', $this->lastUri());
     }
+
+    public function test_block_and_unblock_post_to_the_contact(): void
+    {
+        $contacts = $this->webSession('{"ok":true,"isBlocked":true}')->contacts();
+
+        $this->assertTrue($contacts->block(self::CHAT)['isBlocked']);
+        $this->assertStringEndsWith('sessions/main/contacts/966512345678%40c.us/block', $this->lastUri());
+
+        $this->webSession('{"ok":true,"isBlocked":false}')->contacts()->unblock(self::CHAT);
+        $this->assertStringEndsWith('sessions/main/contacts/966512345678%40c.us/unblock', $this->lastUri());
+    }
 }

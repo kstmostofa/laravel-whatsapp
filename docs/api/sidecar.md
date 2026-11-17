@@ -244,6 +244,11 @@ Single contact lookup. 404 if not found.
 
 The number is normalized — pass with or without `+`, with or without `@c.us`.
 
+### `POST /sessions/:id/contacts/:contactId/block`
+### `POST /sessions/:id/contacts/:contactId/unblock`
+
+No body. `contactId` is a WA ID or a plain phone number. Returns `{ ok: true, isBlocked }`. A group ID returns 400: leave the group instead.
+
 ### `GET /sessions/:id/contacts/:contactId/picture`
 
 Streams the JPEG bytes of the contact's profile picture. 204 if no picture available (cached by Laravel for 30 minutes — both hits AND misses).
