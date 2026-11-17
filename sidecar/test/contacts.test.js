@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const { dedupeContacts } = require('../contacts');
+const { dedupeContacts, contactCardIds } = require('../contacts');
 
 test('keeps one entry per id, merging what each duplicate knows', () => {
   const contacts = dedupeContacts([
@@ -21,4 +21,17 @@ test('a later empty value never blanks an earlier one', () => {
   ]);
 
   assert.equal(contact.name, 'Saved');
+});
+
+test('contact card ids accept phone numbers and WhatsApp IDs', () => {
+  assert.deepEqual(
+    contactCardIds({ contactIds: ['+966 51 111 1111', '966522222222@c.us'] }),
+    ['966511111111@c.us', '966522222222@c.us'],
+  );
+});
+
+test('contact card ids reject a missing, empty or non-string list with a 400', () => {
+  for (const contactIds of [undefined, [], 'x@c.us', ['x@c.us', ''], [42]]) {
+    assert.throws(() => contactCardIds({ contactIds }), (e) => e.http === 400);
+  }
 });

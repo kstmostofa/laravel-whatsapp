@@ -15,9 +15,15 @@ class MessagesResource extends Resource
     }
 
     /**
+     * `$options['mentions']` tags users (phone numbers or WhatsApp IDs),
+     * `$options['groupMentions']` tags groups (`id` is the `…@g.us` ID).
+     * A mention only links when the body contains it too: `@9665XXXXXXXX`
+     * for a user, `@<subject>` for a group.
+     *
+     * @param  array{mentions?: array<int, string>, groupMentions?: array<int, array{subject: string, id: string}>}  $options
      * @return array<string, mixed>
      */
-    public function sendText(string $to, string $body, ?string $quotedMessageId = null): array
+    public function sendText(string $to, string $body, ?string $quotedMessageId = null, array $options = []): array
     {
         return $this->request('POST', $this->endpoint(), [
             'json' => array_filter([
@@ -25,7 +31,7 @@ class MessagesResource extends Resource
                 'to' => $to,
                 'body' => $body,
                 'quotedMessageId' => $quotedMessageId,
-            ]),
+            ]) + $this->mentions($options),
         ]);
     }
 
@@ -91,9 +97,28 @@ class MessagesResource extends Resource
     }
 
     /**
+     * Send contact cards (vCards) for contacts the session knows. One ID
+     * sends a single card, several send them as one message.
+     *
+     * @param  array<int, string>  $contactIds  phone numbers or WhatsApp IDs (`9665XXXXXXXX@c.us`)
      * @return array<string, mixed>
      */
-    public function reply(string $to, string $body, string $quotedMessageId): array
+    public function sendContacts(string $to, array $contactIds): array
+    {
+        return $this->request('POST', $this->endpoint(), [
+            'json' => [
+                'type' => 'contacts',
+                'to' => $to,
+                'contactIds' => array_values($contactIds),
+            ],
+        ]);
+    }
+
+    /**
+     * @param  array{mentions?: array<int, string>, groupMentions?: array<int, array{subject: string, id: string}>}  $options  see sendText()
+     * @return array<string, mixed>
+     */
+    public function reply(string $to, string $body, string $quotedMessageId, array $options = []): array
     {
         return $this->request('POST', $this->endpoint(), [
             'json' => [
@@ -101,7 +126,7 @@ class MessagesResource extends Resource
                 'to' => $to,
                 'body' => $body,
                 'quotedMessageId' => $quotedMessageId,
-            ],
+            ] + $this->mentions($options),
         ]);
     }
 
@@ -160,6 +185,18 @@ class MessagesResource extends Resource
             "{$this->endpoint()}/".rawurlencode($messageId).'/edit',
             ['json' => ['body' => $body]],
         );
+    }
+
+    /**
+     * @param  array{mentions?: array<int, string>, groupMentions?: array<int, array{subject: string, id: string}>}  $options
+     * @return array<string, mixed>
+     */
+    protected function mentions(array $options): array
+    {
+        return array_filter([
+            'mentions' => array_values($options['mentions'] ?? []),
+            'groupMentions' => array_values($options['groupMentions'] ?? []),
+        ]);
     }
 
     /**

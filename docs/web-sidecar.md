@@ -92,6 +92,23 @@ Sidecar accepts **either** raw phone numbers OR WhatsApp chat IDs:
 WhatsApp::web('main')->messages()->sendText('+9665XXXXXXXX', 'Hello');
 ```
 
+### Mentions
+
+Tag people and groups with the `options` argument of `sendText()` and `reply()`. A mention only links when the body contains it too: `@<number>` for a user, `@<subject>` for a group.
+
+```php
+WhatsApp::web('main')->messages()->sendText('1203…@g.us', 'Hi @9665XXXXXXXX, see @Sales', options: [
+    'mentions' => ['9665XXXXXXXX@c.us'],                                // phone numbers or WhatsApp IDs
+    'groupMentions' => [['subject' => 'Sales', 'id' => '1203…@g.us']],
+]);
+
+WhatsApp::web('main')->messages()->reply('1203…@g.us', 'Over to you @9665XXXXXXXX', $msg['id'], [
+    'mentions' => ['9665XXXXXXXX@c.us'],
+]);
+```
+
+Received messages carry `mentionedIds` (WhatsApp IDs) and `groupMentions` (`[{ subject, id }]`), both empty lists when nobody is tagged.
+
 ### Media — three shapes
 
 By URL (sidecar fetches it):
@@ -113,6 +130,17 @@ WhatsApp::web('main')->messages()->sendDocument('+9665...', [
 ```
 
 Same shape for `sendVideo`, `sendAudio`, `sendSticker`.
+
+### Contact cards
+
+Send one or more contacts the session knows as vCards. Pass phone numbers or WhatsApp IDs; several IDs arrive as one multi-contact message.
+
+```php
+WhatsApp::web('main')->messages()->sendContacts('+9665...', ['9665YYYYYYYY@c.us']);
+WhatsApp::web('main')->messages()->sendContacts('+9665...', ['9665YYYYYYYY@c.us', '+9665ZZZZZZZZ']);
+```
+
+Received contact cards (`type` `vcard` or `multi_vcard`) carry a `vCards` field with the raw vCard text of each card.
 
 ### Reply / react / forward / delete / edit
 

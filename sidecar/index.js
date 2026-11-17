@@ -15,14 +15,14 @@ const path = require('path');
 const fs = require('fs');
 const { Client, LocalAuth, MessageMedia, Location } = require('whatsapp-web.js');
 const { discoverPersistedSessions, isValidSessionId } = require('./session-store');
-const { serializeMessageId, serializeWid } = require('./wa-id');
+const { normalizeWaId, serializeMessageId, serializeWid } = require('./wa-id');
 const { readChatsFromStore, readMessagesFromStore } = require('./chat-store');
 const { checkStuckSession, defaultCreateInfo } = require('./ready-watchdog');
-const { dedupeContacts } = require('./contacts');
-const { sendAndCapture, bodyMatcher } = require('./send-capture');
+const { dedupeContacts, contactCardIds } = require('./contacts');
+const { sendAndCapture, bodyMatcher, contactCardMatcher } = require('./send-capture');
 const { runMessageAction } = require('./page-actions');
-const { ensureMediaPatch } = require('./media-patch');
 const { ensureEditHook, editDeduper } = require('./edit-hook');
+const { mentionOptions, serializeMentions } = require('./mentions');
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '127.0.0.1';
@@ -139,6 +139,9 @@ function serializeMessage(m) {
     hasQuotedMsg: !!m.hasQuotedMsg,
     quoted: serializeQuote(m, data),
     ack: typeof m.ack === 'number' ? m.ack : null,
+    // Raw vCard text of each contact card in a `vcard` / `multi_vcard` message.
+    vCards: Array.isArray(m.vCards) ? m.vCards : [],
+    ...serializeMentions(m),
   };
 }
 
@@ -340,20 +343,6 @@ async function autoStartPersistedSessions() {
   }
 }
 
-// Normalize a recipient to whatsapp-web.js's expected Chat ID format.
-//   `9665XXXXXXXX@c.us`  → returned as-is (already a WA ID)
-//   `+9665XXXXXXXX`      → stripped to digits + `@c.us`
-//   `9665XXXXXXXX`       → digits + `@c.us`
-//   `…@g.us`, `…@lid`    → returned as-is
-// Empty / falsy → returned as-is so whatsapp-web.js fails loudly.
-function normalizeWaId(input) {
-  if (!input || typeof input !== 'string') return input;
-  if (input.includes('@')) return input;
-  const digits = input.replace(/\D+/g, '');
-  if (!digits) return input;
-  return `${digits}@c.us`;
-}
-
 async function buildOutgoingMedia({ url, base64, mimeType, filename }) {
   if (url) return await MessageMedia.fromUrl(url, { unsafeMime: true });
   if (base64) return new MessageMedia(mimeType || 'application/octet-stream', base64, filename);
@@ -442,7 +431,7 @@ app.get('/sessions/:id/info', async (req, res, next) => {
 
 /**
  * Polymorphic send endpoint.
- * Body: { type: 'text'|'image'|'video'|'audio'|'document'|'sticker'|'location'|'reaction'|'reply', ... }
+ * Body: { type: 'text'|'image'|'video'|'audio'|'document'|'sticker'|'location'|'contacts'|'reaction'|'reply', ... }
  */
 app.post('/sessions/:id/messages', async (req, res, next) => {
   try {
@@ -454,11 +443,11 @@ app.post('/sessions/:id/messages', async (req, res, next) => {
     let result;
     switch (b.type) {
       case 'text':
-        result = await sendCaptured(s, to, b.body ?? '', b.quotedMessageId ? { quotedMessageId: b.quotedMessageId } : {}, b.body);
+        result = await sendCaptured(s, to, b.body ?? '', { ...(b.quotedMessageId ? { quotedMessageId: b.quotedMessageId } : {}), ...mentionOptions(b) }, b.body);
         break;
 
       case 'reply':
-        result = await sendCaptured(s, to, b.body ?? '', { quotedMessageId: b.quotedMessageId }, b.body);
+        result = await sendCaptured(s, to, b.body ?? '', { quotedMessageId: b.quotedMessageId, ...mentionOptions(b) }, b.body);
         break;
 
       case 'image':
@@ -467,7 +456,6 @@ app.post('/sessions/:id/messages', async (req, res, next) => {
       case 'document':
       case 'sticker': {
         const media = await buildOutgoingMedia(b);
-        await ensureMediaPatch(s.client.pupPage);
         const options = {
           caption: b.caption,
           sendMediaAsSticker: b.type === 'sticker',
@@ -482,6 +470,17 @@ app.post('/sessions/:id/messages', async (req, res, next) => {
       case 'location':
         result = await s.client.sendMessage(to, new Location(b.latitude, b.longitude, b.description));
         break;
+
+      case 'contacts': {
+        const cards = await Promise.all(contactCardIds(b).map((id) => s.client.getContactById(id)));
+        result = await sendAndCapture(
+          s.client,
+          () => s.client.sendMessage(to, cards.length === 1 ? cards[0] : cards),
+          contactCardMatcher,
+          (m) => serializeMessageId(m && m.id),
+        );
+        break;
+      }
 
       case 'reaction': {
         // Not through getMessageById(): its serializer breaks on current

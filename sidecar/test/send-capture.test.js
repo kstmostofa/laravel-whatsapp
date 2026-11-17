@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const { EventEmitter } = require('node:events');
 const test = require('node:test');
-const { sendAndCapture, bodyMatcher } = require('../send-capture');
+const { sendAndCapture, bodyMatcher, contactCardMatcher } = require('../send-capture');
 
 const idOf = (m) => (m && m.id) || null;
 
@@ -48,4 +48,10 @@ test('send errors propagate and the listener is removed', async () => {
 
   await assert.rejects(sendAndCapture(client, async () => { throw new Error('boom'); }, bodyMatcher('x'), idOf), /boom/);
   assert.equal(client.listenerCount('message_create'), 0);
+});
+
+test('contact card matcher matches single and multi vcard messages only', () => {
+  assert.equal(contactCardMatcher({ type: 'vcard' }), true);
+  assert.equal(contactCardMatcher({ type: 'multi_vcard' }), true);
+  assert.equal(contactCardMatcher({ type: 'chat' }), false);
 });

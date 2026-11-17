@@ -52,4 +52,9 @@ function bodyMatcher(body) {
   return (message) => String(message.body ?? '') === expected;
 }
 
-module.exports = { sendAndCapture, bodyMatcher };
+/** Matcher for a contact card send: one card is `vcard`, several are `multi_vcard`. */
+function contactCardMatcher(message) {
+  return message.type === 'vcard' || message.type === 'multi_vcard';
+}
+
+module.exports = { sendAndCapture, bodyMatcher, contactCardMatcher };
