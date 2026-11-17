@@ -6,6 +6,7 @@ namespace Kstmostofa\LaravelWhatsApp\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Kstmostofa\LaravelWhatsApp\Events\Concerns\ReadsPayload;
 use Kstmostofa\LaravelWhatsApp\Events\Concerns\ResolvesCloudAccount;
 
 /**
@@ -14,7 +15,7 @@ use Kstmostofa\LaravelWhatsApp\Events\Concerns\ResolvesCloudAccount;
  */
 class MessageStatusUpdate
 {
-    use Dispatchable, ResolvesCloudAccount, SerializesModels;
+    use Dispatchable, ReadsPayload, ResolvesCloudAccount, SerializesModels;
 
     /**
      * @param  array<string, mixed>  $payload  single `statuses[]` entry from Meta
@@ -28,17 +29,17 @@ class MessageStatusUpdate
 
     public function status(): ?string
     {
-        return $this->payload['status'] ?? null;
+        return self::stringOrNull($this->payload['status'] ?? null);
     }
 
     public function messageId(): ?string
     {
-        return $this->payload['id'] ?? null;
+        return self::stringOrNull($this->payload['id'] ?? null);
     }
 
     public function recipient(): ?string
     {
-        return $this->payload['recipient_id'] ?? null;
+        return self::stringOrNull($this->payload['recipient_id'] ?? null);
     }
 
     /** Alias of recipient(). */

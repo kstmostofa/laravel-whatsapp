@@ -8,6 +8,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Kstmostofa\LaravelWhatsApp\Broadcasting\BroadcastsToSession;
+use Kstmostofa\LaravelWhatsApp\Events\Concerns\ReadsPayload;
 
 /**
  * The session was disconnected. `reason()` is whatsapp-web.js's reason string —
@@ -15,7 +16,7 @@ use Kstmostofa\LaravelWhatsApp\Broadcasting\BroadcastsToSession;
  */
 class Disconnected implements ShouldBroadcast
 {
-    use BroadcastsToSession, Dispatchable, SerializesModels;
+    use BroadcastsToSession, Dispatchable, ReadsPayload, SerializesModels;
 
     /**
      * @param  array<string, mixed>  $payload  ['reason' => string]
@@ -27,7 +28,7 @@ class Disconnected implements ShouldBroadcast
 
     public function reason(): ?string
     {
-        return $this->payload['reason'] ?? null;
+        return self::stringOrNull($this->payload['reason'] ?? null);
     }
 
     public function broadcastAs(): string

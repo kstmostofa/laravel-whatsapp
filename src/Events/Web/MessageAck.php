@@ -8,6 +8,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Kstmostofa\LaravelWhatsApp\Broadcasting\BroadcastsToSession;
+use Kstmostofa\LaravelWhatsApp\Events\Concerns\ReadsPayload;
 
 /**
  * Delivery acknowledgement for an outbound message.
@@ -18,7 +19,7 @@ use Kstmostofa\LaravelWhatsApp\Broadcasting\BroadcastsToSession;
  */
 class MessageAck implements ShouldBroadcast
 {
-    use BroadcastsToSession, Dispatchable, SerializesModels;
+    use BroadcastsToSession, Dispatchable, ReadsPayload, SerializesModels;
 
     public const ACK_ERROR = -1;
 
@@ -42,7 +43,7 @@ class MessageAck implements ShouldBroadcast
 
     public function messageId(): ?string
     {
-        return $this->payload['id'] ?? null;
+        return self::stringOrNull($this->payload['id'] ?? null);
     }
 
     public function ack(): ?int
