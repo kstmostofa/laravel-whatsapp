@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Client\Resources;
 
 use GuzzleHttp\Client as GuzzleClient;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Livewire\Concerns;
 
 use Kstmostofa\LaravelWhatsApp\Broadcasting\SessionChannel;
