@@ -232,6 +232,22 @@ class WhatsAppFake extends CloudClient
         PHPUnit::assertSame($expected, $actual, "Expected {$expected} WhatsApp message(s), {$actual} were sent.");
     }
 
+    /**
+     * Assert a non-send call reached a backend, e.g. muting a chat or
+     * blocking a contact. `$path` is the sidecar or Graph path with IDs
+     * unencoded: `sessions/main/contacts/966512345678@c.us/block`.
+     *
+     * @param  (callable(array<string, mixed>): bool)|null  $filter  receives the JSON body
+     */
+    public function assertRequested(string $method, string $path, ?callable $filter = null): void
+    {
+        $matches = array_filter($this->requests, fn (array $request) => strtoupper($request['method']) === strtoupper($method)
+            && rawurldecode($request['path']) === ltrim($path, '/')
+            && ($filter === null || $filter(is_array($request['options']['json'] ?? null) ? $request['options']['json'] : [])));
+
+        PHPUnit::assertNotEmpty($matches, "No [{$method} {$path}] request".($filter ? ' matching the given callback' : '').' was made.');
+    }
+
     public function assertTemplateSent(string $name, ?string $to = null): void
     {
         PHPUnit::assertNotEmpty(

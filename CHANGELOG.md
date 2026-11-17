@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and restart the sidecar. If you run a published copy of the sidecar,
   re-publish it with `--force`.
 
+### Added
+- **`WhatsApp::assertRequested()`** on the fake checks calls that change
+  state without sending a message, by HTTP method, sidecar path and
+  optionally the JSON body.
+
 ### Changed
 - The sidecar now pins whatsapp-web.js to exactly `1.34.8` (was `^1.23.0`,
   locked at 1.34.7). Its fixes for current WhatsApp Web include the
