@@ -91,6 +91,24 @@ class MessagesResource extends Resource
     }
 
     /**
+     * Send contact cards (vCards) for contacts the session knows. One ID
+     * sends a single card, several send them as one message.
+     *
+     * @param  array<int, string>  $contactIds  phone numbers or WhatsApp IDs (`9665XXXXXXXX@c.us`)
+     * @return array<string, mixed>
+     */
+    public function sendContacts(string $to, array $contactIds): array
+    {
+        return $this->request('POST', $this->endpoint(), [
+            'json' => [
+                'type' => 'contacts',
+                'to' => $to,
+                'contactIds' => array_values($contactIds),
+            ],
+        ]);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function reply(string $to, string $body, string $quotedMessageId): array

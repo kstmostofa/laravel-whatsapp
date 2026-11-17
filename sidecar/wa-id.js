@@ -86,4 +86,18 @@ function serializeMessageId(id) {
   return null;
 }
 
-module.exports = { serializeWid, serializeMessageId };
+// Normalize a recipient to whatsapp-web.js's expected Chat ID format.
+//   `9665XXXXXXXX@c.us`  → returned as-is (already a WA ID)
+//   `+9665XXXXXXXX`      → stripped to digits + `@c.us`
+//   `9665XXXXXXXX`       → digits + `@c.us`
+//   `…@g.us`, `…@lid`    → returned as-is
+// Empty / falsy → returned as-is so whatsapp-web.js fails loudly.
+function normalizeWaId(input) {
+  if (!input || typeof input !== 'string') return input;
+  if (input.includes('@')) return input;
+  const digits = input.replace(/\D+/g, '');
+  if (!digits) return input;
+  return `${digits}@c.us`;
+}
+
+module.exports = { normalizeWaId, serializeWid, serializeMessageId };

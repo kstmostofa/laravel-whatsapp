@@ -114,6 +114,17 @@ WhatsApp::web('main')->messages()->sendDocument('+9665...', [
 
 Same shape for `sendVideo`, `sendAudio`, `sendSticker`.
 
+### Contact cards
+
+Send one or more contacts the session knows as vCards. Pass phone numbers or WhatsApp IDs; several IDs arrive as one multi-contact message.
+
+```php
+WhatsApp::web('main')->messages()->sendContacts('+9665...', ['9665YYYYYYYY@c.us']);
+WhatsApp::web('main')->messages()->sendContacts('+9665...', ['9665YYYYYYYY@c.us', '+9665ZZZZZZZZ']);
+```
+
+Received contact cards (`type` `vcard` or `multi_vcard`) carry a `vCards` field with the raw vCard text of each card.
+
 ### Reply / react / forward / delete / edit
 
 ```php

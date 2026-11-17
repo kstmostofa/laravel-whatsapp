@@ -44,6 +44,19 @@ class WebMessagesTest extends TestCase
         $this->assertSame('meow', $body['caption']);
     }
 
+    public function test_send_contacts_posts_contact_ids(): void
+    {
+        $client = $this->app->make(WebClient::class);
+        $this->mockGuzzleOn($client, [new Response(200, [], '{}')]);
+
+        $client->session('main')->messages()->sendContacts('966512345678@c.us', ['966511111111@c.us', '+966522222222']);
+
+        $body = json_decode((string) $this->lastRequest()->getBody(), true);
+        $this->assertSame('contacts', $body['type']);
+        $this->assertSame('966512345678@c.us', $body['to']);
+        $this->assertSame(['966511111111@c.us', '+966522222222'], $body['contactIds']);
+    }
+
     public function test_create_group_posts_to_groups_endpoint(): void
     {
         $client = $this->app->make(WebClient::class);

@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and restart the sidecar. If you run a published copy of the sidecar,
   re-publish it with `--force`.
 
+### Added
+- **Web contact cards**: `WhatsApp::web($id)->messages()->sendContacts($to, $contactIds)`
+  sends one or more vCards. Received messages carry a `vCards` field.
+
 ### Changed
 - The sidecar now pins whatsapp-web.js to exactly `1.34.8` (was `^1.23.0`,
   locked at 1.34.7). Its fixes for current WhatsApp Web include the
