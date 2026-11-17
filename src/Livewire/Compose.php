@@ -124,9 +124,15 @@ class Compose extends Component
         $session = $this->sessionId ?: (string) config('laravel-whatsapp.ui.default_session', 'main');
         $messages = app(WebClient::class)->session($session)->messages();
 
+        // Omit an empty caption rather than sending "caption": null.
+        $media = ['url' => $this->mediaUrl];
+        if ($this->caption !== '') {
+            $media['caption'] = $this->caption;
+        }
+
         return match ($this->type) {
-            'image' => $messages->sendImage($this->to, ['url' => $this->mediaUrl, 'caption' => $this->caption ?: null]),
-            'document' => $messages->sendDocument($this->to, ['url' => $this->mediaUrl, 'caption' => $this->caption ?: null]),
+            'image' => $messages->sendImage($this->to, $media),
+            'document' => $messages->sendDocument($this->to, $media),
             default => $messages->sendText($this->to, $this->body),
         };
     }
@@ -138,9 +144,15 @@ class Compose extends Component
     {
         $messages = app(CloudClient::class)->messages();
 
+        // Omit an empty caption rather than sending "caption": null.
+        $media = ['link' => $this->mediaUrl];
+        if ($this->caption !== '') {
+            $media['caption'] = $this->caption;
+        }
+
         return match ($this->type) {
-            'image' => $messages->sendImage($this->to, ['link' => $this->mediaUrl, 'caption' => $this->caption ?: null]),
-            'document' => $messages->sendDocument($this->to, ['link' => $this->mediaUrl, 'caption' => $this->caption ?: null]),
+            'image' => $messages->sendImage($this->to, $media),
+            'document' => $messages->sendDocument($this->to, $media),
             'template' => $this->sendTemplate($messages),
             default => $messages->sendText($this->to, $this->body),
         };
