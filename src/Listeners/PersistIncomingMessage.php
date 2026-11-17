@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kstmostofa\LaravelWhatsApp\Listeners;
 
+use Kstmostofa\LaravelWhatsApp\Direction;
 use Kstmostofa\LaravelWhatsApp\Events\InteractiveReplied as CloudInteractiveReplied;
 use Kstmostofa\LaravelWhatsApp\Events\MediaReceived as CloudMediaReceived;
 use Kstmostofa\LaravelWhatsApp\Events\MessageReceived as CloudMessageReceived;
@@ -76,7 +77,7 @@ class PersistIncomingMessage
 
         $attributes = [
             'session_id' => $event->sessionId,
-            'direction' => $isOutbound ? 'outbound' : 'inbound',
+            'direction' => ($isOutbound ? Direction::Outbound : Direction::Inbound)->value,
             // For outbound: from=me, to=chat. For inbound: from=chat, to=me.
             'chat_id' => $event->chatId(),
             // In groups `from` is the group; `author` is the member who sent it.
@@ -108,7 +109,7 @@ class PersistIncomingMessage
 
         $this->store('cloud', is_string($messageId) ? $messageId : null, [
             'session_id' => $event->phoneNumberId,
-            'direction' => 'inbound',
+            'direction' => Direction::Inbound->value,
             'chat_id' => $event->from(),
             'from_id' => $event->from(),
             'to_id' => $event->phoneNumberId,
@@ -226,7 +227,7 @@ class PersistIncomingMessage
     {
         $this->store('cloud', $event->messageId(), [
             'session_id' => $event->phoneNumberId,
-            'direction' => 'outbound',
+            'direction' => Direction::Outbound->value,
             'chat_id' => $event->to(),
             'from_id' => $event->phoneNumberId,
             'to_id' => $event->to(),

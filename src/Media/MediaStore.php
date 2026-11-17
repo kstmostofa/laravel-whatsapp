@@ -9,6 +9,7 @@ use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Storage;
 use Kstmostofa\LaravelWhatsApp\Backend;
 use Kstmostofa\LaravelWhatsApp\Client\CloudClient;
+use Kstmostofa\LaravelWhatsApp\Direction;
 use Kstmostofa\LaravelWhatsApp\Models\WaMessage;
 use Kstmostofa\LaravelWhatsApp\Web\WebClient;
 
@@ -62,7 +63,7 @@ class MediaStore
             return ! empty($payload['hasMedia']) || in_array($message->type, self::MEDIA_TYPES, true);
         }
 
-        return $message->direction === 'inbound'
+        return $message->direction === Direction::Inbound->value
             && in_array($message->type, self::MEDIA_TYPES, true)
             && is_string($payload[$message->type]['id'] ?? null);
     }

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use Kstmostofa\LaravelWhatsApp\Direction;
 use Kstmostofa\LaravelWhatsApp\Models\Concerns\UsesWhatsAppConnection;
 
 /**
@@ -69,7 +70,7 @@ class WaMessage extends Model
      */
     public function scopeInbound($query)
     {
-        return $query->where('direction', 'inbound');
+        return $query->where('direction', Direction::Inbound->value);
     }
 
     /**
@@ -78,7 +79,7 @@ class WaMessage extends Model
      */
     public function scopeOutbound($query)
     {
-        return $query->where('direction', 'outbound');
+        return $query->where('direction', Direction::Outbound->value);
     }
 
     /**
