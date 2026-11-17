@@ -4,16 +4,21 @@ declare(strict_types=1);
 
 namespace Kstmostofa\LaravelWhatsApp\Tests\Feature;
 
+use GuzzleHttp\Client as GuzzleClient;
+use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Middleware;
+use GuzzleHttp\Psr7\Response;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Kstmostofa\LaravelWhatsApp\Models\WaMessage;
 use Kstmostofa\LaravelWhatsApp\Tests\TestCase;
+use Psr\Http\Message\RequestInterface;
 
 /**
- * Both controllers call the sidecar through their own Guzzle client, so the
- * upstream success path is not covered here. The sidecar is pointed at a
- * closed port to exercise the "unreachable" branches deterministically.
+ * The sidecar is pointed at a closed port, so the "unreachable" branches run
+ * for real. fakeSidecar() swaps in a MockHandler for the success paths.
  */
 class ProxyControllersTest extends TestCase
 {
@@ -25,6 +30,28 @@ class ProxyControllersTest extends TestCase
         $app['config']->set('laravel-whatsapp.media.disk', 'whatsapp-test');
         $app['config']->set('laravel-whatsapp.web.host', '127.0.0.1');
         $app['config']->set('laravel-whatsapp.web.port', 1);
+        $app['config']->set('laravel-whatsapp.web.token', 'SIDECAR_TOKEN');
+    }
+
+    /** @var array<int, array{request: RequestInterface}> */
+    private array $sidecarRequests = [];
+
+    /**
+     * @param  array<int, Response>  $responses
+     */
+    private function fakeSidecar(array $responses): void
+    {
+        $stack = HandlerStack::create(new MockHandler($responses));
+        $stack->push(Middleware::history($this->sidecarRequests));
+
+        $this->app->bind(GuzzleClient::class, fn ($app, array $params) => new GuzzleClient(['handler' => $stack] + ($params['config'] ?? [])));
+    }
+
+    private function sidecarRequest(): RequestInterface
+    {
+        $this->assertCount(1, $this->sidecarRequests);
+
+        return $this->sidecarRequests[0]['request'];
     }
 
     protected function setUp(): void
@@ -114,5 +141,50 @@ class ProxyControllersTest extends TestCase
             ->assertHeader('X-Avatar-Cache', 'MISS-NEGATIVE');
 
         $this->assertSame('__no_avatar__', Cache::get($key));
+    }
+
+    public function test_media_streams_the_sidecar_response_with_the_bearer_token(): void
+    {
+        $this->fakeSidecar([new Response(200, [
+            'Content-Type' => 'image/jpeg', 'Content-Length' => '4', 'Content-Disposition' => 'inline; filename="a.jpg"',
+        ], 'JPEG')]);
+
+        $response = $this->get(route('whatsapp.ui.media', ['session' => 'main', 'messageId' => 'true_1@c.us_AB/CD']));
+
+        $response->assertOk();
+        $response->assertHeader('Content-Type', 'image/jpeg');
+        $response->assertHeader('Content-Disposition', 'inline; filename="a.jpg"');
+        $this->assertSame('JPEG', $response->streamedContent());
+        $request = $this->sidecarRequest();
+        $this->assertSame('http://127.0.0.1:1/sessions/main/messages/true_1%40c.us_AB%2FCD/media', (string) $request->getUri());
+        $this->assertSame('Bearer SIDECAR_TOKEN', $request->getHeaderLine('Authorization'));
+    }
+
+    public function test_media_passes_a_sidecar_error_status_through(): void
+    {
+        $this->fakeSidecar([new Response(404, [], 'message not found')]);
+
+        $this->get(route('whatsapp.ui.media', ['session' => 'main', 'messageId' => 'gone']))->assertNotFound();
+    }
+
+    public function test_avatar_fetches_from_the_sidecar_once_then_serves_from_cache(): void
+    {
+        $this->fakeSidecar([new Response(200, ['Content-Type' => 'image/png'], 'PNGBYTES')]);
+        $url = route('whatsapp.ui.avatar', ['session' => 'main', 'contactId' => '966511111111@c.us']);
+
+        $this->get($url)->assertOk()->assertHeader('X-Avatar-Cache', 'MISS');
+        $this->get($url)->assertOk()->assertHeader('X-Avatar-Cache', 'HIT');
+
+        $request = $this->sidecarRequest();
+        $this->assertSame('http://127.0.0.1:1/sessions/main/contacts/966511111111%40c.us/picture', (string) $request->getUri());
+        $this->assertSame('Bearer SIDECAR_TOKEN', $request->getHeaderLine('Authorization'));
+    }
+
+    public function test_avatar_sidecar_404_gives_204(): void
+    {
+        $this->fakeSidecar([new Response(404)]);
+
+        $this->get(route('whatsapp.ui.avatar', ['session' => 'main', 'contactId' => '966511111111@c.us']))
+            ->assertNoContent();
     }
 }

@@ -45,10 +45,11 @@ class MediaProxyController extends Controller
         $headers = $client->token() ? ['Authorization' => 'Bearer '.$client->token()] : [];
 
         try {
-            $upstream = (new GuzzleClient([
+            // Resolved through the container so tests can swap the handler.
+            $upstream = app()->make(GuzzleClient::class, ['config' => [
                 'timeout' => 30,
                 'http_errors' => false,
-            ]))->get($url, [
+            ]])->get($url, [
                 'headers' => $headers,
                 'stream' => true,
             ]);
