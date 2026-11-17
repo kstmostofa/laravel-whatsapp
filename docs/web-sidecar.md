@@ -70,6 +70,14 @@ $info = WhatsApp::web('main')->info();   // { pushname, wid, phone, … } once r
 $chats = WhatsApp::web('main')->chats(); // list of chats with last message + unread count
 ```
 
+### About text
+
+```php
+WhatsApp::web('main')->setAbout('On holiday until Monday');
+```
+
+Sets the profile "About" line. This is not `status()`, which posts to Status / Stories.
+
 ## Messages
 
 `WhatsApp::web('main')->messages()` returns a resource with the same API shape as Cloud API's `messages()`, but routed to the sidecar.

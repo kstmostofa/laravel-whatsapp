@@ -272,6 +272,14 @@ Post to Status / Stories:
 { "type": "image", "url": "https://…/promo.jpg", "caption": "New launch" }
 ```
 
+### `PUT /sessions/:id/about`
+
+```json
+{ "about": "On holiday until Monday" }
+```
+
+Sets the profile "About" text (whatsapp-web.js `setStatus()`, unrelated to Status / Stories). Returns `{ ok: true }`.
+
 ### `GET /events`
 
 Every session's events on one SSE stream, including sessions started after you connect. Same event names and payloads as the per-session stream below, and each payload includes its `sessionId`. The opening `hello` event lists the current sessions. Used by `php artisan whatsapp:web:listen --all`.

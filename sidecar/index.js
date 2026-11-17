@@ -843,6 +843,19 @@ app.post('/sessions/:id/status', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// The profile "About" text. whatsapp-web.js calls it setStatus(), which is
+// unrelated to Status / Stories above.
+app.put('/sessions/:id/about', async (req, res, next) => {
+  try {
+    const s = getSession(req.params.id);
+    requireReady(s);
+    const about = req.body?.about;
+    if (typeof about !== 'string') return res.status(400).json({ error: '`about` must be a string' });
+    await s.client.setStatus(about);
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
 // Server-Sent Events for the bridge command to consume.
 app.get('/sessions/:id/events', (req, res, next) => {
   try {

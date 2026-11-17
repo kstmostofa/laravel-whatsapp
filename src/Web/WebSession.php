@@ -95,6 +95,22 @@ class WebSession
     }
 
     /**
+     * Set this account's profile "About" text.
+     *
+     * Named `setAbout()` (whatsapp-web.js calls it setStatus) because
+     * `status()` is the Status / Stories resource and `state()` is the
+     * connection state.
+     *
+     * @return array<string, mixed>
+     */
+    public function setAbout(string $about): array
+    {
+        return $this->client->request('PUT', "sessions/{$this->sessionId}/about", [
+            'json' => compact('about'),
+        ]);
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     public function chats(): array

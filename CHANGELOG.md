@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (forever when `$until` is null) and `unmuteChat($chatId)`.
 - **Block contacts** on the Web backend: `contacts()->block($contactId)` and
   `contacts()->unblock($contactId)`.
+- **Set the profile About text** on the Web backend:
+  `WhatsApp::web('main')->setAbout($text)`. Named `setAbout` because
+  `status()` already posts to Status / Stories.
 - **`WhatsApp::assertRequested()`** on the fake checks calls that change
   state without sending a message, by HTTP method, sidecar path and
   optionally the JSON body.

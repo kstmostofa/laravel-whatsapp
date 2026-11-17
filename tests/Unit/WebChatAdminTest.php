@@ -72,4 +72,13 @@ class WebChatAdminTest extends TestCase
         $this->webSession('{"ok":true,"isBlocked":false}')->contacts()->unblock(self::CHAT);
         $this->assertStringEndsWith('sessions/main/contacts/966512345678%40c.us/unblock', $this->lastUri());
     }
+
+    public function test_set_about_puts_the_text(): void
+    {
+        $this->webSession()->setAbout('On holiday until Monday');
+
+        $this->assertSame('PUT', $this->lastRequest()?->getMethod());
+        $this->assertStringEndsWith('sessions/main/about', $this->lastUri());
+        $this->assertSame(['about' => 'On holiday until Monday'], $this->lastBody());
+    }
 }
