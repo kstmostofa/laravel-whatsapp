@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Events\Web;
 
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Kstmostofa\LaravelWhatsApp\Broadcasting\BroadcastsToSession;
+use Kstmostofa\LaravelWhatsApp\Events\Concerns\ReadsPayload;
 
 /**
  * The whatsapp-web.js client finished initializing and is ready to send/receive.
@@ -13,7 +16,7 @@ use Kstmostofa\LaravelWhatsApp\Broadcasting\BroadcastsToSession;
  */
 class SessionReady implements ShouldBroadcast
 {
-    use BroadcastsToSession, Dispatchable, SerializesModels;
+    use BroadcastsToSession, Dispatchable, ReadsPayload, SerializesModels;
 
     /**
      * @param  array<string, mixed>  $payload
@@ -26,12 +29,12 @@ class SessionReady implements ShouldBroadcast
     /** The paired account's own ID, e.g. `9665XXXXXXXX@c.us`. */
     public function wid(): ?string
     {
-        return $this->payload['info']['wid'] ?? null;
+        return self::stringOrNull($this->payload['info']['wid'] ?? null);
     }
 
     public function pushname(): ?string
     {
-        return $this->payload['info']['pushname'] ?? null;
+        return self::stringOrNull($this->payload['info']['pushname'] ?? null);
     }
 
     /** The paired phone number, digits only. */

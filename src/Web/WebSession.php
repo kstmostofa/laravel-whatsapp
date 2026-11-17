@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Web;
 
 use Kstmostofa\LaravelWhatsApp\Web\Resources\ContactsResource;
@@ -45,7 +47,10 @@ class WebSession
      */
     public function start(): array
     {
-        return $this->client->request('POST', "sessions/{$this->sessionId}/start");
+        /** @var array{id: string, status: string, qr: ?string} $response  shape defined by sidecar/index.js */
+        $response = $this->client->request('POST', "sessions/{$this->sessionId}/start");
+
+        return $response;
     }
 
     /**
@@ -69,7 +74,10 @@ class WebSession
      */
     public function qr(): array
     {
-        return $this->client->request('GET', "sessions/{$this->sessionId}/qr");
+        /** @var array{status: string, qr: ?string} $response  shape defined by sidecar/index.js */
+        $response = $this->client->request('GET', "sessions/{$this->sessionId}/qr");
+
+        return $response;
     }
 
     /**
@@ -83,7 +91,10 @@ class WebSession
      */
     public function state(): array
     {
-        return $this->client->request('GET', "sessions/{$this->sessionId}/status");
+        /** @var array{id: string, status: string} $response  shape defined by sidecar/index.js */
+        $response = $this->client->request('GET', "sessions/{$this->sessionId}/status");
+
+        return $response;
     }
 
     /**

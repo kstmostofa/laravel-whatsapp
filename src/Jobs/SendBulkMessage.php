@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Jobs;
 
 use DateTimeInterface;
@@ -10,6 +12,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\Middleware\RateLimited;
 use Kstmostofa\LaravelWhatsApp\Exceptions\CloudApiException;
+use Kstmostofa\LaravelWhatsApp\Jobs\Concerns\UsesWhatsAppQueue;
 use Kstmostofa\LaravelWhatsApp\Notifications\WhatsAppMessage;
 use Kstmostofa\LaravelWhatsApp\Support\MessageSender;
 
@@ -23,7 +26,7 @@ use Kstmostofa\LaravelWhatsApp\Support\MessageSender;
  */
 class SendBulkMessage implements ShouldQueue
 {
-    use Batchable, Dispatchable, InteractsWithQueue, Queueable;
+    use Batchable, Dispatchable, InteractsWithQueue, Queueable, UsesWhatsAppQueue;
 
     public const LIMITER = 'whatsapp-bulk';
 
@@ -36,8 +39,7 @@ class SendBulkMessage implements ShouldQueue
         public string $to,
         public WhatsAppMessage $message,
     ) {
-        $this->onConnection(config('laravel-whatsapp.queue.connection'));
-        $this->onQueue(config('laravel-whatsapp.queue.queue', 'default'));
+        $this->useWhatsAppQueue();
     }
 
     public function retryUntil(): DateTimeInterface

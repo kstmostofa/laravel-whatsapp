@@ -1,4 +1,7 @@
 {
     "preset": "laravel",
+    "rules": {
+        "declare_strict_types": true
+    },
     "exclude": ["build", "dist", "dist-src", "sidecar"]
 }

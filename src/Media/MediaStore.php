@@ -1,11 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Media;
 
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Storage;
+use Kstmostofa\LaravelWhatsApp\Backend;
 use Kstmostofa\LaravelWhatsApp\Client\CloudClient;
+use Kstmostofa\LaravelWhatsApp\Direction;
 use Kstmostofa\LaravelWhatsApp\Models\WaMessage;
 use Kstmostofa\LaravelWhatsApp\Web\WebClient;
 
@@ -55,11 +59,11 @@ class MediaStore
 
         $payload = $message->payload ?? [];
 
-        if ($message->backend === 'web') {
+        if ($message->backend === Backend::Web->value) {
             return ! empty($payload['hasMedia']) || in_array($message->type, self::MEDIA_TYPES, true);
         }
 
-        return $message->direction === 'inbound'
+        return $message->direction === Direction::Inbound->value
             && in_array($message->type, self::MEDIA_TYPES, true)
             && is_string($payload[$message->type]['id'] ?? null);
     }
@@ -74,7 +78,7 @@ class MediaStore
             return false;
         }
 
-        [$body, $mime] = $message->backend === 'web'
+        [$body, $mime] = $message->backend === Backend::Web->value
             ? $this->fetchFromSidecar($message)
             : $this->fetchFromCloud($message);
 
@@ -123,7 +127,7 @@ class MediaStore
      */
     protected function fetchFromCloud(WaMessage $message): array
     {
-        $mediaId = (string) $message->payload[$message->type]['id'];
+        $mediaId = (string) ($message->payload[$message->type]['id'] ?? '');
         $media = $this->container->make(CloudClient::class)->media((string) $message->session_id);
 
         $mime = (string) ($media->info($mediaId)['mime_type'] ?? $message->payload[$message->type]['mime_type'] ?? 'application/octet-stream');

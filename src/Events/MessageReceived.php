@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Kstmostofa\LaravelWhatsApp\Events\Concerns\ReadsPayload;
 use Kstmostofa\LaravelWhatsApp\Events\Concerns\ResolvesCloudAccount;
 
 /**
@@ -14,7 +17,7 @@ use Kstmostofa\LaravelWhatsApp\Events\Concerns\ResolvesCloudAccount;
  */
 class MessageReceived
 {
-    use Dispatchable, ResolvesCloudAccount, SerializesModels;
+    use Dispatchable, ReadsPayload, ResolvesCloudAccount, SerializesModels;
 
     /**
      * @param  array<string, mixed>  $payload  single `messages[]` entry from Meta
@@ -28,16 +31,16 @@ class MessageReceived
 
     public function from(): ?string
     {
-        return $this->payload['from'] ?? null;
+        return self::stringOrNull($this->payload['from'] ?? null);
     }
 
     public function messageId(): ?string
     {
-        return $this->payload['id'] ?? null;
+        return self::stringOrNull($this->payload['id'] ?? null);
     }
 
     public function text(): ?string
     {
-        return $this->payload['text']['body'] ?? null;
+        return self::stringOrNull($this->payload['text']['body'] ?? null);
     }
 }

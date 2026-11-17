@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Livewire;
 
 use Illuminate\Contracts\View\View;
@@ -346,7 +348,9 @@ class ChatHistory extends Component
 
     public function sendReply(): void
     {
-        if (! $this->selectedChat) {
+        $chatId = $this->selectedChat;
+
+        if (! $chatId) {
             return;
         }
 
@@ -361,8 +365,8 @@ class ChatHistory extends Component
 
         try {
             $result = $hasAttachment
-                ? $this->dispatchMedia()
-                : $this->dispatchText();
+                ? $this->dispatchMedia($chatId)
+                : $this->dispatchText($chatId);
 
             $this->persistOptimistic($result);
 
@@ -377,10 +381,10 @@ class ChatHistory extends Component
     /**
      * @return array<string, mixed>
      */
-    protected function dispatchText(): array
+    protected function dispatchText(string $chatId): array
     {
         return app(WebClient::class)->session($this->session)->messages()
-            ->sendText($this->selectedChat, $this->reply, $this->replyingTo);
+            ->sendText($chatId, $this->reply, $this->replyingTo);
     }
 
     /**
@@ -389,12 +393,17 @@ class ChatHistory extends Component
      *
      * @return array<string, mixed>
      */
-    protected function dispatchMedia(): array
+    protected function dispatchMedia(string $chatId): array
     {
         $file = $this->attachment;
         $mime = $file->getMimeType() ?: 'application/octet-stream';
         $name = $file->getClientOriginalName();
-        $base64 = base64_encode(file_get_contents($file->getRealPath()));
+        // SidecarException is what send() shows to the user; never send an empty file.
+        $contents = file_get_contents($file->getRealPath());
+        if ($contents === false) {
+            throw new SidecarException("Couldn't read the attachment.");
+        }
+        $base64 = base64_encode($contents);
         $caption = trim($this->reply) !== '' ? $this->reply : null;
 
         $messages = app(WebClient::class)->session($this->session)->messages();
@@ -407,10 +416,10 @@ class ChatHistory extends Component
         ], fn ($v) => $v !== null);
 
         return match (true) {
-            str_starts_with($mime, 'image/') => $messages->sendImage($this->selectedChat, $payload),
-            str_starts_with($mime, 'video/') => $messages->sendVideo($this->selectedChat, $payload),
-            str_starts_with($mime, 'audio/') => $messages->sendAudio($this->selectedChat, $payload),
-            default => $messages->sendDocument($this->selectedChat, $payload),
+            str_starts_with($mime, 'image/') => $messages->sendImage($chatId, $payload),
+            str_starts_with($mime, 'video/') => $messages->sendVideo($chatId, $payload),
+            str_starts_with($mime, 'audio/') => $messages->sendAudio($chatId, $payload),
+            default => $messages->sendDocument($chatId, $payload),
         };
     }
 

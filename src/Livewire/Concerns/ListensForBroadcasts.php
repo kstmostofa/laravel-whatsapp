@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Livewire\Concerns;
 
 use Kstmostofa\LaravelWhatsApp\Broadcasting\SessionChannel;
@@ -19,7 +21,7 @@ trait ListensForBroadcasts
     }
 
     /**
-     * @param  array<int, string>  $sessionIds
+     * @param  array<int, ?string>  $sessionIds  null and '' are skipped
      * @param  array<string, string>  $events  broadcastAs name => method
      * @return array<string, string>
      */

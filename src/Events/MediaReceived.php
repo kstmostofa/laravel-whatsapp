@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Kstmostofa\LaravelWhatsApp\Events\Concerns\ReadsPayload;
 use Kstmostofa\LaravelWhatsApp\Events\Concerns\ResolvesCloudAccount;
 
 /**
@@ -12,7 +15,7 @@ use Kstmostofa\LaravelWhatsApp\Events\Concerns\ResolvesCloudAccount;
  */
 class MediaReceived
 {
-    use Dispatchable, ResolvesCloudAccount, SerializesModels;
+    use Dispatchable, ReadsPayload, ResolvesCloudAccount, SerializesModels;
 
     /**
      * @param  array<string, mixed>  $payload  single `messages[]` entry (type is image/video/audio/document/sticker)
@@ -26,32 +29,32 @@ class MediaReceived
 
     public function mediaType(): ?string
     {
-        return $this->payload['type'] ?? null;
+        return self::stringOrNull($this->payload['type'] ?? null);
     }
 
     public function mediaId(): ?string
     {
         $type = $this->mediaType();
 
-        return $type ? ($this->payload[$type]['id'] ?? null) : null;
+        return self::stringOrNull($type ? ($this->payload[$type]['id'] ?? null) : null);
     }
 
     public function mimeType(): ?string
     {
         $type = $this->mediaType();
 
-        return $type ? ($this->payload[$type]['mime_type'] ?? null) : null;
+        return self::stringOrNull($type ? ($this->payload[$type]['mime_type'] ?? null) : null);
     }
 
     public function caption(): ?string
     {
         $type = $this->mediaType();
 
-        return $type ? ($this->payload[$type]['caption'] ?? null) : null;
+        return self::stringOrNull($type ? ($this->payload[$type]['caption'] ?? null) : null);
     }
 
     public function from(): ?string
     {
-        return $this->payload['from'] ?? null;
+        return self::stringOrNull($this->payload['from'] ?? null);
     }
 }

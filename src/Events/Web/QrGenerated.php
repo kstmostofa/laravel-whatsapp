@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Events\Web;
 
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Kstmostofa\LaravelWhatsApp\Broadcasting\BroadcastsToSession;
+use Kstmostofa\LaravelWhatsApp\Events\Concerns\ReadsPayload;
 
 /**
  * A QR code was generated for this session. `dataUri()` returns a `data:image/png;base64,…`
@@ -13,7 +16,7 @@ use Kstmostofa\LaravelWhatsApp\Broadcasting\BroadcastsToSession;
  */
 class QrGenerated implements ShouldBroadcast
 {
-    use BroadcastsToSession, Dispatchable, SerializesModels;
+    use BroadcastsToSession, Dispatchable, ReadsPayload, SerializesModels;
 
     /**
      * @param  array<string, mixed>  $payload  ['dataUri' => 'data:image/png;base64,…']
@@ -25,7 +28,7 @@ class QrGenerated implements ShouldBroadcast
 
     public function dataUri(): ?string
     {
-        return $this->payload['dataUri'] ?? null;
+        return self::stringOrNull($this->payload['dataUri'] ?? null);
     }
 
     /** Alias of dataUri(). */

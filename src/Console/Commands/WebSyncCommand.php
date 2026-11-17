@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Console\Commands;
 
 use Illuminate\Console\Command;
@@ -29,7 +31,7 @@ class WebSyncCommand extends Command
         $limit = max(1, min(500, (int) $this->option('limit')));
 
         try {
-            $chatIds = $this->option('chat') ?: $importer->recentChatIds($session, (int) $this->option('chats'));
+            $chatIds = (array) $this->option('chat') ?: $importer->recentChatIds($session, (int) $this->option('chats'));
         } catch (SidecarException $e) {
             $this->error("Couldn't list chats for {$session}: {$e->getMessage()}");
 
