@@ -214,6 +214,15 @@ No body.
 { "subject": "New name" }
 ```
 
+### `PUT /sessions/:id/groups/:groupId/settings/messages`
+### `PUT /sessions/:id/groups/:groupId/settings/info`
+
+```json
+{ "adminsOnly": true }
+```
+
+`messages`: only admins can send. `info`: only admins can edit the subject, description and picture. Returns `{ ok: true, adminsOnly }`. 403 when WhatsApp refuses the change (you are not an admin), 404 when the chat is not a group. Admin only.
+
 ### `GET /sessions/:id/contacts`
 
 ```json

@@ -16,6 +16,8 @@ class WebChatAdminTest extends TestCase
 
     protected const CHAT = '966512345678@c.us';
 
+    protected const GROUP = '120363000000000001@g.us';
+
     protected function webSession(string $response = '{"ok":true}'): WebSession
     {
         $client = $this->app->make(WebClient::class);
@@ -80,5 +82,23 @@ class WebChatAdminTest extends TestCase
         $this->assertSame('PUT', $this->lastRequest()?->getMethod());
         $this->assertStringEndsWith('sessions/main/about', $this->lastUri());
         $this->assertSame(['about' => 'On holiday until Monday'], $this->lastBody());
+    }
+
+    public function test_group_settings_put_admins_only_per_setting(): void
+    {
+        $cases = [
+            'restrictMessagesToAdmins' => ['messages', true],
+            'openMessagesToAll' => ['messages', false],
+            'restrictInfoToAdmins' => ['info', true],
+            'openInfoToAll' => ['info', false],
+        ];
+
+        foreach ($cases as $method => [$setting, $adminsOnly]) {
+            $this->webSession()->groups()->{$method}(self::GROUP);
+
+            $this->assertSame('PUT', $this->lastRequest()?->getMethod());
+            $this->assertStringEndsWith("sessions/main/groups/120363000000000001%40g.us/settings/{$setting}", $this->lastUri(), $method);
+            $this->assertSame(['adminsOnly' => $adminsOnly], $this->lastBody(), $method);
+        }
     }
 }

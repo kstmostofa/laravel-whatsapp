@@ -709,6 +709,25 @@ app.put('/sessions/:id/groups/:groupId/subject', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// Who may send messages / edit group info. Admin only.
+const GROUP_SETTINGS = { messages: 'setMessagesAdminsOnly', info: 'setInfoAdminsOnly' };
+
+for (const [setting, method] of Object.entries(GROUP_SETTINGS)) {
+  app.put(`/sessions/:id/groups/:groupId/settings/${setting}`, async (req, res, next) => {
+    try {
+      const s = getSession(req.params.id);
+      requireReady(s);
+      const adminsOnly = req.body?.adminsOnly;
+      if (typeof adminsOnly !== 'boolean') return res.status(400).json({ error: '`adminsOnly` must be a boolean' });
+      const chat = await s.client.getChatById(req.params.groupId);
+      if (!chat?.isGroup) return res.status(404).json({ error: 'group not found' });
+      // false means WhatsApp refused the change, in practice because we are not an admin.
+      if (!(await chat[method](adminsOnly))) return res.status(403).json({ error: 'not allowed (group admin required)' });
+      res.json({ ok: true, adminsOnly });
+    } catch (e) { next(e); }
+  });
+}
+
 app.get('/sessions/:id/contacts', async (req, res, next) => {
   try {
     const s = getSession(req.params.id);

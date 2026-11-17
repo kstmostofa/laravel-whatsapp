@@ -192,6 +192,11 @@ $groups->promoteParticipants($groupId, ['9665ZZZZZZZZ@c.us']);   // make admin
 $groups->demoteParticipants($groupId, ['9665ZZZZZZZZ@c.us']);    // remove admin
 $groups->setDescription($groupId, 'Weekly sync, Sundays 10am');
 
+$groups->restrictMessagesToAdmins($groupId);   // only admins can send
+$groups->openMessagesToAll($groupId);
+$groups->restrictInfoToAdmins($groupId);       // only admins can edit subject, description, picture
+$groups->openInfoToAll($groupId);
+
 $groups->inviteLink($groupId);     // ['code' => 'AbC…', 'link' => 'https://chat.whatsapp.com/AbC…']
 $groups->revokeInvite($groupId);   // old link stops working; returns the new one
 ```
