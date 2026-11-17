@@ -154,7 +154,10 @@ class WhatsAppFake extends CloudClient
             };
         }
 
-        return ['success' => true];
+        // The sidecar answers {ok: true}, Meta {success: true}; `success` stays on both for existing tests.
+        return $backend === Backend::Web->value
+            ? ['ok' => true, 'success' => true]
+            : ['success' => true];
     }
 
     // ---------------------------------------------------------------- inspection

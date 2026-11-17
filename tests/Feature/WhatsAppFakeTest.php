@@ -80,4 +80,14 @@ class WhatsAppFakeTest extends TestCase
 
         WhatsApp::assertSentTo('+966512345678');
     }
+
+    public function test_non_send_calls_answer_with_each_backends_real_shape(): void
+    {
+        WhatsApp::fake();
+
+        // The sidecar answers {ok: true}; `success` is kept for tests written against the old fake.
+        $this->assertSame(['ok' => true, 'success' => true], WhatsApp::web('main')->messages()->delete('true_1@c.us_X'));
+        // Meta answers {success: true}.
+        $this->assertSame(['success' => true], WhatsApp::messages()->markAsRead('wamid.X'));
+    }
 }
