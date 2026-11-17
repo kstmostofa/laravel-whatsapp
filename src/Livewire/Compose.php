@@ -90,7 +90,7 @@ class Compose extends Component
 
         try {
             $response = $this->dispatchSend();
-            $this->result = json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+            $this->result = json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR);
             $this->body = $this->mediaUrl = $this->caption = '';
             $this->templateParams = [];
         } catch (CloudApiException|SidecarException $e) {
