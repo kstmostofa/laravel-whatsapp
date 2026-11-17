@@ -396,7 +396,12 @@ class ChatHistory extends Component
         $file = $this->attachment;
         $mime = $file->getMimeType() ?: 'application/octet-stream';
         $name = $file->getClientOriginalName();
-        $base64 = base64_encode(file_get_contents($file->getRealPath()));
+        // SidecarException is what send() shows to the user; never send an empty file.
+        $contents = file_get_contents($file->getRealPath());
+        if ($contents === false) {
+            throw new SidecarException("Couldn't read the attachment.");
+        }
+        $base64 = base64_encode($contents);
         $caption = trim($this->reply) !== '' ? $this->reply : null;
 
         $messages = app(WebClient::class)->session($this->session)->messages();

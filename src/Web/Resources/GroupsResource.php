@@ -87,7 +87,10 @@ class GroupsResource extends Resource
      */
     public function inviteLink(string $groupId): array
     {
-        return $this->request('GET', "{$this->endpoint()}/".rawurlencode($groupId).'/invite');
+        /** @var array{code: ?string, link: ?string} $response  shape defined by sidecar/index.js */
+        $response = $this->request('GET', "{$this->endpoint()}/".rawurlencode($groupId).'/invite');
+
+        return $response;
     }
 
     /**
@@ -97,7 +100,10 @@ class GroupsResource extends Resource
      */
     public function revokeInvite(string $groupId): array
     {
-        return $this->request('POST', "{$this->endpoint()}/".rawurlencode($groupId).'/invite/revoke');
+        /** @var array{code: ?string, link: ?string} $response  shape defined by sidecar/index.js */
+        $response = $this->request('POST', "{$this->endpoint()}/".rawurlencode($groupId).'/invite/revoke');
+
+        return $response;
     }
 
     /**

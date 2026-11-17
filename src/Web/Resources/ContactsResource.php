@@ -38,6 +38,9 @@ class ContactsResource extends Resource
     {
         $normalized = preg_replace('/\D+/', '', $number) ?? '';
 
-        return $this->request('GET', "{$this->endpoint()}/".rawurlencode($normalized).'/exists');
+        /** @var array{number: string, exists: bool} $response  shape defined by sidecar/index.js */
+        $response = $this->request('GET', "{$this->endpoint()}/".rawurlencode($normalized).'/exists');
+
+        return $response;
     }
 }

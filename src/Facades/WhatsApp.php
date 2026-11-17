@@ -73,7 +73,7 @@ class WhatsApp extends Facade
      */
     public static function fake(): WhatsAppFake
     {
-        $config = static::$app['config'];
+        $config = config();
 
         $fake = new WhatsAppFake(
             $config->get('laravel-whatsapp.phone_number_id'),
