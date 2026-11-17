@@ -21,7 +21,7 @@ trait ListensForBroadcasts
     }
 
     /**
-     * @param  array<int, string>  $sessionIds
+     * @param  array<int, ?string>  $sessionIds  null and '' are skipped
      * @param  array<string, string>  $events  broadcastAs name => method
      * @return array<string, string>
      */

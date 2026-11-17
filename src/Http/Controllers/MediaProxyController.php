@@ -88,18 +88,20 @@ class MediaProxyController extends Controller
             return null; // table or columns missing
         }
 
-        if (! $message) {
+        $path = $message?->media_path;
+
+        if ($path === null) {
             return null;
         }
 
         $disk = app(MediaStore::class)->disk();
-        $stream = $disk->exists($message->media_path) ? $disk->readStream($message->media_path) : null;
+        $stream = $disk->exists($path) ? $disk->readStream($path) : null;
 
         if (! is_resource($stream)) {
             return null;
         }
 
-        $filename = $message->payload['filename'] ?? basename($message->media_path);
+        $filename = $message->payload['filename'] ?? basename($path);
 
         return new StreamedResponse(function () use ($stream) {
             fpassthru($stream);

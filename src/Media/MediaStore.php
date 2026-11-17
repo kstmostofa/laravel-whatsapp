@@ -125,7 +125,7 @@ class MediaStore
      */
     protected function fetchFromCloud(WaMessage $message): array
     {
-        $mediaId = (string) $message->payload[$message->type]['id'];
+        $mediaId = (string) ($message->payload[$message->type]['id'] ?? '');
         $media = $this->container->make(CloudClient::class)->media((string) $message->session_id);
 
         $mime = (string) ($media->info($mediaId)['mime_type'] ?? $message->payload[$message->type]['mime_type'] ?? 'application/octet-stream');
