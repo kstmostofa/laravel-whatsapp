@@ -22,6 +22,7 @@ const { dedupeContacts } = require('./contacts');
 const { sendAndCapture, bodyMatcher } = require('./send-capture');
 const { runMessageAction } = require('./page-actions');
 const { ensureEditHook, editDeduper } = require('./edit-hook');
+const { unmuteDateFrom } = require('./chat-admin');
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '127.0.0.1';
@@ -576,6 +577,27 @@ app.post('/sessions/:id/chats/:chatId/seen', async (req, res, next) => {
     requireReady(s);
     const ok = await s.client.sendSeen(req.params.chatId);
     res.json({ ok: ok !== false });
+  } catch (e) { next(e); }
+});
+
+// Mute notifications for a chat, until a unix timestamp or forever.
+// muteExpiration is -1 when muted forever, 0 when not muted.
+app.post('/sessions/:id/chats/:chatId/mute', async (req, res, next) => {
+  try {
+    const s = getSession(req.params.id);
+    requireReady(s);
+    const until = unmuteDateFrom(req.body?.until);
+    const { isMuted, muteExpiration } = await s.client.muteChat(normalizeWaId(req.params.chatId), until);
+    res.json({ ok: true, isMuted, muteExpiration });
+  } catch (e) { next(e); }
+});
+
+app.post('/sessions/:id/chats/:chatId/unmute', async (req, res, next) => {
+  try {
+    const s = getSession(req.params.id);
+    requireReady(s);
+    const { isMuted, muteExpiration } = await s.client.unmuteChat(normalizeWaId(req.params.chatId));
+    res.json({ ok: true, isMuted, muteExpiration });
   } catch (e) { next(e); }
 });
 

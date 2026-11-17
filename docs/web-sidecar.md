@@ -146,6 +146,19 @@ WhatsApp::web('main')->messages()->sendImage('+9665...', ['url' => $url, 'quoted
 
 Messages from the sidecar carry a `quoted` field when they reply to something: `{ stanzaId, body, type, from }`, enough to draw the quote without another lookup.
 
+## Chats
+
+```php
+$session = WhatsApp::web('main');
+
+$session->markChatSeen('9665XXXXXXXX@c.us');                   // read receipts, clears the unread counter
+$session->muteChat('9665XXXXXXXX@c.us');                       // mute forever
+$session->muteChat('9665XXXXXXXX@c.us', now()->addHours(8));   // mute until a time
+$session->unmuteChat('9665XXXXXXXX@c.us');
+```
+
+`muteChat()` and `unmuteChat()` return `['ok' => true, 'isMuted' => bool, 'muteExpiration' => int]`. `muteExpiration` is a unix timestamp, `-1` when muted forever.
+
 ## Groups
 
 ```php

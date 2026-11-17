@@ -143,6 +143,11 @@ Recent messages in one chat, oldest first, in the same shape as the `message` ev
 
 Marks the chat as read: sends read receipts and clears its unread counter. No body. Returns `{ ok: true }`. The admin UI calls this when you open a conversation.
 
+### `POST /sessions/:id/chats/:chatId/mute`
+### `POST /sessions/:id/chats/:chatId/unmute`
+
+Mute body is optional: `{ "until": 1767229200 }` (unix seconds, must be in the future). Without `until` the chat is muted forever. Returns `{ ok: true, isMuted, muteExpiration }`, where `muteExpiration` is `-1` for forever and `0` when not muted. Unmute takes no body.
+
 ### `GET /sessions/:id/groups`
 
 ```json

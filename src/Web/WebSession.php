@@ -116,6 +116,26 @@ class WebSession
     }
 
     /**
+     * Silence notifications for a chat until `$until`, or forever when null.
+     *
+     * @return array{ok: bool, isMuted: bool, muteExpiration: int} muteExpiration is -1 when muted forever
+     */
+    public function muteChat(string $chatId, ?\DateTimeInterface $until = null): array
+    {
+        $options = $until === null ? [] : ['json' => ['until' => $until->getTimestamp()]];
+
+        return $this->client->request('POST', "sessions/{$this->sessionId}/chats/".rawurlencode($chatId).'/mute', $options);
+    }
+
+    /**
+     * @return array{ok: bool, isMuted: bool, muteExpiration: int}
+     */
+    public function unmuteChat(string $chatId): array
+    {
+        return $this->client->request('POST', "sessions/{$this->sessionId}/chats/".rawurlencode($chatId).'/unmute');
+    }
+
+    /**
      * Recent messages in a chat, oldest first, in the same shape as the
      * `message` event. The sidecar caps `$limit` at 500.
      *
