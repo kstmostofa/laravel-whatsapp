@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kstmostofa\LaravelWhatsApp\Livewire;
 
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Kstmostofa\LaravelWhatsApp\Exceptions\SidecarException;
 use Kstmostofa\LaravelWhatsApp\Livewire\Concerns\ForwardsMessages;
@@ -154,6 +155,34 @@ class ChatHistory extends Component
      */
     public function render()
     {
+        $chats = $this->chatList();
+        ['messages' => $messages, 'hasOlder' => $hasOlder] = $this->thread();
+
+        // Names for group senders and for people in quoted replies.
+        $contacts = app(ContactNames::class);
+        $names = $contacts->lookup($messages->flatMap(fn ($m) => [$m->from_id, $m->payload['quoted']['from'] ?? null]));
+
+        return view('laravel-whatsapp::livewire.chat-history', [
+            'contacts' => $contacts,
+            'names' => $names,
+            'isGroupChat' => str_ends_with((string) $this->selectedChat, '@g.us'),
+            'forwardTargets' => $this->forwardTargets($chats),
+            'replyTarget' => $this->replyingTo ? $this->findMessage($this->replyingTo) : null,
+            'quickReactions' => self::QUICK_REACTIONS,
+            'chats' => $chats,
+            'messages' => $messages,
+            'hasOlder' => $hasOlder,
+            'pollInterval' => $this->pollInterval(),
+        ]);
+    }
+
+    /**
+     * The sidebar: chats from the sidecar, searched, newest first, capped.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function chatList(): array
+    {
         $chats = [];
         try {
             // Cache the sidecar chats list for a few seconds so wire:poll doesn't
@@ -190,6 +219,17 @@ class ChatHistory extends Component
             }
         }
 
+        return $chats;
+    }
+
+    /**
+     * The open conversation: the newest `messagesLimit` messages, oldest first,
+     * and whether older ones exist.
+     *
+     * @return array{messages: Collection<int, WaMessage>, hasOlder: bool}
+     */
+    protected function thread(): array
+    {
         $messages = collect();
         $hasOlder = false;
 
@@ -223,21 +263,6 @@ class ChatHistory extends Component
             }
         }
 
-        // Names for group senders and for people in quoted replies.
-        $contacts = app(ContactNames::class);
-        $names = $contacts->lookup($messages->flatMap(fn ($m) => [$m->from_id, $m->payload['quoted']['from'] ?? null]));
-
-        return view('laravel-whatsapp::livewire.chat-history', [
-            'contacts' => $contacts,
-            'names' => $names,
-            'isGroupChat' => str_ends_with((string) $this->selectedChat, '@g.us'),
-            'forwardTargets' => $this->forwardTargets($chats),
-            'replyTarget' => $this->replyingTo ? $this->findMessage($this->replyingTo) : null,
-            'quickReactions' => self::QUICK_REACTIONS,
-            'chats' => $chats,
-            'messages' => $messages,
-            'hasOlder' => $hasOlder,
-            'pollInterval' => $this->pollInterval(),
-        ]);
+        return ['messages' => $messages, 'hasOlder' => $hasOlder];
     }
 }
