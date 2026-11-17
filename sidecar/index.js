@@ -21,7 +21,6 @@ const { checkStuckSession, defaultCreateInfo } = require('./ready-watchdog');
 const { dedupeContacts } = require('./contacts');
 const { sendAndCapture, bodyMatcher } = require('./send-capture');
 const { runMessageAction } = require('./page-actions');
-const { ensureMediaPatch } = require('./media-patch');
 const { ensureEditHook, editDeduper } = require('./edit-hook');
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
@@ -467,7 +466,6 @@ app.post('/sessions/:id/messages', async (req, res, next) => {
       case 'document':
       case 'sticker': {
         const media = await buildOutgoingMedia(b);
-        await ensureMediaPatch(s.client.pupPage);
         const options = {
           caption: b.caption,
           sendMediaAsSticker: b.type === 'sticker',
