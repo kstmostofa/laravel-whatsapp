@@ -38,9 +38,12 @@ class GroupsResource extends Resource
      */
     public function join(string $invite): array
     {
-        return $this->request('POST', "{$this->endpoint()}/join", [
+        /** @var array{ok: bool, id: string} $response  shape defined by sidecar/index.js */
+        $response = $this->request('POST', "{$this->endpoint()}/join", [
             'json' => compact('invite'),
         ]);
+
+        return $response;
     }
 
     /**
@@ -184,8 +187,11 @@ class GroupsResource extends Resource
      */
     protected function updateSetting(string $groupId, string $setting, bool $adminsOnly): array
     {
-        return $this->request('PUT', "{$this->endpoint()}/".rawurlencode($groupId)."/settings/{$setting}", [
+        /** @var array{ok: bool, adminsOnly: bool} $response  shape defined by sidecar/index.js */
+        $response = $this->request('PUT', "{$this->endpoint()}/".rawurlencode($groupId)."/settings/{$setting}", [
             'json' => compact('adminsOnly'),
         ]);
+
+        return $response;
     }
 }
