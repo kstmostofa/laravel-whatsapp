@@ -122,40 +122,48 @@ class SidecarCommandsTest extends TestCase
             ->assertSuccessful();
     }
 
-    public function test_install_passes_skip_chromium_env_to_the_manager(): void
+    /**
+     * Binaries that exist on any test machine, and no Puppeteer cache to sweep.
+     */
+    private function installPrerequisites(string $node = PHP_BINARY, string $npm = PHP_BINARY): void
     {
-        // Point both binaries at the running PHP so checkBinary() passes without Node installed.
         config([
-            'laravel-whatsapp.web.sidecar.node_binary' => PHP_BINARY,
-            'laravel-whatsapp.web.sidecar.npm_binary' => PHP_BINARY,
+            'laravel-whatsapp.web.sidecar.node_binary' => $node,
+            'laravel-whatsapp.web.sidecar.npm_binary' => $npm,
         ]);
         putenv('PUPPETEER_CACHE_DIR='.sys_get_temp_dir().'/wa-test-missing-cache');
+        $this->beforeApplicationDestroyed(fn () => putenv('PUPPETEER_CACHE_DIR'));
+    }
 
+    public function test_install_passes_skip_chromium_env_to_the_manager(): void
+    {
+        $this->installPrerequisites();
         $this->manager(fn (MockInterface $m) => $m->shouldReceive('install')->once()
             ->withArgs(fn ($onOutput, $env) => $env === ['PUPPETEER_SKIP_DOWNLOAD' => 'true', 'PUPPETEER_SKIP_CHROMIUM_DOWNLOAD' => 'true']));
 
         $this->artisan('whatsapp:sidecar:install', ['--skip-chromium' => true])
             ->expectsOutputToContain('Sidecar installed.')
             ->assertSuccessful();
-
-        putenv('PUPPETEER_CACHE_DIR');
     }
 
     public function test_install_failure_prints_puppeteer_recovery_hints(): void
     {
-        config([
-            'laravel-whatsapp.web.sidecar.node_binary' => PHP_BINARY,
-            'laravel-whatsapp.web.sidecar.npm_binary' => PHP_BINARY,
-        ]);
-        putenv('PUPPETEER_CACHE_DIR='.sys_get_temp_dir().'/wa-test-missing-cache');
-
+        $this->installPrerequisites();
         $this->manager(fn (MockInterface $m) => $m->shouldReceive('install')
             ->andThrow(new SidecarException('npm install failed: puppeteer could not download Chrome')));
 
         $this->artisan('whatsapp:sidecar:install')
             ->expectsOutputToContain('Puppeteer install failed. Try one of:')
             ->assertFailed();
+    }
 
-        putenv('PUPPETEER_CACHE_DIR');
+    public function test_install_fails_without_installing_when_a_binary_is_missing(): void
+    {
+        $this->installPrerequisites(npm: 'wa-test-no-such-npm');
+        $this->manager(fn (MockInterface $m) => $m->shouldNotReceive('install'));
+
+        $this->artisan('whatsapp:sidecar:install')
+            ->expectsOutputToContain('npm (`wa-test-no-such-npm`) not found on PATH.')
+            ->assertFailed();
     }
 }

@@ -19,8 +19,10 @@ class SidecarInstallCommand extends Command
 
     public function handle(SidecarManager $manager): int
     {
-        $this->checkBinary(config('laravel-whatsapp.web.sidecar.node_binary'), 'Node.js');
-        $this->checkBinary(config('laravel-whatsapp.web.sidecar.npm_binary'), 'npm');
+        if (! $this->checkBinary((string) config('laravel-whatsapp.web.sidecar.node_binary'), 'Node.js')
+            || ! $this->checkBinary((string) config('laravel-whatsapp.web.sidecar.npm_binary'), 'npm')) {
+            return self::FAILURE;
+        }
 
         $this->cleanCorruptCacheDirs();
 
@@ -181,17 +183,18 @@ class SidecarInstallCommand extends Command
         }
     }
 
-    protected function checkBinary(string $binary, string $label): void
+    protected function checkBinary(string $binary, string $label): bool
     {
         // ExecutableFinder resolves against PATH (and PATHEXT on Windows, so
         // `node` matches node.exe / npm.cmd). An absolute path in config is
         // accepted as-is. This replaces a hard-coded `which`, which does not
         // exist on Windows and made the check always fail there.
         if (is_file($binary) || (new ExecutableFinder)->find($binary) !== null) {
-            return;
+            return true;
         }
 
         $this->error("{$label} (`{$binary}`) not found on PATH. Install it before running this command.");
-        exit(self::FAILURE);
+
+        return false;
     }
 }
