@@ -27,6 +27,25 @@ class WhatsAppFakeTest extends TestCase
         WhatsApp::assertNotSentTo('966500000000');
     }
 
+    public function test_web_contact_cards_can_be_asserted(): void
+    {
+        WhatsApp::fake();
+
+        WhatsApp::web('main')->messages()->sendContacts('966598765432@c.us', ['966511111111@c.us']);
+
+        WhatsApp::assertSentTo('966598765432', fn (SentMessage $m) => $m->type === 'contacts'
+            && $m->payload['contactIds'] === ['966511111111@c.us']);
+    }
+
+    public function test_web_mentions_can_be_asserted(): void
+    {
+        WhatsApp::fake();
+
+        WhatsApp::web('main')->messages()->sendText('1203639999@g.us', 'hi @966511111111', options: ['mentions' => ['966511111111@c.us']]);
+
+        WhatsApp::assertSentTo('1203639999@g.us', fn (SentMessage $m) => $m->payload['mentions'] === ['966511111111@c.us']);
+    }
+
     public function test_one_line_send_and_queued_job_go_through_the_fake(): void
     {
         WhatsApp::fake();
