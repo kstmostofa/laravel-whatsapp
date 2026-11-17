@@ -22,6 +22,7 @@ const { dedupeContacts, contactCardIds } = require('./contacts');
 const { sendAndCapture, bodyMatcher, contactCardMatcher } = require('./send-capture');
 const { runMessageAction } = require('./page-actions');
 const { ensureEditHook, editDeduper } = require('./edit-hook');
+const { mentionOptions, serializeMentions } = require('./mentions');
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '127.0.0.1';
@@ -140,6 +141,7 @@ function serializeMessage(m) {
     ack: typeof m.ack === 'number' ? m.ack : null,
     // Raw vCard text of each contact card in a `vcard` / `multi_vcard` message.
     vCards: Array.isArray(m.vCards) ? m.vCards : [],
+    ...serializeMentions(m),
   };
 }
 
@@ -441,11 +443,11 @@ app.post('/sessions/:id/messages', async (req, res, next) => {
     let result;
     switch (b.type) {
       case 'text':
-        result = await sendCaptured(s, to, b.body ?? '', b.quotedMessageId ? { quotedMessageId: b.quotedMessageId } : {}, b.body);
+        result = await sendCaptured(s, to, b.body ?? '', { ...(b.quotedMessageId ? { quotedMessageId: b.quotedMessageId } : {}), ...mentionOptions(b) }, b.body);
         break;
 
       case 'reply':
-        result = await sendCaptured(s, to, b.body ?? '', { quotedMessageId: b.quotedMessageId }, b.body);
+        result = await sendCaptured(s, to, b.body ?? '', { quotedMessageId: b.quotedMessageId, ...mentionOptions(b) }, b.body);
         break;
 
       case 'image':

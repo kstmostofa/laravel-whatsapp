@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Web contact cards**: `WhatsApp::web($id)->messages()->sendContacts($to, $contactIds)`
   sends one or more vCards. Received messages carry a `vCards` field.
+- **Web mentions**: `sendText()` and `reply()` on `WhatsApp::web($id)->messages()`
+  take `options: ['mentions' => [...], 'groupMentions' => [...]]` to tag users
+  and groups. Received messages carry `mentionedIds` and `groupMentions`.
 
 ### Changed
 - The sidecar now pins whatsapp-web.js to exactly `1.34.8` (was `^1.23.0`,
