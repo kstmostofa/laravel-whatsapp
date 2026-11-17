@@ -8,6 +8,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Cache;
 use Kstmostofa\LaravelWhatsApp\Events\Web\MessageReaction;
 use Kstmostofa\LaravelWhatsApp\Exceptions\SidecarException;
+use Kstmostofa\LaravelWhatsApp\Livewire\Concerns\ForwardsMessages;
 use Kstmostofa\LaravelWhatsApp\Livewire\Concerns\ListensForBroadcasts;
 use Kstmostofa\LaravelWhatsApp\Livewire\Concerns\SendsReplies;
 use Kstmostofa\LaravelWhatsApp\Models\WaMessage;
@@ -24,6 +25,7 @@ use Livewire\WithFileUploads;
 #[Layout('laravel-whatsapp::layouts.app')]
 class ChatHistory extends Component
 {
+    use ForwardsMessages;
     use ListensForBroadcasts;
     use SendsReplies;
     use WithFileUploads;
@@ -42,12 +44,6 @@ class ChatHistory extends Component
     public bool $showDeleteConfirm = false;
 
     public ?string $deletingMessageId = null;
-
-    public bool $showForward = false;
-
-    public ?string $forwardingId = null;
-
-    public string $forwardSearch = '';
 
     public ?string $notice = null;
 
@@ -232,37 +228,6 @@ class ChatHistory extends Component
         }
     }
 
-    public function startForward(string $wamId): void
-    {
-        $this->forwardingId = $wamId;
-        $this->forwardSearch = '';
-        $this->showForward = true;
-    }
-
-    public function cancelForward(): void
-    {
-        $this->showForward = false;
-        $this->forwardingId = null;
-    }
-
-    public function forwardTo(string $chatId): void
-    {
-        if (! $this->forwardingId) {
-            return;
-        }
-
-        $this->error = null;
-
-        try {
-            app(WebClient::class)->session($this->session)->messages()->forward($this->forwardingId, $chatId);
-            $this->notice = 'Message forwarded.';
-        } catch (SidecarException $e) {
-            $this->error = $e->getMessage();
-        }
-
-        $this->cancelForward();
-    }
-
     protected function findMessage(string $wamId): ?WaMessage
     {
         try {
@@ -394,15 +359,6 @@ class ChatHistory extends Component
             }
         }
 
-        $forwardTargets = [];
-        if ($this->showForward) {
-            $needle = mb_strtolower($this->forwardSearch);
-            $forwardTargets = array_values(array_filter(
-                $chats,
-                fn ($c) => $needle === '' || str_contains(mb_strtolower(($c['name'] ?? '').' '.($c['id'] ?? '')), $needle),
-            ));
-        }
-
         // Names for group senders and for people in quoted replies.
         $contacts = app(ContactNames::class);
         $names = $contacts->lookup($messages->flatMap(fn ($m) => [$m->from_id, $m->payload['quoted']['from'] ?? null]));
@@ -411,7 +367,7 @@ class ChatHistory extends Component
             'contacts' => $contacts,
             'names' => $names,
             'isGroupChat' => str_ends_with((string) $this->selectedChat, '@g.us'),
-            'forwardTargets' => array_slice($forwardTargets, 0, 30),
+            'forwardTargets' => $this->forwardTargets($chats),
             'replyTarget' => $this->replyingTo ? $this->findMessage($this->replyingTo) : null,
             'quickReactions' => self::QUICK_REACTIONS,
             'chats' => $chats,
