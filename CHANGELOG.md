@@ -18,9 +18,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Web contact cards**: `WhatsApp::web($id)->messages()->sendContacts($to, $contactIds)`
   sends one or more vCards. Received messages carry a `vCards` field.
-- **Web mentions**: `sendText()` and `reply()` on `WhatsApp::web($id)->messages()`
+- **Web mentions**: `sendText()`, `reply()` and the captions of `sendImage()`,
+  `sendVideo()` and `sendDocument()` on `WhatsApp::web($id)->messages()`
   take `options: ['mentions' => [...], 'groupMentions' => [...]]` to tag users
   and groups. Received messages carry `mentionedIds` and `groupMentions`.
+- **Mute chats** on the Web backend: `WhatsApp::web('main')->muteChat($chatId, $until)`
+  (forever when `$until` is null) and `unmuteChat($chatId)`.
+- **Block contacts** on the Web backend: `contacts()->block($contactId)` and
+  `contacts()->unblock($contactId)`.
+- **Set the profile About text** on the Web backend:
+  `WhatsApp::web('main')->setAbout($text)`. Named `setAbout` because
+  `status()` already posts to Status / Stories.
+- **Group settings** on the Web backend: `groups()->restrictMessagesToAdmins()`,
+  `openMessagesToAll()`, `restrictInfoToAdmins()` and `openInfoToAll()`.
+- **Join a group by invite** on the Web backend: `groups()->join($invite)` takes
+  the invite code or the full `https://chat.whatsapp.com/…` link.
+- **`WhatsApp::assertRequested()`** on the fake checks calls that change
+  state without sending a message, by HTTP method, sidecar path and
+  optionally the JSON body.
 - `Backend`, `Direction` and `WebhookStatus` enums. `WhatsApp::send()`,
   `MessageRouter::sendText()` and `resolveBackend()` accept
   `Backend::Cloud` / `Backend::Web` as well as the strings.

@@ -23,6 +23,7 @@ const { sendAndCapture, bodyMatcher, contactCardMatcher } = require('./send-capt
 const { runMessageAction } = require('./page-actions');
 const { ensureEditHook, editDeduper } = require('./edit-hook');
 const { mentionOptions, serializeMentions } = require('./mentions');
+const { unmuteDateFrom, parseInviteCode } = require('./chat-admin');
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '127.0.0.1';
@@ -461,6 +462,7 @@ app.post('/sessions/:id/messages', async (req, res, next) => {
           sendMediaAsSticker: b.type === 'sticker',
           sendMediaAsDocument: b.type === 'document',
           sendAudioAsVoice: b.sendAudioAsVoice === true && b.type === 'audio',
+          ...mentionOptions(b),
         };
         if (b.quotedMessageId) options.quotedMessageId = b.quotedMessageId;
         result = await sendCaptured(s, to, media, options, b.caption);
@@ -580,6 +582,27 @@ app.post('/sessions/:id/chats/:chatId/seen', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// Mute notifications for a chat, until a unix timestamp or forever.
+// muteExpiration is -1 when muted forever, 0 when not muted.
+app.post('/sessions/:id/chats/:chatId/mute', async (req, res, next) => {
+  try {
+    const s = getSession(req.params.id);
+    requireReady(s);
+    const until = unmuteDateFrom(req.body?.until);
+    const { isMuted, muteExpiration } = await s.client.muteChat(normalizeWaId(req.params.chatId), until);
+    res.json({ ok: true, isMuted, muteExpiration });
+  } catch (e) { next(e); }
+});
+
+app.post('/sessions/:id/chats/:chatId/unmute', async (req, res, next) => {
+  try {
+    const s = getSession(req.params.id);
+    requireReady(s);
+    const { isMuted, muteExpiration } = await s.client.unmuteChat(normalizeWaId(req.params.chatId));
+    res.json({ ok: true, isMuted, muteExpiration });
+  } catch (e) { next(e); }
+});
+
 app.get('/sessions/:id/groups', async (req, res, next) => {
   try {
     const s = getSession(req.params.id);
@@ -600,6 +623,16 @@ app.post('/sessions/:id/groups', async (req, res, next) => {
     const name = req.body?.name ?? req.body?.subject;
     const group = await s.client.createGroup(name, participants || []);
     res.json(group);
+  } catch (e) { next(e); }
+});
+
+// Join a group through its invite. `invite` is the code or the full link.
+app.post('/sessions/:id/groups/join', async (req, res, next) => {
+  try {
+    const s = getSession(req.params.id);
+    requireReady(s);
+    const id = await s.client.acceptInvite(parseInviteCode(req.body?.invite));
+    res.json({ ok: true, id });
   } catch (e) { next(e); }
 });
 
@@ -688,6 +721,25 @@ app.put('/sessions/:id/groups/:groupId/subject', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// Who may send messages / edit group info. Admin only.
+const GROUP_SETTINGS = { messages: 'setMessagesAdminsOnly', info: 'setInfoAdminsOnly' };
+
+for (const [setting, method] of Object.entries(GROUP_SETTINGS)) {
+  app.put(`/sessions/:id/groups/:groupId/settings/${setting}`, async (req, res, next) => {
+    try {
+      const s = getSession(req.params.id);
+      requireReady(s);
+      const adminsOnly = req.body?.adminsOnly;
+      if (typeof adminsOnly !== 'boolean') return res.status(400).json({ error: '`adminsOnly` must be a boolean' });
+      const chat = await s.client.getChatById(req.params.groupId);
+      if (!chat?.isGroup) return res.status(404).json({ error: 'group not found' });
+      // false means WhatsApp refused the change, in practice because we are not an admin.
+      if (!(await chat[method](adminsOnly))) return res.status(403).json({ error: 'not allowed (group admin required)' });
+      res.json({ ok: true, adminsOnly });
+    } catch (e) { next(e); }
+  });
+}
+
 app.get('/sessions/:id/contacts', async (req, res, next) => {
   try {
     const s = getSession(req.params.id);
@@ -724,6 +776,20 @@ app.get('/sessions/:id/contacts/:number/exists', async (req, res, next) => {
     res.json({ number: req.params.number, exists });
   } catch (e) { next(e); }
 });
+
+for (const action of ['block', 'unblock']) {
+  app.post(`/sessions/:id/contacts/:contactId/${action}`, async (req, res, next) => {
+    try {
+      const s = getSession(req.params.id);
+      requireReady(s);
+      const contact = await s.client.getContactById(normalizeWaId(req.params.contactId));
+      // whatsapp-web.js silently returns false for groups; say why instead.
+      if (contact.isGroup) return res.status(400).json({ error: `groups cannot be ${action}ed; use leave instead` });
+      await contact[action]();
+      res.json({ ok: true, isBlocked: action === 'block' });
+    } catch (e) { next(e); }
+  });
+}
 
 // Helper: race a promise against a timeout — returns null if the inner promise
 // doesn't resolve within `ms`. Used to keep slow WhatsApp lookups from
@@ -805,6 +871,19 @@ app.post('/sessions/:id/status', async (req, res, next) => {
     }
 
     res.json(serializeMessage(result) || { ok: true });
+  } catch (e) { next(e); }
+});
+
+// The profile "About" text. whatsapp-web.js calls it setStatus(), which is
+// unrelated to Status / Stories above.
+app.put('/sessions/:id/about', async (req, res, next) => {
+  try {
+    const s = getSession(req.params.id);
+    requireReady(s);
+    const about = req.body?.about;
+    if (typeof about !== 'string') return res.status(400).json({ error: '`about` must be a string' });
+    await s.client.setStatus(about);
+    res.json({ ok: true });
   } catch (e) { next(e); }
 });
 

@@ -44,6 +44,13 @@ WhatsApp::assertTemplateSent('order_ready', '+966512345678');
 
 Recipients compare by digits, so `+966 51 234 5678`, `966512345678` and `966512345678@c.us` all match each other.
 
+Calls that change state without sending a message (mute, block, group settings, joining a group) are checked with `assertRequested()`. Pass the HTTP method and the sidecar path with IDs unencoded, and optionally a callback that receives the JSON body:
+
+```php
+WhatsApp::assertRequested('POST', 'sessions/main/contacts/966512345678@c.us/block');
+WhatsApp::assertRequested('PUT', 'sessions/main/about', fn (array $body) => $body['about'] === 'On holiday');
+```
+
 ## Inspecting messages
 
 `WhatsApp::sent()` returns every `SentMessage`, optionally filtered:

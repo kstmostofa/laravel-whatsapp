@@ -15,7 +15,7 @@
 | Layer | What it does |
 |---|---|
 | **Cloud API client** | Pure PHP. Templates, media, business profile, phone-number management, several numbers as named accounts, webhooks with HMAC verification. |
-| **Web sidecar** (bundled Node service) | `whatsapp-web.js` wrapped in a thin HTTP service. Personal-number QR pairing, groups and group admin, status, free-form messages anytime, contact lookup, chat history. |
+| **Web sidecar** (bundled Node service) | `whatsapp-web.js` wrapped in a thin HTTP service. Personal-number QR pairing, groups and group admin, status, free-form messages anytime, contact lookup, chat history, mute, block, profile About text. |
 | **Unified facade** | `WhatsApp::messages()->sendTemplate(...)` for Cloud, `WhatsApp::web('main')->messages()->sendText(...)` for sidecar. `WhatsApp::send($to, $body)` auto-picks. |
 | **Livewire + Flux UI** | Drop-in admin at `/whatsapp` — Dashboard, Sessions+QR, Compose, Conversations (chat-bubble UI with media, reply, reactions, forward, edit/delete, search, sound, ack ticks, live updates over broadcasting), Groups with member management, Contacts, Webhooks log with replay, Status. Compose includes a template builder. Works with Tailwind, Bootstrap, or no CSS framework at all. |
 | **Eloquent models** | Opt-in `WaSession` / `WaMessage` / `WaContact` / `WaWebhookEvent` with separate-DB support via `WHATSAPP_DB_CONNECTION`. |

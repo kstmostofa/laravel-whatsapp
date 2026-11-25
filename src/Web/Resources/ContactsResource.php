@@ -43,4 +43,29 @@ class ContactsResource extends Resource
 
         return $response;
     }
+
+    /**
+     * Block a contact: they can no longer message or call you. Accepts a WA ID
+     * or a plain phone number.
+     *
+     * @return array{ok: bool, isBlocked: bool}
+     */
+    public function block(string $contactId): array
+    {
+        /** @var array{ok: bool, isBlocked: bool} $response  shape defined by sidecar/index.js */
+        $response = $this->request('POST', "{$this->endpoint()}/".rawurlencode($contactId).'/block');
+
+        return $response;
+    }
+
+    /**
+     * @return array{ok: bool, isBlocked: bool}
+     */
+    public function unblock(string $contactId): array
+    {
+        /** @var array{ok: bool, isBlocked: bool} $response  shape defined by sidecar/index.js */
+        $response = $this->request('POST', "{$this->endpoint()}/".rawurlencode($contactId).'/unblock');
+
+        return $response;
+    }
 }
