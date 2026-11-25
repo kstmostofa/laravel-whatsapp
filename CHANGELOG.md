@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Upgrading
+- If you extend `MessageRouter` and override `sendText()` or
+  `resolveBackend()`, widen the backend parameter from `?string` to
+  `Backend|string|null`. PHP rejects the narrower override.
+
+### Added
+- `Backend`, `Direction` and `WebhookStatus` enums. Anywhere that took a
+  `WhatsApp::send()`, `MessageRouter::sendText()` and `resolveBackend()`
+  accept `Backend::Cloud` / `Backend::Web` as well as the strings.
+
+### Changed
+- Every PHP file declares `strict_types`. Config values that reach typed
+  parameters are cast first, so Cloud IDs written as integers in a
+  published config (`'phone_number_id' => 123456789012345`), a numeric
+  webhook `app_secret` and a numeric `ui.default_session` keep working.
+- The media and avatar proxies resolve their HTTP client from a
+  package-owned `laravel-whatsapp.proxy-http` binding instead of
+  `GuzzleHttp\Client`, so an app's own Guzzle binding no longer changes
+  requests that carry the sidecar token.
+- `WhatsApp::fake()` answers Web calls with `['ok' => true, 'success' => true]`,
+  the shape the sidecar returns. Cloud calls still get `['success' => true]`.
+
+### Fixed
+- `whatsapp:health --json` printed invalid JSON when a value held bad UTF-8.
+- Compose sent `"caption": null` for image and document sends without a
+  caption. The key is now left out.
+
 ## [1.2.2] - 2026-11-01
 
 Fixes the four Web sidecar features listed as known issues in 1.2.1. Each
