@@ -29,4 +29,21 @@ function dedupeContacts(contacts) {
   return [...byId.values()];
 }
 
-module.exports = { dedupeContacts };
+const { normalizeWaId } = require('./wa-id');
+
+/**
+ * Contact IDs for a contact card send (`type: 'contacts'`), normalized to
+ * WhatsApp IDs. Phone numbers are accepted, like recipients.
+ *
+ * @param {{contactIds?: any}} body  the send request body
+ * @returns {string[]}
+ */
+function contactCardIds({ contactIds }) {
+  if (!Array.isArray(contactIds) || contactIds.length === 0 || !contactIds.every((id) => typeof id === 'string' && id !== '')) {
+    throw Object.assign(new Error('contacts requires a non-empty `contactIds` array of strings'), { http: 400 });
+  }
+
+  return contactIds.map(normalizeWaId);
+}
+
+module.exports = { dedupeContacts, contactCardIds };

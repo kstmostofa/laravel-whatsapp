@@ -8,16 +8,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Upgrading
+- Run `composer update`, then re-run `php artisan whatsapp:sidecar:install`
+  and restart the sidecar. If you run a published copy of the sidecar,
+  re-publish it with `--force`.
 - If you extend `MessageRouter` and override `sendText()` or
   `resolveBackend()`, widen the backend parameter from `?string` to
   `Backend|string|null`. PHP rejects the narrower override.
 
 ### Added
-- `Backend`, `Direction` and `WebhookStatus` enums. Anywhere that took a
-  `WhatsApp::send()`, `MessageRouter::sendText()` and `resolveBackend()`
-  accept `Backend::Cloud` / `Backend::Web` as well as the strings.
+- **Web contact cards**: `WhatsApp::web($id)->messages()->sendContacts($to, $contactIds)`
+  sends one or more vCards. Received messages carry a `vCards` field.
+- **Web mentions**: `sendText()` and `reply()` on `WhatsApp::web($id)->messages()`
+  take `options: ['mentions' => [...], 'groupMentions' => [...]]` to tag users
+  and groups. Received messages carry `mentionedIds` and `groupMentions`.
+- `Backend`, `Direction` and `WebhookStatus` enums. `WhatsApp::send()`,
+  `MessageRouter::sendText()` and `resolveBackend()` accept
+  `Backend::Cloud` / `Backend::Web` as well as the strings.
 
 ### Changed
+- The sidecar now pins whatsapp-web.js to exactly `1.34.8` (was `^1.23.0`,
+  locked at 1.34.7). Its fixes for current WhatsApp Web include the
+  `id._serialized` to `id.$1` rename, duplicate `ready` events on page
+  re-injection, large media downloads and block / unblock. An exact pin keeps
+  `npm install` (without the lockfile) from picking up an untested release.
 - Every PHP file declares `strict_types`. Config values that reach typed
   parameters are cast first, so Cloud IDs written as integers in a
   published config (`'phone_number_id' => 123456789012345`), a numeric
@@ -28,6 +41,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   requests that carry the sidecar token.
 - `WhatsApp::fake()` answers Web calls with `['ok' => true, 'success' => true]`,
   the shape the sidecar returns. Cloud calls still get `['success' => true]`.
+
+### Removed
+- The sidecar's media send patch (`media-patch.js`). whatsapp-web.js 1.34.8
+  fixes the same "Data passed to getter must include an id property" error
+  itself by dropping `__x_id` from the outgoing message.
 
 ### Fixed
 - `whatsapp:health --json` printed invalid JSON when a value held bad UTF-8.
