@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   re-publish it with `--force`.
 
 ### Added
+- **Web contact cards**: `WhatsApp::web($id)->messages()->sendContacts($to, $contactIds)`
+  sends one or more vCards. Received messages carry a `vCards` field.
+- **Web mentions**: `sendText()`, `reply()` and the captions of `sendImage()`,
+  `sendVideo()` and `sendDocument()` on `WhatsApp::web($id)->messages()`
+  take `options: ['mentions' => [...], 'groupMentions' => [...]]` to tag users
+  and groups. Received messages carry `mentionedIds` and `groupMentions`.
 - **Mute chats** on the Web backend: `WhatsApp::web('main')->muteChat($chatId, $until)`
   (forever when `$until` is null) and `unmuteChat($chatId)`.
 - **Block contacts** on the Web backend: `contacts()->block($contactId)` and
