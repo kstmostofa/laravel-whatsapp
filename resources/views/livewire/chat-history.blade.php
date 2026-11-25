@@ -65,6 +65,7 @@
     }"
     x-init="$nextTick(() => scrollDown(false))"
     x-on:chat-opened.window="$nextTick(() => $nextTick(() => scrollDown(false)))"
+    x-on:message-sent.window="$nextTick(() => scrollDown(true))"
 >
     {{-- Chat list --}}
     <flux:card class="col-span-12 md:col-span-4 lg:col-span-3 !p-0 flex flex-col overflow-hidden">
@@ -179,6 +180,7 @@
             <div
                 class="flex-1 overflow-y-auto px-6 py-6 bg-zinc-50 dark:bg-wa-canvas-dark space-y-2"
                 x-ref="scroll"
+                x-init="$nextTick(() => scrollDown(false))"
                 x-effect="
                     if ({{ $newestInboundId }} > lastInboundId) {
                         const wasNearBottom = isNearBottom();

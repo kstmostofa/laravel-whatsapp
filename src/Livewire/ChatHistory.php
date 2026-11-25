@@ -373,6 +373,7 @@ class ChatHistory extends Component
             $this->reply = '';
             $this->removeAttachment();
             $this->replyingTo = null;
+            $this->dispatch('message-sent');
         } catch (SidecarException $e) {
             $this->error = $e->getMessage();
         }

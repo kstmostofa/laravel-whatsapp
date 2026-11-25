@@ -65,7 +65,8 @@ class ChatActionsTest extends TestCase
             ->set('reply', 'Yes, until 10pm')
             ->call('sendReply')
             ->assertSet('replyingTo', null)
-            ->assertDontSee('Replying to message');
+            ->assertDontSee('Replying to message')
+            ->assertDispatched('message-sent');
 
         $sent = $this->bodyOf(1);
         $this->assertSame(self::INBOUND, $sent['quotedMessageId']);
