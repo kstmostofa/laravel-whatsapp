@@ -44,7 +44,7 @@ class ProxyControllersTest extends TestCase
         $stack = HandlerStack::create(new MockHandler($responses));
         $stack->push(Middleware::history($this->sidecarRequests));
 
-        $this->app->bind(GuzzleClient::class, fn ($app, array $params) => new GuzzleClient(['handler' => $stack] + ($params['config'] ?? [])));
+        $this->app->bind('laravel-whatsapp.proxy-http', fn ($app, array $params) => new GuzzleClient(['handler' => $stack] + ($params['config'] ?? [])));
     }
 
     private function sidecarRequest(): RequestInterface

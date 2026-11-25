@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Kstmostofa\LaravelWhatsApp\Http\Controllers;
 
-use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -45,8 +44,8 @@ class MediaProxyController extends Controller
         $headers = $client->token() ? ['Authorization' => 'Bearer '.$client->token()] : [];
 
         try {
-            // Resolved through the container so tests can swap the handler.
-            $upstream = app()->make(GuzzleClient::class, ['config' => [
+            // A package-owned binding, so tests can swap the handler without touching the app's Guzzle.
+            $upstream = app()->make('laravel-whatsapp.proxy-http', ['config' => [
                 'timeout' => 30,
                 'http_errors' => false,
             ]])->get($url, [

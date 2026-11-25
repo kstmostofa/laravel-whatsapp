@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kstmostofa\LaravelWhatsApp;
 
 use Flux\FluxServiceProvider;
+use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Broadcasting\Factory;
 use Illuminate\Contracts\Cache\Repository;
@@ -94,6 +95,10 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
         $this->app->singleton(CloudAccounts::class);
 
         $this->app->singleton(InboundRouter::class);
+
+        // The media and avatar proxies use this instead of GuzzleHttp\Client, so an
+        // app's own Guzzle binding never adds headers or middleware to sidecar calls.
+        $this->app->bind('laravel-whatsapp.proxy-http', fn ($app, array $params) => new GuzzleClient($params['config'] ?? []));
 
         $this->app->singleton(SidecarManager::class, function ($app) {
             return new SidecarManager($app['config']->get('laravel-whatsapp.web'));
