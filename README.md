@@ -128,7 +128,7 @@ Full setup details + dark mode + screenshots → [docs site](https://kstmostofa.
 
 | Command | Purpose |
 |---|---|
-| `whatsapp:sidecar:install` | Clone whatsapp-web.js, `npm ci`, download Chromium |
+| `whatsapp:sidecar:install` | `npm ci` in the bundled sidecar (installs the pinned whatsapp-web.js), download Chromium |
 | `whatsapp:sidecar:start [--foreground]` / `:stop` / `:status` | Lifecycle of the Node process. `--foreground` is for Supervisor / systemd |
 | `whatsapp:web:listen [session] [--all]` | Long-running: sidecar SSE → Laravel events. `--all` covers every session in one process |
 | `whatsapp:health [--json]` [`--exit-code`] | Health probe — pipe into cron / monitoring |
