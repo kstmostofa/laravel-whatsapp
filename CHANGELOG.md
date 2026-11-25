@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-25
+
+New Web backend features: contact cards, mentions, and chat, contact and
+group admin actions. The sidecar moves to whatsapp-web.js 1.34.8, and the
+PHP code now declares `strict_types` and passes PHPStan at level 8.
+Contributed by [django23](https://github.com/django23).
+
 ### Upgrading
 - Run `composer update`, then re-run `php artisan whatsapp:sidecar:install`
   and restart the sidecar. If you run a published copy of the sidecar,
@@ -14,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - If you extend `MessageRouter` and override `sendText()` or
   `resolveBackend()`, widen the backend parameter from `?string` to
   `Backend|string|null`. PHP rejects the narrower override.
+- No migrations and no config changes.
 
 ### Added
 - **Web contact cards**: `WhatsApp::web($id)->messages()->sendContacts($to, $contactIds)`
@@ -489,7 +497,8 @@ Initial public release.
   - Laravel 11 / 12 → PHP 8.2+
   - Laravel 13 → PHP 8.4+ (Symfony 8 is pulled in transitively and requires 8.4)
 
-[Unreleased]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.2.2...HEAD
+[Unreleased]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.2.2...v1.3.0
 [1.2.2]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.1.0...v1.2.0
