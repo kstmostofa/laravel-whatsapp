@@ -373,6 +373,7 @@ class ChatHistory extends Component
             $this->reply = '';
             $this->removeAttachment();
             $this->replyingTo = null;
+            $this->dispatch('message-sent');
         } catch (SidecarException $e) {
             $this->error = $e->getMessage();
         }
@@ -515,6 +516,9 @@ class ChatHistory extends Component
             $this->error = $this->error ?? $e->getMessage();
         }
 
+        // Before search and the list cap, so the header keeps the name of a chat the list hides.
+        $selectedName = collect($chats)->firstWhere('id', $this->selectedChat)['name'] ?? null;
+
         if ($this->chatSearch !== '' && ! empty($chats)) {
             $needle = mb_strtolower($this->chatSearch);
             $chats = array_values(array_filter($chats, function ($c) use ($needle) {
@@ -592,6 +596,7 @@ class ChatHistory extends Component
             'replyTarget' => $this->replyingTo ? $this->findMessage($this->replyingTo) : null,
             'quickReactions' => self::QUICK_REACTIONS,
             'chats' => $chats,
+            'selectedName' => $selectedName,
             'messages' => $messages,
             'hasOlder' => $hasOlder,
             'pollInterval' => $this->pollInterval(),

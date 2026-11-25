@@ -20,7 +20,7 @@
             <flux:menu.item icon="arrow-uturn-right" wire:click="startForward('{{ $m->wa_message_id }}')">Forward</flux:menu.item>
             @if ($isOut)
                 @if (in_array($m->type, ['text', 'chat'], true) && $m->body)
-                    <flux:menu.item icon="pencil-square" wire:click="startEdit('{{ $m->wa_message_id }}', @js($m->body))">Edit message</flux:menu.item>
+                    <flux:menu.item icon="pencil-square" wire:click="startEdit('{{ $m->wa_message_id }}', {{ \Illuminate\Support\Js::from($m->body) }})">Edit message</flux:menu.item>
                 @endif
                 <flux:menu.separator />
                 <flux:menu.item icon="trash" variant="danger" wire:click="confirmDelete('{{ $m->wa_message_id }}')">Delete message</flux:menu.item>
