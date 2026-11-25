@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const { serializeWid, serializeMessageId } = require('../wa-id');
+const { normalizeWaId, serializeWid, serializeMessageId } = require('../wa-id');
 
 test('uses _serialized when whatsapp-web.js exposes it', () => {
   assert.equal(serializeWid({ _serialized: '9665XXXXXXXX@c.us' }), '9665XXXXXXXX@c.us');
@@ -74,4 +74,10 @@ test('a rebuilt key keeps the direction suffix', () => {
     serializeMessageId({ fromMe: false, remote: '1234567890@lid', id: '3EB0ABCD', self: 'in' }),
     'false_1234567890@lid_3EB0ABCD_in',
   );
+});
+
+test('normalizes phone numbers to c.us ids and leaves WhatsApp ids alone', () => {
+  assert.equal(normalizeWaId('+966 51 111 1111'), '966511111111@c.us');
+  assert.equal(normalizeWaId('1203630000@g.us'), '1203630000@g.us');
+  assert.equal(normalizeWaId(''), '');
 });

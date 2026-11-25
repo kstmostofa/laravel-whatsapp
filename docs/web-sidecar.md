@@ -70,6 +70,14 @@ $info = WhatsApp::web('main')->info();   // { pushname, wid, phone, … } once r
 $chats = WhatsApp::web('main')->chats(); // list of chats with last message + unread count
 ```
 
+### About text
+
+```php
+WhatsApp::web('main')->setAbout('On holiday until Monday');
+```
+
+Sets the profile "About" line. This is not `status()`, which posts to Status / Stories.
+
 ## Messages
 
 `WhatsApp::web('main')->messages()` returns a resource with the same API shape as Cloud API's `messages()`, but routed to the sidecar.
@@ -92,6 +100,27 @@ Sidecar accepts **either** raw phone numbers OR WhatsApp chat IDs:
 WhatsApp::web('main')->messages()->sendText('+9665XXXXXXXX', 'Hello');
 ```
 
+### Mentions
+
+Tag people and groups with the `options` argument of `sendText()` and `reply()`, and of `sendImage()`, `sendVideo()` and `sendDocument()` for captions. A mention only links when the body (or caption) contains it too: `@<number>` for a user, `@<subject>` for a group.
+
+```php
+WhatsApp::web('main')->messages()->sendText('1203…@g.us', 'Hi @9665XXXXXXXX, see @Sales', options: [
+    'mentions' => ['9665XXXXXXXX@c.us'],                                // phone numbers or WhatsApp IDs
+    'groupMentions' => [['subject' => 'Sales', 'id' => '1203…@g.us']],
+]);
+
+WhatsApp::web('main')->messages()->reply('1203…@g.us', 'Over to you @9665XXXXXXXX', $msg['id'], [
+    'mentions' => ['9665XXXXXXXX@c.us'],
+]);
+
+WhatsApp::web('main')->messages()->sendImage('1203…@g.us', ['url' => $url, 'caption' => 'Look @9665XXXXXXXX'], [
+    'mentions' => ['9665XXXXXXXX@c.us'],
+]);
+```
+
+Received messages carry `mentionedIds` (WhatsApp IDs) and `groupMentions` (`[{ subject, id }]`), both empty lists when nobody is tagged.
+
 ### Media — three shapes
 
 By URL (sidecar fetches it):
@@ -113,6 +142,17 @@ WhatsApp::web('main')->messages()->sendDocument('+9665...', [
 ```
 
 Same shape for `sendVideo`, `sendAudio`, `sendSticker`.
+
+### Contact cards
+
+Send one or more contacts the session knows as vCards. Pass phone numbers or WhatsApp IDs; several IDs arrive as one multi-contact message.
+
+```php
+WhatsApp::web('main')->messages()->sendContacts('+9665...', ['9665YYYYYYYY@c.us']);
+WhatsApp::web('main')->messages()->sendContacts('+9665...', ['9665YYYYYYYY@c.us', '+9665ZZZZZZZZ']);
+```
+
+Received contact cards (`type` `vcard` or `multi_vcard`) carry a `vCards` field with the raw vCard text of each card.
 
 ### Reply / react / forward / delete / edit
 
@@ -146,6 +186,19 @@ WhatsApp::web('main')->messages()->sendImage('+9665...', ['url' => $url, 'quoted
 
 Messages from the sidecar carry a `quoted` field when they reply to something: `{ stanzaId, body, type, from }`, enough to draw the quote without another lookup.
 
+## Chats
+
+```php
+$session = WhatsApp::web('main');
+
+$session->markChatSeen('9665XXXXXXXX@c.us');                   // read receipts, clears the unread counter
+$session->muteChat('9665XXXXXXXX@c.us');                       // mute forever
+$session->muteChat('9665XXXXXXXX@c.us', now()->addHours(8));   // mute until a time
+$session->unmuteChat('9665XXXXXXXX@c.us');
+```
+
+`muteChat()` and `unmuteChat()` return `['ok' => true, 'isMuted' => bool, 'muteExpiration' => int]`. `muteExpiration` is a unix timestamp, `-1` when muted forever.
+
 ## Groups
 
 ```php
@@ -160,6 +213,7 @@ WhatsApp::web('main')->groups()->addParticipants($group['gid']['_serialized'], [
 WhatsApp::web('main')->groups()->removeParticipants($group['gid']['_serialized'], ['9665ZZZZZZZZ@c.us']);
 WhatsApp::web('main')->groups()->setSubject($group['gid']['_serialized'], 'New name');
 WhatsApp::web('main')->groups()->leave($group['gid']['_serialized']);
+WhatsApp::web('main')->groups()->join('https://chat.whatsapp.com/AbC…');   // or the bare code; returns ['ok' => true, 'id' => '…@g.us']
 ```
 
 Admin actions — you must be a group admin:
@@ -170,6 +224,11 @@ $groups = WhatsApp::web('main')->groups();
 $groups->promoteParticipants($groupId, ['9665ZZZZZZZZ@c.us']);   // make admin
 $groups->demoteParticipants($groupId, ['9665ZZZZZZZZ@c.us']);    // remove admin
 $groups->setDescription($groupId, 'Weekly sync, Sundays 10am');
+
+$groups->restrictMessagesToAdmins($groupId);   // only admins can send
+$groups->openMessagesToAll($groupId);
+$groups->restrictInfoToAdmins($groupId);       // only admins can edit subject, description, picture
+$groups->openInfoToAll($groupId);
 
 $groups->inviteLink($groupId);     // ['code' => 'AbC…', 'link' => 'https://chat.whatsapp.com/AbC…']
 $groups->revokeInvite($groupId);   // old link stops working; returns the new one
@@ -186,6 +245,8 @@ WhatsApp::web('main')->messages()->sendText($group['gid']['_serialized'], 'Welco
 $all = WhatsApp::web('main')->contacts()->all();       // [{ id, name, pushname, number, isUser, isWAContact, … }, …]
 $one = WhatsApp::web('main')->contacts()->get('9665XXXXXXXX@c.us');
 $exists = WhatsApp::web('main')->contacts()->exists('9665XXXXXXXX');  // { number, exists: bool }
+WhatsApp::web('main')->contacts()->block('9665XXXXXXXX@c.us');    // ['ok' => true, 'isBlocked' => true]
+WhatsApp::web('main')->contacts()->unblock('9665XXXXXXXX@c.us');
 ```
 
 ### Importing chat history

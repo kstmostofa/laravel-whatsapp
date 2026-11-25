@@ -15,7 +15,7 @@
 | Layer | What it does |
 |---|---|
 | **Cloud API client** | Pure PHP. Templates, media, business profile, phone-number management, several numbers as named accounts, webhooks with HMAC verification. |
-| **Web sidecar** (bundled Node service) | `whatsapp-web.js` wrapped in a thin HTTP service. Personal-number QR pairing, groups and group admin, status, free-form messages anytime, contact lookup, chat history. |
+| **Web sidecar** (bundled Node service) | `whatsapp-web.js` wrapped in a thin HTTP service. Personal-number QR pairing, groups and group admin, status, free-form messages anytime, contact lookup, chat history, mute, block, profile About text. |
 | **Unified facade** | `WhatsApp::messages()->sendTemplate(...)` for Cloud, `WhatsApp::web('main')->messages()->sendText(...)` for sidecar. `WhatsApp::send($to, $body)` auto-picks. |
 | **Livewire + Flux UI** | Drop-in admin at `/whatsapp` — Dashboard, Sessions+QR, Compose, Conversations (chat-bubble UI with media, reply, reactions, forward, edit/delete, search, sound, ack ticks, live updates over broadcasting), Groups with member management, Contacts, Webhooks log with replay, Status. Compose includes a template builder. Works with Tailwind, Bootstrap, or no CSS framework at all. |
 | **Eloquent models** | Opt-in `WaSession` / `WaMessage` / `WaContact` / `WaWebhookEvent` with separate-DB support via `WHATSAPP_DB_CONNECTION`. |
@@ -128,7 +128,7 @@ Full setup details + dark mode + screenshots → [docs site](https://kstmostofa.
 
 | Command | Purpose |
 |---|---|
-| `whatsapp:sidecar:install` | Clone whatsapp-web.js, `npm ci`, download Chromium |
+| `whatsapp:sidecar:install` | `npm ci` in the bundled sidecar (installs the pinned whatsapp-web.js), download Chromium |
 | `whatsapp:sidecar:start [--foreground]` / `:stop` / `:status` | Lifecycle of the Node process. `--foreground` is for Supervisor / systemd |
 | `whatsapp:web:listen [session] [--all]` | Long-running: sidecar SSE → Laravel events. `--all` covers every session in one process |
 | `whatsapp:health [--json]` [`--exit-code`] | Health probe — pipe into cron / monitoring |
@@ -166,7 +166,7 @@ Detailed deployment guide → [docs/production](https://kstmostofa.github.io/lar
 
 ## Status
 
-- **162 tests passing**, 470 assertions (testbench + mocked Guzzle + Livewire smoke tests), plus 59 sidecar tests (`npm test` in `sidecar/`)
+- **235 tests passing**, 690 assertions (testbench + mocked Guzzle + Livewire smoke tests), plus 68 sidecar tests (`npm test` in `sidecar/`)
 - **Compatible with Laravel 12 / 13** — CI runs the suite on PHP 8.2, 8.3 and 8.4 with Laravel 12, and PHP 8.4 with Laravel 13, plus Pint and Larastan (level 6)
 - PHP minimum: **8.2** on Laravel 12, **8.4** on Laravel 13 (Symfony 8 transitive)
 - Laravel 11 support was dropped in 1.1.0: it is past end of life and has unpatched security advisories

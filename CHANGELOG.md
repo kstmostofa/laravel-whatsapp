@@ -7,6 +7,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-25
+
+New Web backend features: contact cards, mentions, and chat, contact and
+group admin actions. The sidecar moves to whatsapp-web.js 1.34.8, and the
+PHP code now declares `strict_types` and passes PHPStan at level 8.
+Contributed by [django23](https://github.com/django23).
+
+### Upgrading
+- Run `composer update`, then re-run `php artisan whatsapp:sidecar:install`
+  and restart the sidecar. If you run a published copy of the sidecar,
+  re-publish it with `--force`.
+- If you extend `MessageRouter` and override `sendText()` or
+  `resolveBackend()`, widen the backend parameter from `?string` to
+  `Backend|string|null`. PHP rejects the narrower override.
+- No migrations and no config changes.
+
+### Added
+- **Web contact cards**: `WhatsApp::web($id)->messages()->sendContacts($to, $contactIds)`
+  sends one or more vCards. Received messages carry a `vCards` field.
+- **Web mentions**: `sendText()`, `reply()` and the captions of `sendImage()`,
+  `sendVideo()` and `sendDocument()` on `WhatsApp::web($id)->messages()`
+  take `options: ['mentions' => [...], 'groupMentions' => [...]]` to tag users
+  and groups. Received messages carry `mentionedIds` and `groupMentions`.
+- **Mute chats** on the Web backend: `WhatsApp::web('main')->muteChat($chatId, $until)`
+  (forever when `$until` is null) and `unmuteChat($chatId)`.
+- **Block contacts** on the Web backend: `contacts()->block($contactId)` and
+  `contacts()->unblock($contactId)`.
+- **Set the profile About text** on the Web backend:
+  `WhatsApp::web('main')->setAbout($text)`. Named `setAbout` because
+  `status()` already posts to Status / Stories.
+- **Group settings** on the Web backend: `groups()->restrictMessagesToAdmins()`,
+  `openMessagesToAll()`, `restrictInfoToAdmins()` and `openInfoToAll()`.
+- **Join a group by invite** on the Web backend: `groups()->join($invite)` takes
+  the invite code or the full `https://chat.whatsapp.com/…` link.
+- **`WhatsApp::assertRequested()`** on the fake checks calls that change
+  state without sending a message, by HTTP method, sidecar path and
+  optionally the JSON body.
+- `Backend`, `Direction` and `WebhookStatus` enums. `WhatsApp::send()`,
+  `MessageRouter::sendText()` and `resolveBackend()` accept
+  `Backend::Cloud` / `Backend::Web` as well as the strings.
+
+### Changed
+- The sidecar now pins whatsapp-web.js to exactly `1.34.8` (was `^1.23.0`,
+  locked at 1.34.7). Its fixes for current WhatsApp Web include the
+  `id._serialized` to `id.$1` rename, duplicate `ready` events on page
+  re-injection, large media downloads and block / unblock. An exact pin keeps
+  `npm install` (without the lockfile) from picking up an untested release.
+- Every PHP file declares `strict_types`. Config values that reach typed
+  parameters are cast first, so Cloud IDs written as integers in a
+  published config (`'phone_number_id' => 123456789012345`), a numeric
+  webhook `app_secret` and a numeric `ui.default_session` keep working.
+- The media and avatar proxies resolve their HTTP client from a
+  package-owned `laravel-whatsapp.proxy-http` binding instead of
+  `GuzzleHttp\Client`, so an app's own Guzzle binding no longer changes
+  requests that carry the sidecar token.
+- `WhatsApp::fake()` answers Web calls with `['ok' => true, 'success' => true]`,
+  the shape the sidecar returns. Cloud calls still get `['success' => true]`.
+
+### Removed
+- The sidecar's media send patch (`media-patch.js`). whatsapp-web.js 1.34.8
+  fixes the same "Data passed to getter must include an id property" error
+  itself by dropping `__x_id` from the outgoing message.
+
+### Fixed
+- `whatsapp:health --json` printed invalid JSON when a value held bad UTF-8.
+- Compose sent `"caption": null` for image and document sends without a
+  caption. The key is now left out.
+
 ## [1.2.2] - 2026-11-01
 
 Fixes the four Web sidecar features listed as known issues in 1.2.1. Each
@@ -429,7 +497,8 @@ Initial public release.
   - Laravel 11 / 12 → PHP 8.2+
   - Laravel 13 → PHP 8.4+ (Symfony 8 is pulled in transitively and requires 8.4)
 
-[Unreleased]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.2.2...HEAD
+[Unreleased]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.2.2...v1.3.0
 [1.2.2]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.1.0...v1.2.0

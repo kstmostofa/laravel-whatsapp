@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kstmostofa\LaravelWhatsApp;
 
 use Flux\FluxServiceProvider;
+use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Broadcasting\Factory;
 use Illuminate\Contracts\Cache\Repository;
@@ -77,13 +78,14 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
 
         $this->app->singleton(CloudClient::class, function ($app) {
             $config = $app['config']->get('laravel-whatsapp');
+            $account = $app->make(CloudAccounts::class)->config();
 
             return new CloudClient(
-                baseHost: $config['base_host'],
-                apiVersion: $config['api_version'],
-                accessToken: (string) ($config['access_token'] ?? ''),
-                defaultPhoneNumberId: $config['phone_number_id'] ?? null,
-                businessAccountId: $config['business_account_id'] ?? null,
+                baseHost: (string) $config['base_host'],
+                apiVersion: (string) $config['api_version'],
+                accessToken: $account['access_token'],
+                defaultPhoneNumberId: $account['phone_number_id'],
+                businessAccountId: $account['business_account_id'],
                 timeout: (int) ($config['timeout'] ?? 30),
             );
         });
@@ -94,6 +96,10 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
 
         $this->app->singleton(InboundRouter::class);
 
+        // The media and avatar proxies use this instead of GuzzleHttp\Client, so an
+        // app's own Guzzle binding never adds headers or middleware to sidecar calls.
+        $this->app->bind('laravel-whatsapp.proxy-http', fn ($app, array $params) => new GuzzleClient($params['config'] ?? []));
+
         $this->app->singleton(SidecarManager::class, function ($app) {
             return new SidecarManager($app['config']->get('laravel-whatsapp.web'));
         });
@@ -102,9 +108,9 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
             $web = $app['config']->get('laravel-whatsapp.web');
 
             return new WebClient(
-                host: $web['host'],
+                host: (string) $web['host'],
                 port: (int) $web['port'],
-                token: $web['token'] ?? null,
+                token: isset($web['token']) ? (string) $web['token'] : null,
                 timeout: (int) ($web['timeout'] ?? 60),
             );
         });
