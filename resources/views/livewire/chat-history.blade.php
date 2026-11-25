@@ -148,8 +148,7 @@
                 </div>
             </div>
         @else
-            @php($selected = collect($chats)->firstWhere('id', $selectedChat))
-            @php($displayName = $selected['name'] ?? $selectedChat)
+            @php($displayName = $selectedName ?? $selectedChat)
             @php(
                 $headerSubtitle = (function ($id) {
                     if (! $id) return '';

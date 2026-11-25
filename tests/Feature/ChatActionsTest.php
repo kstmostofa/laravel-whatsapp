@@ -76,6 +76,17 @@ class ChatActionsTest extends TestCase
         $this->assertSame('Are you open today?', $out->payload['quoted']['body']);
     }
 
+    public function test_the_header_keeps_the_chat_name_when_search_hides_the_chat(): void
+    {
+        $this->sidecar([]);
+
+        Livewire::test(ChatHistory::class, ['session' => 'main'])
+            ->set('selectedChat', self::CHAT)
+            ->set('chatSearch', 'omar')
+            ->assertSeeHtml('>Ali</div>')
+            ->assertDontSee('No matches');
+    }
+
     public function test_reacting_toggles_your_reaction(): void
     {
         $this->sidecar([new Response(200, [], '{"ok":true}'), new Response(200, [], '{"ok":true}')]);
