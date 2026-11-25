@@ -48,6 +48,7 @@ use Kstmostofa\LaravelWhatsApp\Web\WebSession;
  * @method static void assertNothingSent()
  * @method static void assertSentCount(int $expected)
  * @method static void assertTemplateSent(string $name, ?string $to = null)
+ * @method static void assertRequested(string $method, string $path, ?callable $filter = null)
  *
  * @see CloudClient
  */

@@ -19,6 +19,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `sendVideo()` and `sendDocument()` on `WhatsApp::web($id)->messages()`
   take `options: ['mentions' => [...], 'groupMentions' => [...]]` to tag users
   and groups. Received messages carry `mentionedIds` and `groupMentions`.
+- **Mute chats** on the Web backend: `WhatsApp::web('main')->muteChat($chatId, $until)`
+  (forever when `$until` is null) and `unmuteChat($chatId)`.
+- **Block contacts** on the Web backend: `contacts()->block($contactId)` and
+  `contacts()->unblock($contactId)`.
+- **Set the profile About text** on the Web backend:
+  `WhatsApp::web('main')->setAbout($text)`. Named `setAbout` because
+  `status()` already posts to Status / Stories.
+- **Group settings** on the Web backend: `groups()->restrictMessagesToAdmins()`,
+  `openMessagesToAll()`, `restrictInfoToAdmins()` and `openInfoToAll()`.
+- **Join a group by invite** on the Web backend: `groups()->join($invite)` takes
+  the invite code or the full `https://chat.whatsapp.com/…` link.
+- **`WhatsApp::assertRequested()`** on the fake checks calls that change
+  state without sending a message, by HTTP method, sidecar path and
+  optionally the JSON body.
 
 ### Changed
 - The sidecar now pins whatsapp-web.js to exactly `1.34.8` (was `^1.23.0`,

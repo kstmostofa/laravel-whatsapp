@@ -143,6 +143,11 @@ Recent messages in one chat, oldest first, in the same shape as the `message` ev
 
 Marks the chat as read: sends read receipts and clears its unread counter. No body. Returns `{ ok: true }`. The admin UI calls this when you open a conversation.
 
+### `POST /sessions/:id/chats/:chatId/mute`
+### `POST /sessions/:id/chats/:chatId/unmute`
+
+Mute body is optional: `{ "until": 1767229200 }` (unix seconds, must be in the future). Without `until` the chat is muted forever. Returns `{ ok: true, isMuted, muteExpiration }`, where `muteExpiration` is `-1` for forever and `0` when not muted. Unmute takes no body.
+
 ### `GET /sessions/:id/groups`
 
 ```json
@@ -165,6 +170,14 @@ Create a group:
 ```
 
 `subject` is accepted as an alias for `name`. Returns the group's `gid._serialized`.
+
+### `POST /sessions/:id/groups/join`
+
+```json
+{ "invite": "https://chat.whatsapp.com/AbC…" }
+```
+
+`invite` is the invite code or a `chat.whatsapp.com` link. Anything else returns 400. Returns `{ ok: true, id: "<gid>@g.us" }`.
 
 ### `POST /sessions/:id/groups/:groupId/participants/add`
 ### `POST /sessions/:id/groups/:groupId/participants/remove`
@@ -209,6 +222,15 @@ No body.
 { "subject": "New name" }
 ```
 
+### `PUT /sessions/:id/groups/:groupId/settings/messages`
+### `PUT /sessions/:id/groups/:groupId/settings/info`
+
+```json
+{ "adminsOnly": true }
+```
+
+`messages`: only admins can send. `info`: only admins can edit the subject, description and picture. Returns `{ ok: true, adminsOnly }`. 403 when WhatsApp refuses the change (you are not an admin), 404 when the chat is not a group. Admin only.
+
 ### `GET /sessions/:id/contacts`
 
 ```json
@@ -239,6 +261,11 @@ Single contact lookup. 404 if not found.
 
 The number is normalized — pass with or without `+`, with or without `@c.us`.
 
+### `POST /sessions/:id/contacts/:contactId/block`
+### `POST /sessions/:id/contacts/:contactId/unblock`
+
+No body. `contactId` is a WA ID or a plain phone number. Returns `{ ok: true, isBlocked }`. A group ID returns 400: leave the group instead.
+
 ### `GET /sessions/:id/contacts/:contactId/picture`
 
 Streams the JPEG bytes of the contact's profile picture. 204 if no picture available (cached by Laravel for 30 minutes — both hits AND misses).
@@ -261,6 +288,14 @@ Post to Status / Stories:
 ```json
 { "type": "image", "url": "https://…/promo.jpg", "caption": "New launch" }
 ```
+
+### `PUT /sessions/:id/about`
+
+```json
+{ "about": "On holiday until Monday" }
+```
+
+Sets the profile "About" text (whatsapp-web.js `setStatus()`, unrelated to Status / Stories). Returns `{ ok: true }`.
 
 ### `GET /events`
 

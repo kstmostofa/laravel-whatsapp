@@ -95,6 +95,22 @@ class WebSession
     }
 
     /**
+     * Set this account's profile "About" text.
+     *
+     * Named `setAbout()` (whatsapp-web.js calls it setStatus) because
+     * `status()` is the Status / Stories resource and `state()` is the
+     * connection state.
+     *
+     * @return array<string, mixed>
+     */
+    public function setAbout(string $about): array
+    {
+        return $this->client->request('PUT', "sessions/{$this->sessionId}/about", [
+            'json' => compact('about'),
+        ]);
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     public function chats(): array
@@ -113,6 +129,32 @@ class WebSession
     public function markChatSeen(string $chatId): array
     {
         return $this->client->request('POST', "sessions/{$this->sessionId}/chats/".rawurlencode($chatId).'/seen');
+    }
+
+    /**
+     * Silence notifications for a chat until `$until`, or forever when null.
+     *
+     * @return array{ok: bool, isMuted: bool, muteExpiration: int} muteExpiration is -1 when muted forever
+     */
+    public function muteChat(string $chatId, ?\DateTimeInterface $until = null): array
+    {
+        $options = $until === null ? [] : ['json' => ['until' => $until->getTimestamp()]];
+
+        /** @var array{ok: bool, isMuted: bool, muteExpiration: int} $response  shape defined by sidecar/index.js */
+        $response = $this->client->request('POST', "sessions/{$this->sessionId}/chats/".rawurlencode($chatId).'/mute', $options);
+
+        return $response;
+    }
+
+    /**
+     * @return array{ok: bool, isMuted: bool, muteExpiration: int}
+     */
+    public function unmuteChat(string $chatId): array
+    {
+        /** @var array{ok: bool, isMuted: bool, muteExpiration: int} $response  shape defined by sidecar/index.js */
+        $response = $this->client->request('POST', "sessions/{$this->sessionId}/chats/".rawurlencode($chatId).'/unmute');
+
+        return $response;
     }
 
     /**

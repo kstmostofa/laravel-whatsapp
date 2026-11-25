@@ -75,6 +75,21 @@ class WhatsAppFakeTest extends TestCase
         WhatsApp::assertNothingSent();
     }
 
+    public function test_non_send_calls_can_be_asserted_by_path_and_body(): void
+    {
+        WhatsApp::fake();
+
+        WhatsApp::web('main')->groups()->setSubject('120363000000000001@g.us', 'Riyadh team');
+
+        WhatsApp::assertNothingSent();
+        WhatsApp::assertRequested('PUT', 'sessions/main/groups/120363000000000001@g.us/subject', fn (array $body) => $body['subject'] === 'Riyadh team');
+
+        $this->expectException(AssertionFailedError::class);
+        $this->expectExceptionMessage('No [POST sessions/main/groups/120363000000000001@g.us/leave] request was made.');
+
+        WhatsApp::assertRequested('POST', 'sessions/main/groups/120363000000000001@g.us/leave');
+    }
+
     public function test_message_sent_event_still_fires(): void
     {
         WhatsApp::fake();
