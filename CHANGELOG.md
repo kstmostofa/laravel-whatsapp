@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-11-25
+
+Fixes for the admin UI: buttons that did nothing when clicked, chat
+scrolling and the chat header name. Contributed by
+[django23](https://github.com/django23).
+
+### Upgrading
+- Run `composer update`. The sidecar and `whatsapp:web:listen` don't need a
+  restart.
+- If you published the package views (`laravel-whatsapp-views`), re-publish
+  them with `--force` or copy the fixes into your versions. Published copies
+  keep working, but they keep the bugs below.
+- No migrations, no config changes and no sidecar changes.
+
+### Fixed
+- **Edit message** in the chat screen and **Manage**, **Leave**, **Make admin**,
+  **Remove admin** and **Remove from group** on the groups screen did nothing
+  when clicked. Their arguments used `@js()` inside Flux component attributes,
+  where Blade leaves it as text, so Livewire threw a syntax error.
+- Opening a chat from the list showed the oldest loaded messages instead of
+  the newest, and sending a message didn't scroll down to it.
+- Searching the chat list replaced the open chat's name in the header with
+  its raw ID when the search hid that chat.
+
 ## [1.3.0] - 2026-11-25
 
 New Web backend features: contact cards, mentions, and chat, contact and
@@ -64,6 +88,8 @@ Contributed by [django23](https://github.com/django23).
   requests that carry the sidecar token.
 - `WhatsApp::fake()` answers Web calls with `['ok' => true, 'success' => true]`,
   the shape the sidecar returns. Cloud calls still get `['success' => true]`.
+- The standalone stylesheet (`dist/laravel-whatsapp.css`) is rebuilt for
+  Flux 2.22.
 
 ### Removed
 - The sidecar's media send patch (`media-patch.js`). whatsapp-web.js 1.34.8
@@ -497,7 +523,8 @@ Initial public release.
   - Laravel 11 / 12 → PHP 8.2+
   - Laravel 13 → PHP 8.4+ (Symfony 8 is pulled in transitively and requires 8.4)
 
-[Unreleased]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.2.2...v1.3.0
 [1.2.2]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/kstmostofa/laravel-whatsapp/compare/v1.2.0...v1.2.1

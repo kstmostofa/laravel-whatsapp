@@ -57,9 +57,9 @@
                         <div class="text-right flex-shrink-0">
                             <flux:text size="xs" class="!text-zinc-500 mb-2">{{ count($g['participants'] ?? []) }} members</flux:text>
                             <div class="flex justify-end gap-2">
-                                <flux:button size="sm" variant="filled" icon="cog-6-tooth" wire:click="manage(@js($g['id']))">Manage</flux:button>
+                                <flux:button size="sm" variant="filled" icon="cog-6-tooth" wire:click="manage({{ \Illuminate\Support\Js::from($g['id']) }})">Manage</flux:button>
                                 <flux:button size="sm" variant="danger" icon="arrow-right-start-on-rectangle"
-                                    wire:click="confirmLeave(@js($g['id']), @js($g['name'] ?? ''))">Leave</flux:button>
+                                    wire:click="confirmLeave({{ \Illuminate\Support\Js::from($g['id']) }}, {{ \Illuminate\Support\Js::from($g['name'] ?? '') }})">Leave</flux:button>
                             </div>
                         </div>
                     </div>
@@ -150,12 +150,12 @@
                                         <flux:button size="xs" variant="ghost" icon="ellipsis-vertical" aria-label="Participant actions" />
                                         <flux:menu>
                                             @if ($pAdmin)
-                                                <flux:menu.item icon="arrow-down" wire:click="demote(@js($pid))">Remove admin</flux:menu.item>
+                                                <flux:menu.item icon="arrow-down" wire:click="demote({{ \Illuminate\Support\Js::from($pid) }})">Remove admin</flux:menu.item>
                                             @else
-                                                <flux:menu.item icon="arrow-up" wire:click="promote(@js($pid))">Make admin</flux:menu.item>
+                                                <flux:menu.item icon="arrow-up" wire:click="promote({{ \Illuminate\Support\Js::from($pid) }})">Make admin</flux:menu.item>
                                             @endif
                                             <flux:menu.separator />
-                                            <flux:menu.item icon="user-minus" variant="danger" wire:click="removeParticipant(@js($pid))">Remove from group</flux:menu.item>
+                                            <flux:menu.item icon="user-minus" variant="danger" wire:click="removeParticipant({{ \Illuminate\Support\Js::from($pid) }})">Remove from group</flux:menu.item>
                                         </flux:menu>
                                     </flux:dropdown>
                                 @endif

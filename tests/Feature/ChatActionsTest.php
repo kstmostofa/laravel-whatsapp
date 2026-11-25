@@ -68,7 +68,8 @@ class ChatActionsTest extends TestCase
             ->set('reply', 'Yes, until 10pm')
             ->call('sendReply')
             ->assertSet('replyingTo', null)
-            ->assertDontSee('Replying to message');
+            ->assertDontSee('Replying to message')
+            ->assertDispatched('message-sent');
 
         $sent = $this->bodyOf(1);
         $this->assertSame(self::INBOUND, $sent['quotedMessageId']);
@@ -76,6 +77,17 @@ class ChatActionsTest extends TestCase
         $out = WaMessage::where('wa_message_id', 'true_966511111111@c.us_OUT1')->sole();
         $this->assertSame('IN1', $out->payload['quoted']['stanzaId']);
         $this->assertSame('Are you open today?', $out->payload['quoted']['body']);
+    }
+
+    public function test_the_header_keeps_the_chat_name_when_search_hides_the_chat(): void
+    {
+        $this->sidecar([]);
+
+        Livewire::test(ChatHistory::class, ['session' => 'main'])
+            ->set('selectedChat', self::CHAT)
+            ->set('chatSearch', 'omar')
+            ->assertSeeHtml('>Ali</div>')
+            ->assertDontSee('No matches');
     }
 
     public function test_reacting_toggles_your_reaction(): void

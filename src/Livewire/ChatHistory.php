@@ -155,7 +155,7 @@ class ChatHistory extends Component
      */
     public function render()
     {
-        $chats = $this->chatList();
+        ['chats' => $chats, 'selectedName' => $selectedName] = $this->chatList();
         ['messages' => $messages, 'hasOlder' => $hasOlder] = $this->thread();
 
         // Names for group senders and for people in quoted replies.
@@ -170,6 +170,7 @@ class ChatHistory extends Component
             'replyTarget' => $this->replyingTo ? $this->findMessage($this->replyingTo) : null,
             'quickReactions' => self::QUICK_REACTIONS,
             'chats' => $chats,
+            'selectedName' => $selectedName,
             'messages' => $messages,
             'hasOlder' => $hasOlder,
             'pollInterval' => $this->pollInterval(),
@@ -177,9 +178,10 @@ class ChatHistory extends Component
     }
 
     /**
-     * The sidebar: chats from the sidecar, searched, newest first, capped.
+     * The sidebar: chats from the sidecar, searched, newest first, capped,
+     * and the open chat's name for the header.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array{chats: array<int, array<string, mixed>>, selectedName: ?string}
      */
     protected function chatList(): array
     {
@@ -195,6 +197,9 @@ class ChatHistory extends Component
         } catch (SidecarException $e) {
             $this->error = $this->error ?? $e->getMessage();
         }
+
+        // Before search and the list cap, so the header keeps the name of a chat the list hides.
+        $selectedName = collect($chats)->firstWhere('id', $this->selectedChat)['name'] ?? null;
 
         if ($this->chatSearch !== '' && ! empty($chats)) {
             $needle = mb_strtolower($this->chatSearch);
@@ -219,7 +224,7 @@ class ChatHistory extends Component
             }
         }
 
-        return $chats;
+        return ['chats' => $chats, 'selectedName' => $selectedName];
     }
 
     /**
