@@ -54,7 +54,7 @@ class GroupsIndex extends Component
 
     public function mount(?string $session = null): void
     {
-        $this->session = $session ?? config('laravel-whatsapp.ui.default_session', 'main');
+        $this->session = $session ?? (string) config('laravel-whatsapp.ui.default_session', 'main');
     }
 
     public function create(): void

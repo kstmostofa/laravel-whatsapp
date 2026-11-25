@@ -68,7 +68,7 @@ class Compose extends Component
 
     public function mount(): void
     {
-        $this->sessionId = config('laravel-whatsapp.ui.default_session', 'main');
+        $this->sessionId = (string) config('laravel-whatsapp.ui.default_session', 'main');
     }
 
     /**
