@@ -34,6 +34,13 @@ class VerifySignatureMiddlewareTest extends TestCase
         $this->assertSame(200, $this->handle($this->sign('TEST_SECRET')));
     }
 
+    public function test_an_integer_app_secret_in_config_still_verifies(): void
+    {
+        config(['laravel-whatsapp.webhook.app_secret' => 123456]);
+
+        $this->assertSame(200, $this->handle($this->sign('123456')));
+    }
+
     /**
      * @return array<string, array{0: ?string}>
      */

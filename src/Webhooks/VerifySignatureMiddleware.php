@@ -42,7 +42,7 @@ class VerifySignatureMiddleware
         }
 
         $expected = substr($header, 7);
-        $computed = hash_hmac('sha256', $request->getContent(), $secret);
+        $computed = hash_hmac('sha256', $request->getContent(), (string) $secret);
 
         if (! hash_equals($expected, $computed)) {
             return new \Illuminate\Http\Response('invalid signature', 401);

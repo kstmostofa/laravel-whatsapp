@@ -77,13 +77,14 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
 
         $this->app->singleton(CloudClient::class, function ($app) {
             $config = $app['config']->get('laravel-whatsapp');
+            $account = $app->make(CloudAccounts::class)->config();
 
             return new CloudClient(
-                baseHost: $config['base_host'],
-                apiVersion: $config['api_version'],
-                accessToken: (string) ($config['access_token'] ?? ''),
-                defaultPhoneNumberId: $config['phone_number_id'] ?? null,
-                businessAccountId: $config['business_account_id'] ?? null,
+                baseHost: (string) $config['base_host'],
+                apiVersion: (string) $config['api_version'],
+                accessToken: $account['access_token'],
+                defaultPhoneNumberId: $account['phone_number_id'],
+                businessAccountId: $account['business_account_id'],
                 timeout: (int) ($config['timeout'] ?? 30),
             );
         });
@@ -102,9 +103,9 @@ class LaravelWhatsAppServiceProvider extends ServiceProvider
             $web = $app['config']->get('laravel-whatsapp.web');
 
             return new WebClient(
-                host: $web['host'],
+                host: (string) $web['host'],
                 port: (int) $web['port'],
-                token: $web['token'] ?? null,
+                token: isset($web['token']) ? (string) $web['token'] : null,
                 timeout: (int) ($web['timeout'] ?? 60),
             );
         });

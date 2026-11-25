@@ -48,8 +48,8 @@ class CloudAccounts
         $name ??= self::DEFAULT;
 
         $default = [
-            'phone_number_id' => config('laravel-whatsapp.phone_number_id'),
-            'business_account_id' => config('laravel-whatsapp.business_account_id'),
+            'phone_number_id' => self::id(config('laravel-whatsapp.phone_number_id')),
+            'business_account_id' => self::id(config('laravel-whatsapp.business_account_id')),
             'access_token' => (string) config('laravel-whatsapp.access_token', ''),
         ];
 
@@ -66,10 +66,16 @@ class CloudAccounts
         }
 
         return [
-            'phone_number_id' => $account['phone_number_id'] ?? null,
-            'business_account_id' => $account['business_account_id'] ?? $default['business_account_id'],
+            'phone_number_id' => self::id($account['phone_number_id'] ?? null),
+            'business_account_id' => self::id($account['business_account_id'] ?? null) ?? $default['business_account_id'],
             'access_token' => (string) ($account['access_token'] ?? $default['access_token']),
         ];
+    }
+
+    /** Cloud IDs are all digits, so published configs may hold them as integers. */
+    protected static function id(mixed $value): ?string
+    {
+        return $value === null ? null : (string) $value;
     }
 
     public function client(?string $name = null): CloudClient
