@@ -37,20 +37,22 @@ class MessagesResource extends Resource
 
     /**
      * @param  array{url?: string, base64?: string, mimeType?: string, filename?: string, caption?: string}  $image
+     * @param  array{mentions?: array<int, string>, groupMentions?: array<int, array{subject: string, id: string}>}  $options  see sendText(), the caption holds the `@…` text
      * @return array<string, mixed>
      */
-    public function sendImage(string $to, array $image): array
+    public function sendImage(string $to, array $image, array $options = []): array
     {
-        return $this->sendMedia('image', $to, $image);
+        return $this->sendMedia('image', $to, $image, $options);
     }
 
     /**
      * @param  array{url?: string, base64?: string, mimeType?: string, filename?: string, caption?: string}  $video
+     * @param  array{mentions?: array<int, string>, groupMentions?: array<int, array{subject: string, id: string}>}  $options  see sendText(), the caption holds the `@…` text
      * @return array<string, mixed>
      */
-    public function sendVideo(string $to, array $video): array
+    public function sendVideo(string $to, array $video, array $options = []): array
     {
-        return $this->sendMedia('video', $to, $video);
+        return $this->sendMedia('video', $to, $video, $options);
     }
 
     /**
@@ -64,11 +66,12 @@ class MessagesResource extends Resource
 
     /**
      * @param  array{url?: string, base64?: string, mimeType?: string, filename?: string, caption?: string}  $document
+     * @param  array{mentions?: array<int, string>, groupMentions?: array<int, array{subject: string, id: string}>}  $options  see sendText(), the caption holds the `@…` text
      * @return array<string, mixed>
      */
-    public function sendDocument(string $to, array $document): array
+    public function sendDocument(string $to, array $document, array $options = []): array
     {
-        return $this->sendMedia('document', $to, $document);
+        return $this->sendMedia('document', $to, $document, $options);
     }
 
     /**
@@ -201,12 +204,13 @@ class MessagesResource extends Resource
 
     /**
      * @param  array<string, mixed>  $media
+     * @param  array{mentions?: array<int, string>, groupMentions?: array<int, array{subject: string, id: string}>}  $options
      * @return array<string, mixed>
      */
-    protected function sendMedia(string $type, string $to, array $media): array
+    protected function sendMedia(string $type, string $to, array $media, array $options = []): array
     {
         return $this->request('POST', $this->endpoint(), [
-            'json' => array_filter(array_merge(['type' => $type, 'to' => $to], $media), fn ($v) => $v !== null),
+            'json' => array_filter(array_merge(['type' => $type, 'to' => $to], $media, $this->mentions($options)), fn ($v) => $v !== null),
         ]);
     }
 }

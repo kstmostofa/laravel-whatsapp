@@ -461,6 +461,7 @@ app.post('/sessions/:id/messages', async (req, res, next) => {
           sendMediaAsSticker: b.type === 'sticker',
           sendMediaAsDocument: b.type === 'document',
           sendAudioAsVoice: b.sendAudioAsVoice === true && b.type === 'audio',
+          ...mentionOptions(b),
         };
         if (b.quotedMessageId) options.quotedMessageId = b.quotedMessageId;
         result = await sendCaptured(s, to, media, options, b.caption);

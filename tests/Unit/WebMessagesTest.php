@@ -75,6 +75,30 @@ class WebMessagesTest extends TestCase
         $this->assertSame('image', $body['type']);
         $this->assertSame('https://example.com/cat.jpg', $body['url']);
         $this->assertSame('meow', $body['caption']);
+        $this->assertArrayNotHasKey('mentions', $body);
+        $this->assertArrayNotHasKey('groupMentions', $body);
+    }
+
+    public function test_media_captions_pass_mentions(): void
+    {
+        $client = $this->app->make(WebClient::class);
+        $this->mockGuzzleOn($client, [new Response(200, [], '{}'), new Response(200, [], '{}'), new Response(200, [], '{}'), new Response(200, [], '{}')]);
+        $mentions = ['mentions' => ['966511111111@c.us'], 'groupMentions' => [['subject' => 'Team', 'id' => '1203630000@g.us']]];
+        $messages = $client->session('main')->messages();
+
+        $messages->sendImage('1203639999@g.us', ['url' => 'https://example.com/cat.jpg', 'caption' => 'hi @966511111111'], $mentions);
+        $image = json_decode((string) $this->lastRequest()->getBody(), true);
+        $messages->sendVideo('1203639999@g.us', ['url' => 'https://example.com/cat.mp4'], ['mentions' => ['966511111111@c.us']]);
+        $video = json_decode((string) $this->lastRequest()->getBody(), true);
+        $messages->sendDocument('1203639999@g.us', ['url' => 'https://example.com/a.pdf'], $mentions);
+        $document = json_decode((string) $this->lastRequest()->getBody(), true);
+
+        $this->assertSame('hi @966511111111', $image['caption']);
+        $this->assertSame($mentions['mentions'], $image['mentions']);
+        $this->assertSame($mentions['groupMentions'], $image['groupMentions']);
+        $this->assertSame(['966511111111@c.us'], $video['mentions']);
+        $this->assertArrayNotHasKey('groupMentions', $video);
+        $this->assertSame($mentions['mentions'], $document['mentions']);
     }
 
     public function test_send_contacts_posts_contact_ids(): void
