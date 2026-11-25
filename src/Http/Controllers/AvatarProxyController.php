@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Http\Controllers;
 
-use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Cache;
@@ -78,10 +79,11 @@ class AvatarProxyController extends Controller
         $headers = $client->token() ? ['Authorization' => 'Bearer '.$client->token()] : [];
 
         try {
-            $response = (new GuzzleClient([
+            // A package-owned binding, so tests can swap the handler without touching the app's Guzzle.
+            $response = app()->make('laravel-whatsapp.proxy-http', ['config' => [
                 'timeout' => 8, // strictly bounded — sidecar already times out at 5s per upstream call
                 'http_errors' => false,
-            ]))->get($url, ['headers' => $headers]);
+            ]])->get($url, ['headers' => $headers]);
         } catch (GuzzleException) {
             return [502, 'application/octet-stream', ''];
         }

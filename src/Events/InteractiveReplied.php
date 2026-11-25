@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Kstmostofa\LaravelWhatsApp\Events\Concerns\ReadsPayload;
 use Kstmostofa\LaravelWhatsApp\Events\Concerns\ResolvesCloudAccount;
 
 /**
@@ -13,7 +16,7 @@ use Kstmostofa\LaravelWhatsApp\Events\Concerns\ResolvesCloudAccount;
  */
 class InteractiveReplied
 {
-    use Dispatchable, ResolvesCloudAccount, SerializesModels;
+    use Dispatchable, ReadsPayload, ResolvesCloudAccount, SerializesModels;
 
     /**
      * @param  array<string, mixed>  $payload  single `messages[]` entry (type=interactive or button)
@@ -27,18 +30,18 @@ class InteractiveReplied
 
     public function replyId(): ?string
     {
-        return $this->payload['interactive']['button_reply']['id']
+        return self::stringOrNull($this->payload['interactive']['button_reply']['id']
             ?? $this->payload['interactive']['list_reply']['id']
             ?? $this->payload['button']['payload']
-            ?? null;
+            ?? null);
     }
 
     public function replyTitle(): ?string
     {
-        return $this->payload['interactive']['button_reply']['title']
+        return self::stringOrNull($this->payload['interactive']['button_reply']['title']
             ?? $this->payload['interactive']['list_reply']['title']
             ?? $this->payload['button']['text']
-            ?? null;
+            ?? null);
     }
 
     /**
@@ -79,6 +82,6 @@ class InteractiveReplied
 
     public function from(): ?string
     {
-        return $this->payload['from'] ?? null;
+        return self::stringOrNull($this->payload['from'] ?? null);
     }
 }

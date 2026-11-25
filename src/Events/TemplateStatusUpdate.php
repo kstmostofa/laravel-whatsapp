@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Kstmostofa\LaravelWhatsApp\Events\Concerns\ReadsPayload;
 
 /**
  * Meta has approved, rejected, or paused one of your message templates.
@@ -11,7 +14,7 @@ use Illuminate\Queue\SerializesModels;
  */
 class TemplateStatusUpdate
 {
-    use Dispatchable, SerializesModels;
+    use Dispatchable, ReadsPayload, SerializesModels;
 
     /**
      * @param  array<string, mixed>  $payload  the `value` object from the change
@@ -25,16 +28,16 @@ class TemplateStatusUpdate
 
     public function event(): ?string
     {
-        return $this->payload['event'] ?? null;
+        return self::stringOrNull($this->payload['event'] ?? null);
     }
 
     public function templateName(): ?string
     {
-        return $this->payload['message_template_name'] ?? null;
+        return self::stringOrNull($this->payload['message_template_name'] ?? null);
     }
 
     public function reason(): ?string
     {
-        return $this->payload['reason'] ?? null;
+        return self::stringOrNull($this->payload['reason'] ?? null);
     }
 }

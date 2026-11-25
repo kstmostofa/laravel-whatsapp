@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Events\Web;
 
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Kstmostofa\LaravelWhatsApp\Broadcasting\BroadcastsToSession;
+use Kstmostofa\LaravelWhatsApp\Events\Concerns\ReadsPayload;
 
 /**
  * Someone reacted to a message, changed their reaction, or removed it (empty
@@ -15,7 +18,7 @@ use Kstmostofa\LaravelWhatsApp\Broadcasting\BroadcastsToSession;
  */
 class MessageReaction implements ShouldBroadcast
 {
-    use BroadcastsToSession, Dispatchable, SerializesModels;
+    use BroadcastsToSession, Dispatchable, ReadsPayload, SerializesModels;
 
     /** Key used for your own reactions in a message's `payload.reactions`. */
     public const ME = 'me';
@@ -43,7 +46,7 @@ class MessageReaction implements ShouldBroadcast
 
     public function senderId(): ?string
     {
-        return $this->payload['senderId'] ?? null;
+        return self::stringOrNull($this->payload['senderId'] ?? null);
     }
 
     public function fromMe(): bool

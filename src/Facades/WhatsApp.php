@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Facades;
 
 use Illuminate\Support\Facades\Facade;
+use Kstmostofa\LaravelWhatsApp\Backend;
 use Kstmostofa\LaravelWhatsApp\Client\CloudAccounts;
 use Kstmostofa\LaravelWhatsApp\Client\CloudClient;
 use Kstmostofa\LaravelWhatsApp\Client\Resources\BusinessProfileResource;
@@ -72,7 +75,7 @@ class WhatsApp extends Facade
      */
     public static function fake(): WhatsAppFake
     {
-        $config = static::$app['config'];
+        $config = config();
 
         $fake = new WhatsAppFake(
             $config->get('laravel-whatsapp.phone_number_id'),
@@ -80,12 +83,12 @@ class WhatsApp extends Facade
         );
 
         static::swap($fake);
-        static::$app->instance(CloudClient::class, $fake);
-        static::$app->instance(WebClient::class, $fake->webClient());
+        app()->instance(CloudClient::class, $fake);
+        app()->instance(WebClient::class, $fake->webClient());
 
         // Rebuilt on next use so they pick up the fakes.
-        static::$app->forgetInstance(MessageRouter::class);
-        static::$app->forgetInstance(HealthSnapshot::class);
+        app()->forgetInstance(MessageRouter::class);
+        app()->forgetInstance(HealthSnapshot::class);
 
         return $fake;
     }
@@ -108,7 +111,7 @@ class WhatsApp extends Facade
      */
     public static function cloud(?string $account = null): CloudClient
     {
-        return static::$app->make(CloudAccounts::class)->client($account);
+        return app()->make(CloudAccounts::class)->client($account);
     }
 
     /**
@@ -117,17 +120,17 @@ class WhatsApp extends Facade
      */
     public static function router(): InboundRouter
     {
-        return static::$app->make(InboundRouter::class);
+        return app()->make(InboundRouter::class);
     }
 
     public static function web(string $sessionId): WebSession
     {
-        return static::$app->make(WebClient::class)->session($sessionId);
+        return app()->make(WebClient::class)->session($sessionId);
     }
 
     public static function webClient(): WebClient
     {
-        return static::$app->make(WebClient::class);
+        return app()->make(WebClient::class);
     }
 
     /**
@@ -135,9 +138,9 @@ class WhatsApp extends Facade
      *
      * @return array<string, mixed>
      */
-    public static function send(string $to, string $body, ?string $backend = null, ?string $sessionId = null): array
+    public static function send(string $to, string $body, Backend|string|null $backend = null, ?string $sessionId = null): array
     {
-        return static::$app->make(MessageRouter::class)
+        return app()->make(MessageRouter::class)
             ->sendText($to, $body, $backend, $sessionId);
     }
 }

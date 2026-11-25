@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Console\Commands;
 
 use Illuminate\Console\Command;
@@ -48,7 +50,7 @@ class WebListenCommand extends Command
         // With --all, events carry their own sessionId; this is only a fallback.
         $sessionId = $this->option('all')
             ? '*'
-            : ($this->argument('session') ?: (string) config('laravel-whatsapp.ui.default_session', 'main'));
+            : (string) ($this->argument('session') ?: config('laravel-whatsapp.ui.default_session', 'main'));
 
         if ($sessionId === '') {
             $this->error('No session specified and no default_session configured.');

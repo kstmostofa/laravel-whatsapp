@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Run `composer update`, then re-run `php artisan whatsapp:sidecar:install`
   and restart the sidecar. If you run a published copy of the sidecar,
   re-publish it with `--force`.
+- If you extend `MessageRouter` and override `sendText()` or
+  `resolveBackend()`, widen the backend parameter from `?string` to
+  `Backend|string|null`. PHP rejects the narrower override.
 
 ### Added
 - **Web contact cards**: `WhatsApp::web($id)->messages()->sendContacts($to, $contactIds)`
@@ -33,6 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`WhatsApp::assertRequested()`** on the fake checks calls that change
   state without sending a message, by HTTP method, sidecar path and
   optionally the JSON body.
+- `Backend`, `Direction` and `WebhookStatus` enums. `WhatsApp::send()`,
+  `MessageRouter::sendText()` and `resolveBackend()` accept
+  `Backend::Cloud` / `Backend::Web` as well as the strings.
 
 ### Changed
 - The sidecar now pins whatsapp-web.js to exactly `1.34.8` (was `^1.23.0`,
@@ -40,11 +46,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `id._serialized` to `id.$1` rename, duplicate `ready` events on page
   re-injection, large media downloads and block / unblock. An exact pin keeps
   `npm install` (without the lockfile) from picking up an untested release.
+- Every PHP file declares `strict_types`. Config values that reach typed
+  parameters are cast first, so Cloud IDs written as integers in a
+  published config (`'phone_number_id' => 123456789012345`), a numeric
+  webhook `app_secret` and a numeric `ui.default_session` keep working.
+- The media and avatar proxies resolve their HTTP client from a
+  package-owned `laravel-whatsapp.proxy-http` binding instead of
+  `GuzzleHttp\Client`, so an app's own Guzzle binding no longer changes
+  requests that carry the sidecar token.
+- `WhatsApp::fake()` answers Web calls with `['ok' => true, 'success' => true]`,
+  the shape the sidecar returns. Cloud calls still get `['success' => true]`.
 
 ### Removed
 - The sidecar's media send patch (`media-patch.js`). whatsapp-web.js 1.34.8
   fixes the same "Data passed to getter must include an id property" error
   itself by dropping `__x_id` from the outgoing message.
+
+### Fixed
+- `whatsapp:health --json` printed invalid JSON when a value held bad UTF-8.
+- Compose sent `"caption": null` for image and document sends without a
+  caption. The key is now left out.
 
 ## [1.2.2] - 2026-11-01
 

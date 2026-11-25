@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Tests;
 
 use Illuminate\Contracts\Console\Kernel;

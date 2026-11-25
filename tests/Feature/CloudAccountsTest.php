@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Tests\Feature;
 
 use Illuminate\Support\Facades\Notification;
@@ -44,6 +46,27 @@ class CloudAccountsTest extends TestCase
         $this->assertNotSame($this->app->make(CloudClient::class), $sales);
         $this->assertSame($sales, WhatsApp::cloud('sales'));
         $this->assertSame('SUPPORT_TOKEN', WhatsApp::cloud('support')->accessToken());
+    }
+
+    public function test_integer_ids_in_config_are_read_as_strings(): void
+    {
+        config([
+            'laravel-whatsapp.phone_number_id' => 123456789012345,
+            'laravel-whatsapp.business_account_id' => 987654321,
+            'laravel-whatsapp.accounts.sales.phone_number_id' => 223456789012345,
+            'laravel-whatsapp.accounts.support.business_account_id' => 987654322,
+        ]);
+        $this->app->forgetInstance(CloudClient::class);
+        $accounts = $this->app->make(CloudAccounts::class);
+
+        $this->assertSame(['phone_number_id' => '123456789012345', 'business_account_id' => '987654321', 'access_token' => 'DEFAULT_TOKEN'], $accounts->config());
+        $this->assertSame(['phone_number_id' => '223456789012345', 'business_account_id' => '987654321', 'access_token' => 'DEFAULT_TOKEN'], $accounts->config('sales'));
+        $this->assertSame('987654322', $accounts->config('support')['business_account_id']);
+        $this->assertSame('sales', $accounts->nameFor('223456789012345'));
+
+        // Building the real clients is where strict_types used to throw a TypeError.
+        $this->assertInstanceOf(CloudClient::class, WhatsApp::cloud());
+        $this->assertInstanceOf(CloudClient::class, WhatsApp::cloud('sales'));
     }
 
     public function test_unknown_accounts_throw(): void

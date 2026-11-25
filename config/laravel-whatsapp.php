@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Kstmostofa\LaravelWhatsApp\Events\InteractiveReplied;
 use Kstmostofa\LaravelWhatsApp\Events\MediaReceived;
 use Kstmostofa\LaravelWhatsApp\Events\MessageReceived;

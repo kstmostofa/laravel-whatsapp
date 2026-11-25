@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Http\Controllers;
 
-use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -43,10 +44,11 @@ class MediaProxyController extends Controller
         $headers = $client->token() ? ['Authorization' => 'Bearer '.$client->token()] : [];
 
         try {
-            $upstream = (new GuzzleClient([
+            // A package-owned binding, so tests can swap the handler without touching the app's Guzzle.
+            $upstream = app()->make('laravel-whatsapp.proxy-http', ['config' => [
                 'timeout' => 30,
                 'http_errors' => false,
-            ]))->get($url, [
+            ]])->get($url, [
                 'headers' => $headers,
                 'stream' => true,
             ]);
@@ -86,18 +88,20 @@ class MediaProxyController extends Controller
             return null; // table or columns missing
         }
 
-        if (! $message) {
+        $path = $message?->media_path;
+
+        if ($path === null) {
             return null;
         }
 
         $disk = app(MediaStore::class)->disk();
-        $stream = $disk->exists($message->media_path) ? $disk->readStream($message->media_path) : null;
+        $stream = $disk->exists($path) ? $disk->readStream($path) : null;
 
         if (! is_resource($stream)) {
             return null;
         }
 
-        $filename = $message->payload['filename'] ?? basename($message->media_path);
+        $filename = $message->payload['filename'] ?? basename($path);
 
         return new StreamedResponse(function () use ($stream) {
             fpassthru($stream);

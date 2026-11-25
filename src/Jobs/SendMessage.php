@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Jobs;
 
 use Illuminate\Bus\Queueable;
@@ -9,6 +11,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Kstmostofa\LaravelWhatsApp\Client\CloudClient;
 use Kstmostofa\LaravelWhatsApp\Exceptions\CloudApiException;
+use Kstmostofa\LaravelWhatsApp\Jobs\Concerns\UsesWhatsAppQueue;
 
 /**
  * Queued text-message dispatch with Cloud API retry semantics.
@@ -18,7 +21,7 @@ use Kstmostofa\LaravelWhatsApp\Exceptions\CloudApiException;
  */
 class SendMessage implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels, UsesWhatsAppQueue;
 
     public int $tries = 3;
 
@@ -31,8 +34,7 @@ class SendMessage implements ShouldQueue
         public bool $previewUrl = false,
         public ?string $contextMessageId = null,
     ) {
-        $this->onConnection(config('laravel-whatsapp.queue.connection'));
-        $this->onQueue(config('laravel-whatsapp.queue.queue', 'default'));
+        $this->useWhatsAppQueue();
     }
 
     public function handle(CloudClient $client): void

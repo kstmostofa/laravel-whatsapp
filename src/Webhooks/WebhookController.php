@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kstmostofa\LaravelWhatsApp\Webhooks;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 use Kstmostofa\LaravelWhatsApp\Models\WaWebhookEvent;
+use Kstmostofa\LaravelWhatsApp\WebhookStatus;
 
 class WebhookController extends Controller
 {
@@ -54,7 +57,7 @@ class WebhookController extends Controller
             $record = WaWebhookEvent::create([
                 'backend' => 'cloud',
                 'payload' => $payload,
-                'status' => WaWebhookEvent::STATUS_PENDING,
+                'status' => WebhookStatus::Pending->value,
             ]);
         } catch (\Throwable) {
             // Log table missing — fall back to plain dispatch rather than drop the delivery.
