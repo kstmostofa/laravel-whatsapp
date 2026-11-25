@@ -160,14 +160,14 @@ Detailed deployment guide → [docs/production](https://kstmostofa.github.io/lar
 - [x] Bulk send job with rate limiting
 - [x] Laravel notification channel + `WhatsApp::fake()`
 - [x] Chat history import
-- [x] Larastan (level 6) + Pint in CI
+- [x] Larastan (level 8) + Pint in CI
 - [x] Native broadcasting integration with `Echo` channel listeners
 - [x] Template builder in Compose
 
 ## Status
 
-- **235 tests passing**, 690 assertions (testbench + mocked Guzzle + Livewire smoke tests), plus 68 sidecar tests (`npm test` in `sidecar/`)
-- **Compatible with Laravel 12 / 13** — CI runs the suite on PHP 8.2, 8.3 and 8.4 with Laravel 12, and PHP 8.4 with Laravel 13, plus Pint and Larastan (level 6)
+- **237 tests passing**, 694 assertions (testbench + mocked Guzzle + Livewire smoke tests), plus 68 sidecar tests (`npm test` in `sidecar/`)
+- **Compatible with Laravel 12 / 13** — CI runs the suite on PHP 8.2, 8.3 and 8.4 with Laravel 12, and PHP 8.4 with Laravel 13, plus Pint and Larastan (level 8)
 - PHP minimum: **8.2** on Laravel 12, **8.4** on Laravel 13 (Symfony 8 transitive)
 - Laravel 11 support was dropped in 1.1.0: it is past end of life and has unpatched security advisories
 - **Verified end-to-end in Laravel 12** for the 1.0 feature set: QR pairing, inbound webhook → DB → UI bubble, edit, delete, sound, attachments, dark-mode toggle. Features added in 1.1 are covered by the automated tests above
@@ -181,7 +181,7 @@ MIT. See [LICENSE](LICENSE).
 Issues + PRs welcome at [github.com/kstmostofa/laravel-whatsapp](https://github.com/kstmostofa/laravel-whatsapp). Before submitting, run:
 
 ```bash
-composer check            # Pint style check, Larastan (level 6), and PHPUnit
+composer check            # Pint style check, Larastan (level 8), and PHPUnit
 composer format           # fix code style
 cd sidecar && npm test    # sidecar unit tests (no npm install needed)
 ```
