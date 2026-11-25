@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Edit message** in the chat screen and **Manage**, **Leave**, **Make admin**,
+  **Remove admin** and **Remove from group** on the groups screen did nothing
+  when clicked. Their arguments used `@js()` inside Flux component attributes,
+  where Blade leaves it as text, so Livewire threw a syntax error.
+- Opening a chat from the list showed the oldest loaded messages instead of
+  the newest, and sending a message didn't scroll down to it.
+- Searching the chat list replaced the open chat's name in the header with
+  its raw ID when the search hid that chat.
+
 ## [1.3.0] - 2026-11-25
 
 New Web backend features: contact cards, mentions, and chat, contact and
